@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { currencyForCountry, bankFieldsFor } from '@/lib/countries';
 import { prisma } from '@/lib/db';
 import { recordAudit } from '@/lib/audit';
 import { deleteUpload, storeUpload, UploadRejected } from '@/lib/storage';
@@ -136,6 +137,7 @@ export async function requestPayment(
       reference: true,
       status: true,
       clientId: true,
+      client: { select: { profile: { select: { countryOfResidenceCode: true } } } },
       lawyerId: true,
       firmId: true,
       lawyer: { select: { userId: true } },
@@ -174,6 +176,9 @@ export async function requestPayment(
       caseId: legalCase.id,
       requestedById,
       amountFils: Math.round(parsed.data.amountAed * 100),
+      // The consultation happens where the client is, so the fee is quoted in
+      // that country's money rather than in the platform's.
+      currency: currencyForCountry(legalCase.client?.profile?.countryOfResidenceCode),
       purpose: parsed.data.purpose,
       details: parsed.data.details,
       status: 'REQUESTED',
@@ -229,6 +234,8 @@ function receiptNumberFor(paymentId: string, attempt = 0): string {
  * is created from.
  */
 export type BankingDetails = {
+  /// The country the account is held in, which decides what is required.
+  bankCountryCode?: string | null;
   bankAccountName: string | null;
   bankName: string | null;
   bankIban: string | null;
@@ -239,6 +246,7 @@ export type BankingDetails = {
 };
 
 const BANK_FIELD_LABELS: Record<keyof BankingDetails, string> = {
+  bankCountryCode: 'the country the account is held in',
   bankAccountName: 'account holder name',
   bankName: 'bank name',
   bankIban: 'IBAN',
@@ -320,14 +328,41 @@ function hasEnough(details: BankingDetails | null): boolean {
   );
 }
 
-/** What is still missing, in words a person can act on. */
+/**
+ * What is still missing, in words a person can act on.
+ *
+ * The list follows the banking conventions of the country the account is held
+ * in: an IBAN country is asked for an IBAN or an account number, the United
+ * States for a routing number, Argentina for a CBU, India for an IFSC. Asking
+ * everybody for every field is how a form becomes impossible to complete, and
+ * asking for the wrong ones is how a payment fails after it is sent.
+ */
 export function missingBankingFields(details: BankingDetails): string[] {
+  const rules = bankFieldsFor(details.bankCountryCode);
   const missing: string[] = [];
+
   if (!details.bankAccountName?.trim()) missing.push(BANK_FIELD_LABELS.bankAccountName);
   if (!details.bankName?.trim()) missing.push(BANK_FIELD_LABELS.bankName);
-  if (!details.bankIban?.trim() && !details.bankAccountNumber?.trim()) {
-    missing.push('an IBAN or an account number');
+
+  const identifiers: Record<string, string | null | undefined> = {
+    iban: details.bankIban,
+    accountNumber: details.bankAccountNumber,
+    cbu: (details as { bankCbu?: string | null }).bankCbu,
+    routingNumber: (details as { bankRoutingNumber?: string | null }).bankRoutingNumber,
+    sortCode: (details as { bankSortCode?: string | null }).bankSortCode,
+    ifsc: (details as { bankIfsc?: string | null }).bankIfsc,
+    bsb: (details as { bankBsb?: string | null }).bankBsb,
+  };
+
+  const hasIdentifier = rules.identifiers.some((field) => identifiers[field]?.trim());
+  if (!hasIdentifier) {
+    missing.push(
+      rules.identifiers
+        .map((field) => BANK_FIELD_LABELS[field as keyof typeof BANK_FIELD_LABELS] ?? field)
+        .join(' or '),
+    );
   }
+
   return missing;
 }
 

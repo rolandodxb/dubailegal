@@ -4,40 +4,56 @@ import { cx } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
 /**
- * The language switch.
+ * The language selector: one control that opens, not four buttons in a row.
  *
- * A form with a button per language rather than a dropdown, so it works with
- * JavaScript off and needs no client state: tapping a language posts the choice
- * and the page comes back in that language. Each name is written in its own
- * script, because a list that says "Arabic" to somebody who reads Arabic is a
- * list written for the wrong person.
+ * A `<details>` disclosure rather than a scripted dropdown, for three reasons: it
+ * opens without JavaScript, it is keyboard- and screen-reader-native (the browser
+ * announces it as expandable), and it closes on a second tap with no state to
+ * manage. Four buttons sitting open in the header competed with the navigation
+ * for exactly the space the navigation needed.
+ *
+ * Each language is written in its own script, because a list that says "Arabic"
+ * to somebody who reads Arabic is a list written for the wrong person.
  */
 export function LanguageSwitcher({
   current,
   label,
-  variant = 'inline',
+  variant = 'menu',
 }: {
   current: Locale;
   label: string;
-  /** `inline` sits in a row; `stacked` fills the width of the phone menu. */
-  variant?: 'inline' | 'stacked';
+  /** `menu` for the phone menu: full width, one row per language. */
+  variant?: 'menu' | 'compact';
 }) {
-  const stacked = variant === 'stacked';
+  const active = LOCALES.find((entry) => entry.code === current) ?? LOCALES[0];
+  const compact = variant === 'compact';
 
   return (
-    <form action={setLocaleAction} className={stacked ? 'w-full' : 'inline-block'}>
-      <p
+    <details className="dl-disclosure group relative">
+      <summary
         className={cx(
-          'flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400',
-          stacked ? 'px-1 pb-1' : 'sr-only',
+          'flex items-center gap-2 rounded-lg text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100',
+          compact ? 'min-h-9 px-2.5' : 'min-h-12 w-full px-3',
+        )}
+        aria-label={label}
+      >
+        <Icon name="globe" size={17} />
+        <span className={compact ? 'hidden sm:inline' : 'inline'}>{active.native}</span>
+        <Icon name="chevronDown" size={15} className="dl-disclosure-icon text-slate-400" />
+      </summary>
+
+      <form
+        action={setLocaleAction}
+        className={cx(
+          'z-50 rounded-xl border border-slate-200 bg-white p-1 shadow-lg',
+          compact ? 'absolute end-0 mt-1 w-44' : 'mt-1',
         )}
       >
-        <Icon name="globe" size={14} />
-        {label}
-      </p>
-      <div className={cx('flex flex-wrap gap-1', stacked && 'flex-col gap-0.5')} role="group" aria-label={label}>
+        <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          {label}
+        </p>
         {LOCALES.map((locale) => {
-          const active = locale.code === current;
+          const isActive = locale.code === current;
           return (
             <button
               key={locale.code}
@@ -45,31 +61,20 @@ export function LanguageSwitcher({
               name="locale"
               value={locale.code}
               lang={locale.code}
-              aria-current={active ? 'true' : undefined}
+              aria-current={isActive ? 'true' : undefined}
               className={cx(
-                'rounded-lg text-sm font-medium transition-colors',
-                stacked
-                  ? 'flex min-h-12 w-full items-center gap-3 px-3 text-start'
-                  : 'min-h-9 px-2.5 text-[13px]',
-                active
-                  ? stacked
-                    ? 'bg-brand-50 text-brand-900'
-                    : 'bg-slate-100 text-slate-900'
-                  : 'text-slate-600 hover:bg-slate-100',
+                'flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-start text-sm',
+                isActive
+                  ? 'bg-brand-50 font-semibold text-brand-900'
+                  : 'text-slate-700 hover:bg-slate-100',
               )}
             >
-              {stacked ? (
-                <>
-                  <span className="min-w-0 flex-1 truncate">{locale.native}</span>
-                  {active ? <Icon name="check" size={16} /> : null}
-                </>
-              ) : (
-                locale.native
-              )}
+              <span className="min-w-0 flex-1 truncate">{locale.native}</span>
+              {isActive ? <Icon name="check" size={16} /> : null}
             </button>
           );
         })}
-      </div>
-    </form>
+      </form>
+    </details>
   );
 }

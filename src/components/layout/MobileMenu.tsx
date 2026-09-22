@@ -150,7 +150,7 @@ export function MobileMenu({
               ))}
 
               <div className="mb-5 border-t border-slate-100 pt-4">
-                <LanguageSwitcher current={locale} label={labels.changeLanguage} variant="stacked" />
+                <LanguageSwitcher current={locale} label={labels.changeLanguage} variant="menu" />
               </div>
 
               {signOut ? (

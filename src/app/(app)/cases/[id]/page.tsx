@@ -20,7 +20,7 @@ import { listCaseOffers } from '@/server/services/case-service';
 import { activeUrgentCall } from '@/server/services/appointment-service';
 import { RequestUrgentCallButton } from '@/components/forms/UrgentCallButton';
 import { PaymentRequestForm } from '@/components/cases/PaymentRequestForm';
-import { formatAed } from '@/lib/payment-format';
+import { formatMoney, formatAed } from '@/lib/payment-format';
 import { CaseChat } from '@/components/cases/CaseChat';
 import { CaseProgressTrack, CaseStatusChip } from '@/components/cases/CaseStatusChip';
 import { EncryptionNotice } from '@/components/SecurityNotice';
@@ -225,6 +225,7 @@ export default async function CaseDetailPage({
                 method: payment.method,
                 reference: payment.reference,
                 cardBrand: payment.cardBrand,
+                currency: payment.currency,
                 cardLast4: payment.cardLast4,
                 bankLines: bankTransferLines({
                   bankAccountName: payment.bankAccountName,
@@ -296,7 +297,7 @@ export default async function CaseDetailPage({
                   {casePayments.map((payment) => (
                     <li key={payment.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="text-sm text-slate-800">
-                        {formatAed(payment.amountFils)} · {payment.purpose.toLowerCase().replace('_', ' ')}
+                        {formatMoney(payment.amountFils, payment.currency)} · {payment.purpose.toLowerCase().replace('_', ' ')}
                       </span>
                       <span className="text-xs text-slate-500">
                         {payment.status === 'PAID'

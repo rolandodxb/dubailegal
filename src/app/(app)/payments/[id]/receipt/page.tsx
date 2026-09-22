@@ -6,7 +6,7 @@ import { requireActiveUser } from '@/lib/auth';
 import { getReceiptForViewer } from '@/server/services/payment-service';
 import { receiptPresentationForPayment } from '@/server/services/receipt-template-service';
 import { PAYMENT_PURPOSES } from '@/lib/payment-purposes';
-import { formatAed, maskCard } from '@/lib/payment-format';
+import { formatMoney, formatAed, maskCard } from '@/lib/payment-format';
 import { formatUaeDateTime } from '@/lib/time';
 import { ReceiptActions } from '@/components/forms/ReceiptActions';
 import { BrandLockup, LogoMark } from '@/components/layout/Logo';
@@ -121,7 +121,7 @@ export default async function PaymentReceiptPage({
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Amount paid</p>
             <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">
-              {formatAed(payment.amountFils)}
+              {formatMoney(payment.amountFils, payment.currency)}
             </p>
           </div>
           <div className="text-right">

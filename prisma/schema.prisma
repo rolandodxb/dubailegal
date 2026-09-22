@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   /// Relations are fetched in the same statement as their parent when a query
   /// asks for it (`relationLoadStrategy: 'join'`), instead of one extra query per
   /// relation. On a local database that is a nicety; on a database a network away
@@ -99,7 +99,17 @@ enum Emirate {
 /// type are defined once in src/lib/constants.ts.
 enum DocumentKind {
   EMIRATES_ID
+  /// A national identity card from the country whose nationality the member
+  /// holds — Argentina's DNI, Spain's DNI, India's Aadhaar. Offered as an
+  /// alternative to a passport where the country issues one.
+  NATIONAL_ID
   PASSPORT
+  /// Permission to live in the country of residence, when that is not the
+  /// country whose nationality the member holds.
+  RESIDENCE_PERMIT
+  /// Permission to practise law in the country of residence, for a lawyer
+  /// qualified elsewhere.
+  PRACTICE_AUTHORISATION
   PROFILE_PHOTO
   LAWYER_LICENSE
   FIRM_TRADE_LICENSE
@@ -271,9 +281,20 @@ model Profile {
   /// full to a reviewer.
   emiratesIdNumber       String?
   emiratesIdExpiry       DateTime? @db.Date
+  /// The three countries that decide which documents are asked for, as ISO
+  /// 3166-1 alpha-2 codes. The free-text fields above stay for display.
+  countryOfBirthCode     String?
+  nationalityCode        String?
+  countryOfResidenceCode String?
+
+  /// Set when a member says they hold the documents of their own country but do
+  /// not yet have a residence permit for where they live. It is a normal
+  /// situation, and it must not stop an account being verified.
+  declaresNoResidencePermit Boolean @default(false)
+
   /// HMAC-SHA256 of the normalised Emirates ID. Unique, so one identity cannot
   /// be used to verify several accounts.
-  emiratesIdFingerprint  String?   @unique
+  emiratesIdFingerprint  String?  @unique
   /// Result of the Emirates ID check-digit test at the time it was entered.
   /// Advisory only — a mismatch never blocks a user, it tells the reviewer to
   /// look more closely at the uploaded ID. Null when no check has been run.
@@ -334,6 +355,9 @@ model LawyerProfile {
   /// professional cannot raise one until these are filled in: they are copied
   /// onto the request itself, so a client is never sent to a page that has since
   /// changed under them.
+  /// The country the account is held in, which decides which banking fields are
+  /// required of it: an IBAN country, an ABA routing number, a CBU, an IFSC.
+  bankCountryCode   String?
   bankAccountName   String?
   bankName          String?
   bankIban          String?
@@ -379,6 +403,9 @@ model FirmProfile {
   /// professional cannot raise one until these are filled in: they are copied
   /// onto the request itself, so a client is never sent to a page that has since
   /// changed under them.
+  /// The country the account is held in, which decides which banking fields are
+  /// required of it: an IBAN country, an ABA routing number, a CBU, an IFSC.
+  bankCountryCode   String?
   bankAccountName   String?
   bankName          String?
   bankIban          String?
@@ -1154,6 +1181,7 @@ model PaymentRequest {
   method            PaymentMethod?
   /// Where the client was told to send the money, copied from the professional's
   /// details when the request was raised — the request says what it said then.
+  bankCountryCode   String?
   bankAccountName   String?
   bankName          String?
   bankIban          String?

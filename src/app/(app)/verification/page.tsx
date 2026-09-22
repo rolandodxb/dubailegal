@@ -28,9 +28,17 @@ export default async function VerificationPage() {
 
   const canSubmitDocuments = isEnabled(availability.settings, 'feature.verification_submission');
 
-  const required = overview.requirements.required;
-  const optional = overview.requirements.optional;
-  const orderedKinds: DocumentKind[] = [...required, ...optional, 'OTHER'];
+  // The documents offered are the ones this member's situation calls for, in the
+  // order the rules put them: identity, residence if they live abroad, then the
+  // licence to practise. Everything else stays available under "other".
+  const requestedKinds = overview.rules.requests.flatMap((request) => request.kinds);
+  const orderedKinds: DocumentKind[] = [
+    ...requestedKinds,
+    'PROFILE_PHOTO',
+    'PROFESSIONAL_INDEMNITY_INSURANCE',
+    'BRAND_LOGO',
+    'OTHER',
+  ];
   const uniqueKinds = Array.from(new Set(orderedKinds));
 
   const usable = overview.documents.filter((doc) => doc.status !== 'SUPERSEDED');
@@ -69,7 +77,7 @@ export default async function VerificationPage() {
               },
               {
                 term: 'Documents on file',
-                detail: `${usable.length} (${presentKinds.size} of ${required.length} required types)`,
+                detail: `${usable.length} (${presentKinds.size} of ${overview.rules.requests.filter((request) => request.kinds.length > 0 && request.kinds[0] !== 'PROFILE_PHOTO').length} requested types)`,
               },
               {
                 term: 'Requests submitted',
@@ -147,7 +155,7 @@ export default async function VerificationPage() {
               documentsDone
                 ? undefined
                 : `Missing: ${overview.missingDocuments
-                    .map((kind) => DOCUMENT_KIND_LABEL[kind])
+                    .map((kind) => DOCUMENT_KIND_LABEL[kind as DocumentKind])
                     .join(', ')}`
             }
             href="#documents"
@@ -190,7 +198,7 @@ export default async function VerificationPage() {
           </Alert>
         ) : (
           <div className="mt-4">
-            <DocumentUploadForm kinds={uniqueKinds} requiredKinds={required} />
+            <DocumentUploadForm kinds={uniqueKinds} requiredKinds={requestedKinds} />
           </div>
         )}
       </Card>

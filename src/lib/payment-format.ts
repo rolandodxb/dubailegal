@@ -1,15 +1,36 @@
 /**
  * Currency formatting, shared by the server and the client.
  *
- * Amounts are held in fils (1/100 of a dirham) as integers everywhere, so no
- * rounding error can ever touch money. This is the only place they become text.
+ * Amounts are held as integers in the minor unit of their currency — fils where
+ * the currency is the dirham, cents where it is the euro — so no rounding error
+ * can ever touch money. This is the only place they become text.
+ *
+ * The platform is used worldwide, so a fee is quoted in the money of the place
+ * the consultation happens: a client in Buenos Aires sees pesos, a client in
+ * Madrid sees euros. Every currency here has two decimal places except the few
+ * that do not, which `Intl` knows and this does not need to.
  */
+export function formatMoney(minorUnits: number, currency = 'AED'): string {
+  const code = currency.toUpperCase();
+  const zeroDecimal = ['JPY', 'KRW', 'VND', 'CLP', 'ISK', 'HUF', 'TWD', 'UGX', 'RWF', 'KMF', 'DJF', 'GNF', 'PYG', 'XOF', 'XAF', 'BIF'].includes(code);
+  const divisor = zeroDecimal ? 1 : 100;
+
+  try {
+    return new Intl.NumberFormat('en', {
+      style: 'currency',
+      currency: code,
+      minimumFractionDigits: zeroDecimal ? 0 : 2,
+      maximumFractionDigits: zeroDecimal ? 0 : 2,
+    }).format(minorUnits / divisor);
+  } catch {
+    // An unrecognised code must never break a page that shows money.
+    return `${(minorUnits / divisor).toFixed(2)} ${code}`;
+  }
+}
+
+/** The dirham form, kept for the places that are explicitly about the UAE. */
 export function formatAed(fils: number): string {
-  return new Intl.NumberFormat('en-AE', {
-    style: 'currency',
-    currency: 'AED',
-    minimumFractionDigits: 2,
-  }).format(fils / 100);
+  return formatMoney(fils, 'AED');
 }
 
 /**

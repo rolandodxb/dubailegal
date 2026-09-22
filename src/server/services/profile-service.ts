@@ -3,6 +3,7 @@ import { recordAudit } from '@/lib/audit';
 import { keyedDigest } from '@/lib/tokens';
 import { emiratesIdCheckDigitMatches, normaliseEmiratesId } from '@/lib/emirates-id';
 import { profileSchema } from '@/lib/validation';
+import { countryName } from '@/lib/countries';
 import { fromZodError, failure, success, type ServiceResult } from './result';
 import { invalidateVerification } from './verification-service';
 
@@ -71,8 +72,12 @@ export async function updateProfile(
       fullName: data.fullName,
       dateOfBirth: data.dateOfBirth,
       placeOfBirth: data.placeOfBirth,
-      countryOfResidence: data.countryOfResidence,
-      nationality: data.nationality,
+      countryOfResidence: countryName(data.countryOfResidenceCode) ?? data.countryOfResidence,
+      nationality: countryName(data.nationalityCode) ?? data.nationality,
+      countryOfBirthCode: data.countryOfBirthCode,
+      nationalityCode: data.nationalityCode,
+      countryOfResidenceCode: data.countryOfResidenceCode,
+      declaresNoResidencePermit: data.declaresNoResidencePermit,
       phone: data.phone,
       emiratesIdNumber: digits,
       emiratesIdExpiry: data.emiratesIdExpiry,
@@ -85,8 +90,12 @@ export async function updateProfile(
       fullName: data.fullName,
       dateOfBirth: data.dateOfBirth,
       placeOfBirth: data.placeOfBirth,
-      countryOfResidence: data.countryOfResidence,
-      nationality: data.nationality,
+      countryOfResidence: countryName(data.countryOfResidenceCode) ?? data.countryOfResidence,
+      nationality: countryName(data.nationalityCode) ?? data.nationality,
+      countryOfBirthCode: data.countryOfBirthCode,
+      nationalityCode: data.nationalityCode,
+      countryOfResidenceCode: data.countryOfResidenceCode,
+      declaresNoResidencePermit: data.declaresNoResidencePermit,
       phone: data.phone,
       emiratesIdNumber: digits,
       emiratesIdExpiry: data.emiratesIdExpiry,

@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { ALL_COUNTRIES } from './countries';
+
+const ALL_COUNTRY_CODES = new Set(ALL_COUNTRIES.map((country) => country.code));
 import { AccountType, Emirate, LegalArea } from '@prisma/client';
 import { MIN_PASSWORD_LENGTH } from './constants';
 import { hasValidEmiratesIdFormat, normaliseEmiratesId } from './emirates-id';
@@ -103,6 +106,21 @@ function optionalPhone() {
 }
 
 /** A phone number that must be given — what the account form asks for. */
+/** A country code that must exist in the list the picker offers. */
+function optionalCountryCode(label: string) {
+  return z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((value) => {
+      if (value === null || value === undefined) return null;
+      const trimmed = String(value).trim().toUpperCase();
+      return trimmed.length === 0 ? null : trimmed;
+    })
+    .refine(
+      (code) => code === null || ALL_COUNTRY_CODES.has(code),
+      `${label}: choose a country from the list.`,
+    );
+}
+
 const phoneSchema = z
   .string({ required_error: 'Enter a phone number.' })
   .trim()
@@ -201,6 +219,17 @@ export const changePasswordSchema = z
 export const profileSchema = z
   .object({
     fullName: requiredString(2, 120, 'Full name'),
+    /**
+     * The three countries that decide which documents are asked for. Stored as
+     * ISO codes, because "United Arab Emirates", "UAE" and "Emiratos Árabes"
+     * are the same country and rules cannot be written against free text.
+     */
+    countryOfBirthCode: optionalCountryCode('Country of birth'),
+    nationalityCode: optionalCountryCode('Nationality'),
+    countryOfResidenceCode: optionalCountryCode('Country of residence'),
+    declaresNoResidencePermit: z
+      .union([z.string(), z.boolean(), z.undefined()])
+      .transform((value) => value === true || value === 'on' || value === 'true'),
     dateOfBirth: optionalDate('Date of birth'),
     placeOfBirth: optionalString(120, 'Place of birth'),
     countryOfResidence: optionalString(80, 'Country of residence'),

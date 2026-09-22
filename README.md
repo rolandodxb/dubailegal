@@ -1190,6 +1190,46 @@ respects the system size, and the page drawing into the notch and the home-indic
 scrolling is left exactly as it is — fighting that is how a page comes to feel broken. Motion is used
 only to make a change legible, and `prefers-reduced-motion` switches all of it off.
 
+## Where somebody is from decides what they are asked for
+
+The platform is worldwide, so the questions follow the person. Three facts do the
+work: **where they were born, whose nationality they hold, and where they live.**
+
+| | Asked for |
+|---|---|
+| Argentine living in Argentina | Argentine DNI **or** passport |
+| Argentine living in Spain | Argentine DNI **or** passport, **and** a Spanish residence permit (the TIE) |
+| American living in the United States | passport — the United States issues no national identity card, so it is never asked for one |
+| Argentine lawyer working in Australia | Argentine identity, Argentine practising licence, **Australian permission to practise**, and an Australian residence permit |
+
+Three principles keep it from asking for the impossible:
+
+1. **Never ask for a document a country does not issue.** Where no national card
+   is known, a passport is asked for — the one document every country issues, so
+   there is always a way to satisfy the requirement. A country whose identity
+   document is not yet known accepts a passport, a national card or an Emirates ID.
+2. **A document from abroad is flagged as such.** An Argentine DNI read in Spain
+   normally needs an apostille and a sworn translation, and the member is told
+   that when the requirement is shown rather than after a rejection. The note
+   changes if the two countries are not both parties to the Apostille Convention.
+3. **A residence permit may be declared missing.** Somebody who holds the
+   documents of their own country but has not been granted residency where they
+   live can say so. It is recorded, it does not block verification, and they can
+   add it later.
+
+The rules live in `src/lib/document-requirements.ts` and the country data in
+`src/lib/countries.ts` — currency, the name of the national identity card, the
+name of the residence permit and the banking conventions of each country. A
+country whose details are not known falls back to a passport and a generically
+described permit, which is the honest default.
+
+**Money follows the consultation.** A fee is quoted in the currency of the country
+where the client is, and the bank details a professional must give follow the
+banking conventions of the country their account is held in: an IBAN country is
+asked for an IBAN or an account number, the United States for a routing number,
+Argentina for a CBU, India for an IFSC, Australia for a BSB. Any one identifier
+satisfies it — a client paying from abroad is often quoted a SWIFT code instead.
+
 ## Languages
 
 Four languages, chosen from a switch that appears in the header on a desktop and inside the phone

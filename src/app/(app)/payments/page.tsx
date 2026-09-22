@@ -4,7 +4,7 @@ import { requireMember } from '@/lib/auth';
 import { listPaymentsForUser } from '@/server/services/payment-service';
 import { getReceiptTemplate } from '@/server/services/receipt-template-service';
 import { PAYMENT_PURPOSES } from '@/lib/payment-purposes';
-import { formatAed } from '@/lib/payment-format';
+import { formatMoney, formatAed } from '@/lib/payment-format';
 import { formatUaeDateTime } from '@/lib/time';
 import { LogoMark } from '@/components/layout/Logo';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
@@ -112,7 +112,7 @@ export default async function PaymentsPage() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-lg font-semibold tabular-nums text-slate-900">
-                        {formatAed(payment.amountFils)}
+                        {formatMoney(payment.amountFils, payment.currency)}
                       </p>
                       <span
                         className={cx(
@@ -148,7 +148,7 @@ export default async function PaymentsPage() {
                         href={`/payments/${payment.id}/pay`}
                         className={buttonClasses('primary', 'sm')}
                       >
-                        Pay {formatAed(payment.amountFils)}
+                        Pay {formatMoney(payment.amountFils, payment.currency)}
                       </Link>
                     ) : null}
                     <Link href={`/cases/${payment.case.id}`} className={buttonClasses('ghost', 'sm')}>

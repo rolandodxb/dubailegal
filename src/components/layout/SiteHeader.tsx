@@ -79,7 +79,7 @@ export function SiteHeader({
               >
                 {t.nav.howVerificationWorks}
               </Link>
-              <LanguageSwitcher current={locale} label={t.language.change} />
+              <LanguageSwitcher current={locale} label={t.language.change} variant="compact" />
             </nav>
           ) : null}
         </div>
@@ -231,7 +231,7 @@ export function SiteFooter({
                 {t.nav.createAccount}
               </Link>
               <div className="pt-2">
-                <LanguageSwitcher current={locale} label={t.language.change} />
+                <LanguageSwitcher current={locale} label={t.language.change} variant="compact" />
               </div>
             </nav>
           )}

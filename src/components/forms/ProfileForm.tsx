@@ -7,6 +7,7 @@ import { formatEmiratesId, emiratesIdInputHint } from '@/lib/emirates-id';
 import { calculateAge, toDateInputValue } from '@/lib/format';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Textarea } from '@/components/ui/primitives';
+import { CountrySelect } from './CountrySelect';
 
 export type ProfileFormValues = {
   fullName: string;
@@ -14,6 +15,10 @@ export type ProfileFormValues = {
   placeOfBirth: string | null;
   countryOfResidence: string | null;
   nationality: string | null;
+  countryOfBirthCode?: string | null;
+  nationalityCode?: string | null;
+  countryOfResidenceCode?: string | null;
+  declaresNoResidencePermit?: boolean;
   phone: string | null;
   emiratesIdNumber: string | null;
   emiratesIdExpiry: Date | null;
@@ -32,6 +37,10 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
 
   const value = (key: keyof ProfileFormValues, fallback = '') =>
     state?.values?.[key] ?? (profile?.[key] as string | null) ?? fallback;
+
+  /** Same idea for the country codes, which are stored as codes rather than text. */
+  const countryValue = (key: 'countryOfBirthCode' | 'nationalityCode' | 'countryOfResidenceCode') =>
+    state?.values?.[key] ?? (profile?.[key] as string | null) ?? '';
 
   const [emiratesId, setEmiratesId] = useState(
     state?.values?.emiratesIdNumber ?? profile?.emiratesIdNumber ?? '',
@@ -84,46 +93,49 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
           />
         </Field>
 
-        <Field
-          label="Place of birth"
-          htmlFor="placeOfBirth"
+        <CountrySelect
+          id="countryOfBirthCode"
+          name="countryOfBirthCode"
+          label="Country of birth"
           required
+          defaultValue={countryValue('countryOfBirthCode')}
+          hint="The country that issued your birth documents. This decides which identity document you are asked for."
+          error={state?.fieldErrors?.countryOfBirthCode}
+        />
+
+        <CountrySelect
+          id="nationalityCode"
+          name="nationalityCode"
+          label="Nationality"
+          required
+          defaultValue={countryValue('nationalityCode')}
+          hint="Whose passport you hold. It can differ from where you were born, and often does."
+          error={state?.fieldErrors?.nationalityCode}
+        />
+
+        <CountrySelect
+          id="countryOfResidenceCode"
+          name="countryOfResidenceCode"
+          label="Country of residence"
+          required
+          defaultValue={countryValue('countryOfResidenceCode')}
+          hint="Where you actually live. If it is not where your nationality is from, a residence permit is asked for as well."
+          error={state?.fieldErrors?.countryOfResidenceCode}
+        />
+
+        <Field
+          label="Place of birth, as written"
+          htmlFor="placeOfBirth"
           error={state?.fieldErrors?.placeOfBirth}
-          hint="Shown to you and to reviewers, not published in the directory."
+          hint="The town or city, shown to reviewers and never published."
         >
           <Input
             id="placeOfBirth"
             name="placeOfBirth"
             maxLength={120}
-            placeholder="e.g. Dubai, United Arab Emirates"
+            placeholder="e.g. Rosario"
             defaultValue={value('placeOfBirth')}
             error={state?.fieldErrors?.placeOfBirth}
-          />
-        </Field>
-
-        <Field
-          label="Country of residence"
-          htmlFor="countryOfResidence"
-          required
-          error={state?.fieldErrors?.countryOfResidence}
-        >
-          <Input
-            id="countryOfResidence"
-            name="countryOfResidence"
-            maxLength={80}
-            placeholder="e.g. United Arab Emirates"
-            defaultValue={value('countryOfResidence')}
-            error={state?.fieldErrors?.countryOfResidence}
-          />
-        </Field>
-
-        <Field label="Nationality" htmlFor="nationality" error={state?.fieldErrors?.nationality}>
-          <Input
-            id="nationality"
-            name="nationality"
-            maxLength={80}
-            defaultValue={value('nationality')}
-            error={state?.fieldErrors?.nationality}
           />
         </Field>
 

@@ -5,7 +5,6 @@ import { cached } from '@/lib/ttl-cache';
 import { getSessionUser } from '@/lib/auth';
 import { listPosts } from '@/server/services/blog-service';
 import { CommunityPanel } from '@/components/community/CommunityPanel';
-import { LandingTabs } from '@/components/layout/LandingTabs';
 import { getI18n } from '@/lib/i18n';
 import { BADGE, DOCUMENT_REQUIREMENTS } from '@/lib/constants';
 import { VerificationBadge } from '@/components/VerificationBadge';
@@ -198,8 +197,6 @@ export default async function LandingPage({
 
   return (
     <>
-      <LandingTabs active={activeTab} t={t} />
-
       {activeTab === 'community' ? (
         <div className="bg-slate-50/60">{community}</div>
       ) : (

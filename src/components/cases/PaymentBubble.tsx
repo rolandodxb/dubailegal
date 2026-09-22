@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 import { cancelPaymentAction, submitPaymentProofAction } from '@/app/actions/payment-actions';
 import { initialFormState } from '@/lib/form-state';
-import { formatAed, maskCard } from '@/lib/payment-format';
+import { formatMoney, formatAed, maskCard } from '@/lib/payment-format';
 import { formatUaeDateTime } from '@/lib/time';
 import { Alert, buttonClasses, Field, Input, cx } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
@@ -14,6 +14,8 @@ export type ChatPayment = {
   id: string;
   caseId: string;
   amountFils: number;
+  /** The money the fee was quoted in, from the client's country. */
+  currency: string;
   purpose: string;
   details: string | null;
   status: 'REQUESTED' | 'PAID' | 'CANCELLED';
@@ -122,7 +124,7 @@ export function PaymentBubble({
             </div>
 
             <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
-              {formatAed(payment.amountFils)}
+              {formatMoney(payment.amountFils, payment.currency)}
             </p>
 
             {payment.details ? (
@@ -213,7 +215,7 @@ export function PaymentBubble({
               className={buttonClasses('primary', 'lg', 'w-full')}
             >
               <Icon name="building" size={18} />
-              Pay {formatAed(payment.amountFils)} by transfer
+              Pay {formatMoney(payment.amountFils, payment.currency)} by transfer
             </Link>
             <p className="mt-2 text-center text-[11px] text-slate-500">
               Record the transfer and a receipt is issued. Card payment is being developed.

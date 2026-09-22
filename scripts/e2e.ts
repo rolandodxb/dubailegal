@@ -216,11 +216,93 @@ async function main(): Promise<void> {
     malformed.ok === false && Boolean(malformed.fieldErrors?.emiratesIdNumber),
   );
 
+  // ══════════════════════════════════════════════════════════════════════════
+  section('Which documents are asked for follows the person, not the platform');
+
+  const { documentRulesFor, missingRequirements } = await import('../src/lib/document-requirements');
+
+  const argentineInArgentina = documentRulesFor({
+    accountType: 'USER',
+    countryOfBirthCode: 'AR',
+    nationalityCode: 'AR',
+    countryOfResidenceCode: 'AR',
+  });
+  check(
+    'an Argentine living in Argentina is asked for a DNI or a passport, and nothing about residence',
+    argentineInArgentina.requests.some((request) => request.kinds.includes('NATIONAL_ID')) &&
+      !argentineInArgentina.requests.some((request) => request.kinds.includes('RESIDENCE_PERMIT')),
+  );
+
+  const argentineInSpain = documentRulesFor({
+    accountType: 'USER',
+    countryOfBirthCode: 'AR',
+    nationalityCode: 'AR',
+    countryOfResidenceCode: 'ES',
+  });
+  check(
+    'an Argentine living in Spain is asked for Argentine identity and a Spanish residence permit',
+    argentineInSpain.requests.some((request) => request.kinds.includes('NATIONAL_ID')) &&
+      argentineInSpain.requests.some((request) => request.kinds.includes('RESIDENCE_PERMIT')),
+  );
+  check(
+    'and is told the permit is the TIE, which is what Spain issues',
+    argentineInSpain.requests.some((request) => request.label.includes('TIE')),
+    argentineInSpain.requests.map((request) => request.label).join(' / '),
+  );
+
+  const americanInAmerica = documentRulesFor({
+    accountType: 'USER',
+    countryOfBirthCode: 'US',
+    nationalityCode: 'US',
+    countryOfResidenceCode: 'US',
+  });
+  check(
+    'a country that issues no identity card is never asked for one',
+    americanInAmerica.requests.some((request) => request.kinds.join() === 'PASSPORT'),
+    americanInAmerica.requests.map((request) => request.kinds.join('+')).join(' / '),
+  );
+
+  const declaredNoPermit = documentRulesFor({
+    accountType: 'USER',
+    countryOfBirthCode: 'AR',
+    nationalityCode: 'AR',
+    countryOfResidenceCode: 'ES',
+    declaresNoResidencePermit: true,
+  });
+  check(
+    'a member who says they hold no residence permit yet is not blocked by it',
+    !missingRequirements(declaredNoPermit, ['NATIONAL_ID']).some((entry) =>
+      entry.kinds.includes('RESIDENCE_PERMIT'),
+    ),
+  );
+
+  const lawyerAbroad = documentRulesFor({
+    accountType: 'LAWYER',
+    countryOfBirthCode: 'AR',
+    nationalityCode: 'AR',
+    countryOfResidenceCode: 'AU',
+  });
+  check(
+    'a lawyer qualified in Argentina and working in Australia is asked for both licences',
+    lawyerAbroad.requests.some((request) => request.kinds.includes('LAWYER_LICENSE')) &&
+      lawyerAbroad.requests.some((request) => request.kinds.includes('PRACTICE_AUTHORISATION')),
+  );
+  check(
+    'and is warned that documents from abroad need an apostille or legalisation',
+    lawyerAbroad.requests.some((request) => Boolean(request.legalisationNote)),
+  );
+
   section('Documents');
   const beforeDocs = await verification.getVerificationOverview(individual.userId);
   check(
     'verification cannot be submitted with no documents',
-    beforeDocs !== null && beforeDocs.canSubmit === false && beforeDocs.missingDocuments.includes('EMIRATES_ID'),
+    beforeDocs !== null && beforeDocs.canSubmit === false && beforeDocs.missingDocuments.length > 0,
+  );
+  check(
+    'and it says which document is missing, in words rather than in codes',
+    beforeDocs !== null &&
+      beforeDocs.missingDocuments.some((label) => /passport|identity|emirates/i.test(label)),
+    beforeDocs?.missingDocuments.join(' / '),
   );
 
   const badUpload = await uploadDocument(

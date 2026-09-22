@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { documentRulesFor, missingRequirements } from '@/lib/document-requirements';
 import { purgeCaseEvidence } from './document-purge';
 import { recordAudit } from '@/lib/audit';
 import {
@@ -86,7 +87,16 @@ export async function getVerificationOverview(userId: string) {
   if (!user) return null;
 
   const accountType = user.accountType as AccountType;
-  const requirements = DOCUMENT_REQUIREMENTS[accountType];
+
+  // Which documents this member owes depends on where they were born, whose
+  // nationality they hold and where they live — not on their account type alone.
+  const rules = documentRulesFor({
+    accountType,
+    countryOfBirthCode: user.profile?.countryOfBirthCode,
+    nationalityCode: user.profile?.nationalityCode,
+    countryOfResidenceCode: user.profile?.countryOfResidenceCode,
+    declaresNoResidencePermit: user.profile?.declaresNoResidencePermit,
+  });
 
   const accountTypeName =
     accountType === 'FIRM' ? 'legal firm' : accountType === 'LAWYER' ? 'lawyer' : 'individual';
@@ -127,7 +137,11 @@ export async function getVerificationOverview(userId: string) {
     (USABLE_DOCUMENT_STATUSES as readonly string[]).includes(doc.status),
   );
   const presentKinds = new Set(usableDocs.map((doc) => doc.kind));
-  const missingDocuments = requirements.required.filter((kind) => !presentKinds.has(kind));
+  // A request with alternatives is satisfied by any one of them, so a country
+  // that issues no identity card can still be verified with a passport alone.
+  const missingDocuments = missingRequirements(rules, [...presentKinds]).map(
+    (entry) => entry.label,
+  );
 
   const emailVerified = user.emailVerifiedAt !== null;
   const openCase = user.verificationCases.find(
@@ -147,11 +161,7 @@ export async function getVerificationOverview(userId: string) {
     );
   }
   if (missingDocuments.length > 0) {
-    blockers.push(
-      `Upload the required documents: ${missingDocuments
-        .map((kind) => DOCUMENT_KIND_LABEL[kind])
-        .join(', ')}.`,
-    );
+    blockers.push(`Provide the documents for your account: ${missingDocuments.join('; ')}.`);
   }
   if (openCase) blockers.push('A verification request is already with our reviewers.');
 
@@ -165,7 +175,7 @@ export async function getVerificationOverview(userId: string) {
     profile,
     accountType,
     accountTypeName,
-    requirements,
+    rules,
     documents: user.documents,
     cases: user.verificationCases,
     openCase: openCase ?? null,

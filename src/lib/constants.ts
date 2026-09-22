@@ -79,23 +79,24 @@ export const DOCUMENT_KIND_LABEL: Record<DocumentKind, string> = {
   PROFESSIONAL_INDEMNITY_INSURANCE: 'Professional indemnity insurance',
   BRAND_LOGO: 'Billing receipt mark',
   OTHER: 'Other supporting document',
+  NATIONAL_ID: 'National identity card',
+  RESIDENCE_PERMIT: 'Residence permit',
+  PRACTICE_AUTHORISATION: 'Permission to practise law',
 };
 
 export const DOCUMENT_KIND_HINT: Record<DocumentKind, string> = {
-  EMIRATES_ID: 'Front and back of your Emirates ID. Required for every account.',
-  PASSPORT: 'Optional. Helps reviewers confirm your identity faster.',
+  EMIRATES_ID: 'Front and back of your Emirates ID.',
+  NATIONAL_ID: 'Front and back of your national identity card.',
+  PASSPORT: 'The page with your photograph and the machine-readable strip.',
+  RESIDENCE_PERMIT: 'The permit that lets you live where you live, or the page in your passport that records it.',
+  LAWYER_LICENSE: 'The licence issued by the authority that admitted you to practise.',
+  PRACTICE_AUTHORISATION: 'Permission to practise in the country where you work, if that is not where you qualified.',
+  FIRM_TRADE_LICENSE: 'The registration of the firm where it operates.',
+  POWER_OF_ATTORNEY: 'The authority of the person opening the account for the firm.',
+  PROFESSIONAL_INDEMNITY_INSURANCE: 'Optional. Your professional indemnity cover, where you hold it.',
   PROFILE_PHOTO: 'Optional. Shown on your profile and directory listing.',
-  LAWYER_LICENSE:
-    'Your licence or permit to provide legal representation in the UAE, issued by the competent authority.',
-  FIRM_TRADE_LICENSE:
-    'The firm\u2019s trade licence showing the licensed legal activity.',
-  POWER_OF_ATTORNEY:
-    'Evidence that the signatory is authorised to act for the firm.',
-  PROFESSIONAL_INDEMNITY_INSURANCE:
-    'Optional. Your current professional indemnity cover.',
-  BRAND_LOGO:
-    'The mark printed on the billing receipts you raise. Not evidence, so it is never part of a verification request.',
-  OTHER: 'Any further document a reviewer may need.',
+  BRAND_LOGO: 'Optional. The mark printed on your own billing receipts.',
+  OTHER: 'Anything else that supports your request. Say what it is.',
 };
 
 /**
