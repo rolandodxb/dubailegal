@@ -72,6 +72,13 @@ export function ConferenceRoom({
   const [joined, setJoined] = useState(false);
   /** Set once the camera is live, so the recorder can attach to it. */
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+  /**
+   * The other side's stream, held in state rather than written straight into the
+   * video element. A track can arrive before React has attached the ref, and a
+   * stream assigned to a null ref is simply lost — the caller then sees their own
+   * camera and nothing else, with the call reported as connected.
+   */
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'live' | 'ended'>('idle');
   const [othersPresent, setOthersPresent] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +93,15 @@ export function ConferenceRoom({
   const politeRef = useRef(false);
   const makingOfferRef = useRef(false);
   const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
+  /**
+   * Signals that arrived before this side joined.
+   *
+   * An offer sent while the other person is still reading the page has nowhere
+   * to go — there is no peer connection yet — and dropping it means the call
+   * never negotiates until a fallback rescues it. Held here and applied the
+   * moment the connection exists.
+   */
+  const pendingSignalsRef = useRef<SignalPayload[]>([]);
 
   const sendSignal = useCallback(
     async (payload: SignalPayload) => {
@@ -131,12 +147,19 @@ export function ConferenceRoom({
       for (const track of stream.getTracks()) peer.addTrack(track, stream);
 
       peer.ontrack = (event) => {
-        const [remote] = event.streams;
-        if (remote && remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remote;
-          void remoteVideoRef.current.play().catch(() => undefined);
-          setConnectionState('live');
-        }
+        // `event.streams` is normally the sender's stream, but a peer that adds
+        // tracks without a stream leaves it empty; either way the track itself is
+        // what matters, so a stream is assembled if one was not given.
+        const incoming = event.streams[0] ?? new MediaStream([event.track]);
+        setRemoteStream((current) => {
+          if (current && current.id === incoming.id) return current;
+          if (current && !event.streams[0]) {
+            current.addTrack(event.track);
+            return current;
+          }
+          return incoming;
+        });
+        setConnectionState((state) => (state === 'ended' ? state : 'live'));
       };
 
       peer.onicecandidate = (event) => {
@@ -165,7 +188,10 @@ export function ConferenceRoom({
   const handleSignal = useCallback(
     async (payload: SignalPayload) => {
       const peer = peerRef.current;
-      if (!peer) return;
+      if (!peer) {
+        pendingSignalsRef.current.push(payload);
+        return;
+      }
 
       try {
         if (payload.kind === 'offer' || payload.kind === 'answer') {
@@ -207,6 +233,17 @@ export function ConferenceRoom({
     [sendSignal],
   );
 
+  /** Attaches the other side's stream when both it and the element exist. */
+  useEffect(() => {
+    const element = remoteVideoRef.current;
+    if (!element || !remoteStream) return;
+    if (element.srcObject !== remoteStream) element.srcObject = remoteStream;
+    // Autoplay can be refused while a page has not been interacted with, and a
+    // silent refusal is a black rectangle; the attempt is kept so a tap on the
+    // page is enough to start it.
+    void element.play().catch(() => undefined);
+  }, [remoteStream, joined, connectionState]);
+
   /**
    * Whether this page may use the camera at all.
    *
@@ -218,6 +255,36 @@ export function ConferenceRoom({
    */
   const mediaBlockedByAddress =
     typeof window !== 'undefined' && !window.isSecureContext;
+
+  /**
+   * If no offer arrives, make one anyway.
+   *
+   * Deciding who offers makes the ordinary case work; this makes the unusual one
+   * work too — the other side may never tap Join, or be running an older page, or
+   * have lost the signal. Waiting politely for ever is indistinguishable from a
+   * broken call, so after a few seconds the answerer offers as well. The glare
+   * handling below makes that safe: exactly one of the two offers survives.
+   */
+  useEffect(() => {
+    if (!joined || connectionState === 'live' || connectionState === 'ended') return;
+    const timer = setTimeout(() => {
+      const peer = peerRef.current;
+      if (!peer || peer.remoteDescription || makingOfferRef.current) return;
+      void (async () => {
+        try {
+          makingOfferRef.current = true;
+          const offer = await peer.createOffer();
+          await peer.setLocalDescription(offer);
+          await sendSignal({ kind: 'offer', sdp: offer.sdp ?? '' });
+        } catch {
+          // Nothing to do: the other triggers report the failure to the caller.
+        } finally {
+          makingOfferRef.current = false;
+        }
+      })();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [joined, connectionState, sendSignal]);
 
   const join = useCallback(async () => {
     setError(null);
@@ -234,13 +301,29 @@ export function ConferenceRoom({
 
     setConnectionState('connecting');
 
-    // Whoever is already here makes the offer; the second arrival answers.
-    politeRef.current = othersPresent > 0;
+    /**
+     * Who offers, decided the same way on both sides.
+     *
+     * This used to be "whoever is already in the room makes the offer", which
+     * deadlocks in the ordinary case: both people open the room page *before*
+     * tapping Join, so each sees the other already present, both conclude they
+     * are the polite one, and neither ever sends an offer. Presence was fine and
+     * the cameras were fine — there was simply no negotiation.
+     *
+     * The role is known to both sides and is never the same twice, so the client
+     * offers and the professional answers, whatever order they arrive in.
+     */
+    politeRef.current = role !== 'CLIENT';
 
     try {
       const stream = await attachLocalMedia();
       createPeer(stream);
       setJoined(true);
+
+      // Anything that arrived while this side was still deciding to join.
+      const queued = pendingSignalsRef.current;
+      pendingSignalsRef.current = [];
+      for (const payload of queued) await handleSignal(payload);
 
       if (!politeRef.current) {
         makingOfferRef.current = true;
@@ -261,7 +344,7 @@ export function ConferenceRoom({
       );
       setConnectionState('idle');
     }
-  }, [attachLocalMedia, createPeer, othersPresent, sendSignal]);
+  }, [attachLocalMedia, createPeer, handleSignal, sendSignal]);
 
   const leave = useCallback(async () => {
     await sendSignal({ kind: 'bye' });
@@ -353,11 +436,14 @@ export function ConferenceRoom({
             <Icon name="video" size={28} className="text-slate-500" />
             <p className="text-sm font-medium text-slate-200">
               {connectionState === 'connecting'
-                ? `Waiting for ${otherPartyName} to join…`
+                ? `Connecting to ${otherPartyName}…`
                 : connectionState === 'ended'
                   ? 'The call has ended.'
                   : othersPresent > 0
-                    ? `${otherPartyName} is in the room.`
+                    ? // Being in the room is not the same as being connected, and the
+                      // difference matters: this used to read as though the call were up
+                      // while nothing was being negotiated.
+                      `${otherPartyName} is in the room — join the call to see them.`
                     : 'Nobody else is in the room yet.'}
             </p>
             <p className="text-xs text-slate-400">

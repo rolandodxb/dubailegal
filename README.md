@@ -1272,6 +1272,49 @@ says. The mechanism is complete: translating one is adding keys to `src/lib/i18n
 in the page. There is no plumbing left to build, and the compiler will not let a key be missed or
 mistyped. Saying this plainly is better than a switch that pretends.
 
+## An emergency call: two people, one room, one negotiation
+
+The call had several faults stacked on each other, and each one alone was enough to stop two
+people seeing each other.
+
+**There was no room page a signed-in member could open.** `/emergency/room/<code>` was guest-only: it
+demanded the token from a link and answered 404 to everybody else. So a member who raised a request
+was sent to a page that refused them, and the lawyer who took it sat in the room on another page. The
+page now admits **either credential** — the token from a link, or the session of somebody who belongs
+in that room — so both halves of one call are on one surface.
+
+**The member's request had no room at all.** A guest's request opened one; a member's did not. There
+was nowhere for either side to go.
+
+**Politeness was decided by who arrived first**, which deadlocks in the ordinary case: both people
+open the room before tapping Join, so each sees the other already present, both decide they are the
+polite one, and **neither ever sends an offer**. Presence was working, the cameras were working, and
+no negotiation was happening — which is why the screens said "connected" while each side saw only
+itself. Who offers is now decided by role, which both sides know and which is never the same twice:
+the client offers, the professional answers. A fallback offer after four seconds covers the case
+where the other side never joins at all.
+
+**An offer that arrived before somebody tapped Join was thrown away**, because there was no peer
+connection to apply it to. Those signals are now held and applied the moment the connection exists.
+
+**The remote stream was written straight into a video element through a ref.** A track can arrive
+before React has attached that ref, and a stream assigned to nothing is lost. The stream is held in
+state and attached by an effect, and any track is accepted even when the sender sent no stream with
+it.
+
+The overlay also stopped calling presence a connection: *"X is in the room — join the call to see
+them"* rather than a message that read as though the call were already up.
+
+### How it is verified
+
+`npm run call:check` opens **two headless browsers** — two processes with two profiles, because two
+tabs share a cookie jar and both end up signed in as the same person, which is what the first version
+of the check did — signs one in as the client who raised an emergency and the other as the lawyer who
+took it, taps Join on both, and waits for **frames to arrive**. It asserts `readyState >= 2` on each
+side, which means a frame has been decoded: not "the stream object exists" and not "the connection
+state says connected", but pixels. It also asserts that the room contains both an offer and an answer
+and two participants, so one side talking to itself cannot pass.
+
 ## An emergency call connects because both halves are in the same room
 
 An emergency call was holding with one party missing, and the reason was a single line: a request

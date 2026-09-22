@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { resolveRoomForGuest } from '@/server/services/room-service';
+import { resolveRoomForGuest, resolveRoomForUser } from '@/server/services/room-service';
+import { getSessionUser } from '@/lib/auth';
 import { guestEmergencyByRoom } from '@/server/services/emergency-service';
 import { LEGAL_AREA_LABEL } from '@/lib/constants';
 import { env } from '@/lib/env';
 import { ConferenceRoom } from '@/components/rooms/ConferenceRoom';
 import { iceServersForClient } from '@/lib/webrtc';
-import { CancelGuestEmergencyForm } from '@/components/forms/EmergencyForms';
+import { CancelEmergencyForm, CancelGuestEmergencyForm } from '@/components/forms/EmergencyForms';
 import { listRecordingsForRoom } from '@/server/services/room-recording-service';
 import { formatFileSize } from '@/lib/format';
 import { BrandLockup } from '@/components/layout/Logo';
@@ -21,11 +22,15 @@ export const metadata: Metadata = {
 };
 
 /**
- * The emergency room, reached without an account.
+ * The emergency room.
  *
- * Somebody being detained should not have to remember an email and a password.
- * The token in their link is the only credential, and this page sits deliberately
- * outside the signed-in area so nothing redirects them to a login screen.
+ * One page for everybody in the call, because there is one room. Somebody being
+ * detained reaches it with the token in their link and no account at all; a member
+ * who raised a request, and the lawyer on emergency call who took it, are admitted
+ * by their session instead. It used to be guest-only, which is why a signed-in
+ * member opening the link from their own request was shown a 404 while the lawyer
+ * sat in the room on another page — the two halves of one call on two surfaces,
+ * neither able to see the other.
  */
 export default async function GuestEmergencyRoomPage({
   params,
@@ -34,10 +39,16 @@ export default async function GuestEmergencyRoomPage({
   params: Promise<{ code: string }>;
   searchParams: Promise<{ t?: string }>;
 }) {
-  const [{ code }, { t }] = await Promise.all([params, searchParams]);
+  const [{ code }, { t }, viewer] = await Promise.all([params, searchParams, getSessionUser()]);
 
-  const access = await resolveRoomForGuest(code, t ?? '');
+  // Either credential admits: the token from the link, or the session of somebody
+  // who belongs in this room.
+  const access =
+    (await resolveRoomForGuest(code, t ?? '')) ??
+    (viewer ? await resolveRoomForUser(code, viewer.id) : null);
   if (!access) notFound();
+
+  const isGuest = access.role === 'CLIENT' && !viewer;
 
   const [request, recordings] = await Promise.all([
     guestEmergencyByRoom(code),
@@ -94,13 +105,24 @@ export default async function GuestEmergencyRoomPage({
 
       {/* A call made by mistake has to be cancellable by the person who made it,
           from the room, without an account. */}
-      <Card className="mt-6">
-        <h2 className="font-semibold text-slate-900">No longer need this?</h2>
-        <p className="mt-1 mb-3 text-sm text-slate-600">
-          Withdrawing closes the room and tells every lawyer who saw the request that it is over.
-        </p>
-        <CancelGuestEmergencyForm roomCode={code} token={t ?? ''} />
-      </Card>
+      {access.role === 'CLIENT' ? (
+        <Card className="mt-6">
+          <h2 className="font-semibold text-slate-900">No longer need this?</h2>
+          <p className="mt-1 mb-3 text-sm text-slate-600">
+            Withdrawing closes the room and tells every lawyer who saw the request that it is over.
+          </p>
+          {/*
+            A guest withdraws with the token in their link; a member withdraws the
+            request on their own account. Rendering the guest form for a member
+            posted an empty token, so it was refused and the button looked dead.
+          */}
+          {isGuest || !request ? (
+            <CancelGuestEmergencyForm roomCode={code} token={t ?? ''} />
+          ) : (
+            <CancelEmergencyForm requestId={request.id} />
+          )}
+        </Card>
+      ) : null}
 
       {recordings.length > 0 ? (
         <Card className="mt-6">
@@ -120,7 +142,7 @@ export default async function GuestEmergencyRoomPage({
                 <video
                   controls
                   preload="none"
-                  src={`/api/room-recordings/${recording.id}?t=${encodeURIComponent(t ?? '')}`}
+                  src={`/api/room-recordings/${recording.id}${t ? `?t=${encodeURIComponent(t)}` : ''}`}
                   className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-900"
                 />
               </li>

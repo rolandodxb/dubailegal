@@ -621,7 +621,7 @@ export async function raiseGuestEmergency(
     kind: 'emergency.public',
     title: `Urgent: ${parsed.data.guestName} needs help now`,
     body: `${parsed.data.description.slice(0, 140)} — call-back ${parsed.data.guestPhone}. Join the room to take it.`,
-    link: `/rooms/${roomCode}`,
+    link: `/emergency/room/${roomCode}`,
   });
 
   await recordAudit({
