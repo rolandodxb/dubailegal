@@ -5,6 +5,7 @@ import { navCounts } from '@/server/services/nav-counts';
 import { MaintenanceScreen } from '@/components/layout/MaintenanceScreen';
 import { SiteFooter, SiteHeader } from '@/components/layout/SiteHeader';
 import { getI18n } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { SideNav } from '@/components/layout/SideNav';
 import { buildMemberNav } from '@/components/layout/memberNav';
 
@@ -72,6 +73,9 @@ export default async function PublicLayout({ children }: { children: React.React
               drag the page with it. */}
           <aside className="dl-scroll-hidden sm:sticky sm:top-20 sm:max-h-[calc(100vh-6rem)] sm:self-start sm:overflow-y-auto sm:overscroll-contain sm:pr-1 sm:pb-4">
             <SideNav items={navItems} />
+            <div className="mt-4 border-t border-slate-200 pt-3">
+              <LanguageSwitcher current={locale} label={t.language.change} variant="sidebar" />
+            </div>
           </aside>
           <main className="min-w-0">{children}</main>
         </div>

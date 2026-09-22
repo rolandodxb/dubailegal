@@ -6,6 +6,7 @@ import { MaintenanceScreen } from '@/components/layout/MaintenanceScreen';
 import { navCounts } from '@/server/services/nav-counts';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { getI18n } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { SideNav, type NavItem } from '@/components/layout/SideNav';
 import { PrintBrand } from '@/components/layout/Logo';
 
@@ -58,6 +59,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               drag the page with it. */}
           <aside className="dl-scroll-hidden sm:sticky sm:top-20 sm:max-h-[calc(100vh-6rem)] sm:self-start sm:overflow-y-auto sm:overscroll-contain sm:pr-1 sm:pb-4 print:hidden">
             <SideNav items={navItems} />
+            <div className="mt-4 border-t border-slate-200 pt-3">
+              <LanguageSwitcher current={locale} label={t.language.change} variant="sidebar" />
+            </div>
           </aside>
           <main className="min-w-0">
             {/* On paper, above whatever page was printed. */}

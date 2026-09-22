@@ -71,6 +71,13 @@ export async function acceptEmergencyAction(_prev: FormState, formData: FormData
 
   revalidatePath('/emergency');
   revalidatePath('/pending');
+  // Into the room, not into the case. The person who raised it is waiting there
+  // and the call cannot start until both are present; sending the professional to
+  // the case left each half of the call in a different place, which is exactly
+  // why it sat holding for a party that had already arrived.
+  if (result.data.roomCode) {
+    redirect(`/emergency/room/${result.data.roomCode}`);
+  }
   redirect(`/cases/${result.data.caseId}?notice=case-assigned`);
 }
 

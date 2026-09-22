@@ -85,6 +85,33 @@ export const en = {
     legalFirms: 'Legal firms',
     lawyers: 'Lawyers',
     clientReviews: 'Client reviews',
+    publishedProfiles: 'published profiles, of which',
+    isVerified: 'is verified',
+    areVerified: 'are verified',
+    emptyDirectory:
+      'The directory is empty right now. Nothing here is invented to make the page look busy — profiles appear as real lawyers and firms join.',
+    beFirst: 'Be the first to list',
+    badgeHeading: 'What a badge means',
+    badgeNote:
+      'Issued only after a named reviewer approves the documents — never automatically, and withdrawn if the evidence behind it changes.',
+    clientsTitle: 'Are you looking for legal assistance?',
+    clientsBody:
+      'Find a lawyer or firm you can check, send your case, and follow it to the end. Free, with no obligation and no fee to search.',
+    clientsCta: 'What you get',
+    professionalsTitle: 'Are you a lawyer or a law firm?',
+    professionalsBody:
+      'A profile that shows what a reviewer actually checked, cases that arrive with the paperwork attached, and meetings, documents and fees in one place.',
+    professionalsCta: 'See what is included',
+    clientsHeading: 'For clients',
+    professionalsHeading: 'For lawyers and firms',
+    communityEyebrow: 'Community',
+    verifiedByHand: 'Reviewed by a person, never by a machine',
+    clientsIntro: 'Most people find a lawyer through a friend and hope for the best. Dubai Legal gives you the details to judge for yourself, and a record of everything afterwards. Everything below is what you get as a client — searching is free, and it stays free.',
+    needLawyer: 'I need a lawyer',
+    needLawyerBody: 'An account is what turns a directory listing into a case you can follow. It needs your identity documents to verify you, and your number is never published.',
+    createFreeAccount: 'Create a free account',
+    searchFirst: 'Search first',
+    professionalsIntro: 'Your next client is looking at your profile right now, deciding whether to trust you. What they find here is a record a reviewer actually checked — and a practice that answers.',
   },
 
   community: {

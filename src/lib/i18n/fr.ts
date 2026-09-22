@@ -81,6 +81,33 @@ export const fr: Dictionary = {
     legalFirms: 'Cabinets',
     lawyers: 'Avocats',
     clientReviews: 'Avis de clients',
+    publishedProfiles: 'profils publiés, dont',
+    isVerified: 'est vérifié',
+    areVerified: 'sont vérifiés',
+    emptyDirectory:
+      'L’annuaire est vide pour l’instant. Rien ici n’est inventé pour donner l’impression d’une page remplie : les profils apparaissent à mesure que de vrais avocats et cabinets s’inscrivent.',
+    beFirst: 'Soyez le premier à figurer',
+    badgeHeading: 'Ce que signifie un badge',
+    badgeNote:
+      'Délivré uniquement après qu’un vérificateur nommé a approuvé les documents — jamais automatiquement, et retiré si les preuves qui le fondent changent.',
+    clientsTitle: 'Vous cherchez une assistance juridique ?',
+    clientsBody:
+      'Trouvez un avocat ou un cabinet que vous pouvez vérifier, transmettez votre dossier et suivez-le jusqu’au bout. Gratuit, sans engagement et sans frais de recherche.',
+    clientsCta: 'Ce que vous obtenez',
+    professionalsTitle: 'Vous êtes avocat ou un cabinet ?',
+    professionalsBody:
+      'Un profil qui montre ce qu’un vérificateur a réellement contrôlé, des dossiers qui arrivent avec les pièces jointes, et réunions, documents et honoraires au même endroit.',
+    professionalsCta: 'Voir ce qui est inclus',
+    clientsHeading: 'Pour les clients',
+    professionalsHeading: 'Pour les avocats et les cabinets',
+    communityEyebrow: 'Communauté',
+    verifiedByHand: 'Vérifié par une personne, jamais par une machine',
+    clientsIntro: 'La plupart des gens trouvent un avocat par un ami et espèrent que tout ira bien. Dubai Legal vous donne les détails pour juger par vous-même, et une trace de tout ce qui suit. Tout ce qui suit est ce que vous obtenez en tant que client — la recherche est gratuite, et le reste.',
+    needLawyer: 'J’ai besoin d’un avocat',
+    needLawyerBody: 'Un compte est ce qui transforme une fiche d’annuaire en dossier que vous pouvez suivre. Il exige vos documents d’identité pour vous vérifier, et votre numéro n’est jamais publié.',
+    createFreeAccount: 'Créer un compte gratuit',
+    searchFirst: 'Chercher d’abord',
+    professionalsIntro: 'Votre prochain client regarde votre profil en ce moment, en train de décider s’il peut vous faire confiance. Ce qu’il trouve ici est un parcours qu’un vérificateur a réellement contrôlé — et un cabinet qui répond.',
   },
 
   community: {

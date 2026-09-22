@@ -256,13 +256,12 @@ export default async function LandingPage({
 
               {facts.published === 0 ? (
                 <p className="mt-6 text-sm text-slate-600">
-                  The directory is empty right now. Nothing here is invented to make the page look
-                  busy — profiles appear as real lawyers and firms join.{' '}
+                  {t.landing.emptyDirectory}{' '}
                   <Link
                     href="/register?type=LAWYER"
                     className="font-medium text-brand-700 hover:underline"
                   >
-                    Be the first to list
+                    {t.landing.beFirst}
                   </Link>
                   .
                 </p>
@@ -279,7 +278,7 @@ export default async function LandingPage({
             {/* The thing that matters most: what a verified profile was checked against. */}
             <Card className="p-6">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-                What a badge means
+                {t.landing.badgeHeading}
               </h2>
               <ul className="mt-4 space-y-4">
                 {BADGE_EXPLANATIONS.map(({ type, who }) => (
@@ -293,8 +292,7 @@ export default async function LandingPage({
                 ))}
               </ul>
               <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">
-                Issued only after a named reviewer approves the documents — never automatically, and
-                withdrawn if the evidence behind it changes.
+                {t.landing.badgeNote}
               </p>
             </Card>
           </div>
@@ -312,15 +310,14 @@ export default async function LandingPage({
               <Icon name="search" size={22} />
             </span>
             <h2 className="mt-4 text-lg font-semibold text-slate-900">
-              Are you looking for legal assistance?
+              {t.landing.clientsTitle}
             </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-              Find a lawyer or firm you can check, send your case, and follow it to the end. Free, with
-              no obligation and no fee to search.
+              {t.landing.clientsBody}
             </p>
             <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-domain-directory">
-              What you get
-              <Icon name="arrowRight" size={16} />
+              {t.landing.clientsCta}
+              <Icon name="arrowRight" size={16} className="rtl:rotate-180" />
             </span>
           </a>
 
@@ -353,13 +350,9 @@ export default async function LandingPage({
             <Icon name="search" size={22} />
           </span>
           <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-            Are you looking for legal assistance?
+            {t.landing.clientsTitle}
           </h2>
-          <p className="mt-3 max-w-2xl text-slate-600">
-            Most people find a lawyer through a friend and hope for the best. Dubai Legal gives you the
-            details to judge for yourself, and a record of everything afterwards. Everything below is
-            what you get as a client — searching is free, and it stays free.
-          </p>
+          <p className="mt-3 max-w-2xl text-slate-600">{t.landing.clientsIntro}</p>
 
           <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {CLIENT_FEATURES.map((feature) => (
@@ -378,22 +371,18 @@ export default async function LandingPage({
               <div className="max-w-xl">
                 <div className="flex items-center gap-2">
                   <VerificationBadge accountType="USER" size="md" />
-                  <h3 className="font-semibold text-slate-900">I need a lawyer</h3>
+                  <h3 className="font-semibold text-slate-900">{t.landing.needLawyer}</h3>
                 </div>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  An account is what turns a directory listing into a case you can follow. It needs
-                  your Emirates ID to verify you —{' '}
-                  {DOCUMENT_REQUIREMENTS.USER.required.length} document
-                  {DOCUMENT_REQUIREMENTS.USER.required.length === 1 ? '' : 's'} in total — and your
-                  number is never published.
+                  {t.landing.needLawyerBody}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <Link href="/register?type=USER" className={buttonClasses('primary', 'lg')}>
-                  Create a free account
+                  {t.landing.createFreeAccount}
                 </Link>
                 <Link href="/directory" className={buttonClasses('secondary', 'lg')}>
-                  Search first
+                  {t.landing.searchFirst}
                 </Link>
               </div>
             </div>

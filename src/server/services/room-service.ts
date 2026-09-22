@@ -149,6 +149,7 @@ export async function resolveRoomForUser(
       guestName: true,
       status: true,
       legalCaseId: true,
+      clientId: true,
     },
   });
   if (!emergency) return null;
@@ -158,6 +159,27 @@ export async function resolveRoomForUser(
     where: { userId },
     select: { acceptsEmergency: true, isFirmEmergency: true },
   });
+  // The person who raised it, if they have an account, is the other half of the
+  // call. Without this branch they could open the room and only ever see
+  // themselves: the professional side resolved, the client side did not, so the
+  // two never met and the call sat waiting for a party that was already there.
+  if (emergency.clientId === userId) {
+    return {
+      roomKind: 'EMERGENCY',
+      role: 'CLIENT',
+      viewerKey: userKey(userId),
+      otherPartyName: 'The on-call lawyer',
+      caseId: emergency.legalCaseId,
+      appointment: null,
+      emergency: {
+        id: emergency.id,
+        title: emergency.title,
+        caseType: emergency.caseType,
+        guestName: emergency.guestName,
+      },
+    };
+  }
+
   if (!profile) return null;
   if (!profile.acceptsEmergency && !profile.isFirmEmergency) return null;
 

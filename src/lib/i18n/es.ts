@@ -81,6 +81,33 @@ export const es: Dictionary = {
     legalFirms: 'Despachos',
     lawyers: 'Abogados',
     clientReviews: 'Opiniones de clientes',
+    publishedProfiles: 'perfiles publicados, de los cuales',
+    isVerified: 'está verificado',
+    areVerified: 'están verificados',
+    emptyDirectory:
+      'El directorio está vacío ahora mismo. Aquí no se inventa nada para que la página parezca llena: los perfiles aparecen cuando se registran abogados y despachos reales.',
+    beFirst: 'Sea el primero en aparecer',
+    badgeHeading: 'Qué significa una insignia',
+    badgeNote:
+      'Se emite solo cuando un revisor identificado aprueba los documentos: nunca de forma automática, y se retira si las pruebas que la sostienen cambian.',
+    clientsTitle: '¿Busca asesoramiento jurídico?',
+    clientsBody:
+      'Encuentre un abogado o despacho que pueda comprobar, envíe su caso y siga su curso hasta el final. Gratis, sin compromiso y sin coste por buscar.',
+    clientsCta: 'Qué obtiene',
+    professionalsTitle: '¿Es abogado o un despacho?',
+    professionalsBody:
+      'Un perfil que muestra lo que un revisor comprobó realmente, casos que llegan con la documentación adjunta, y reuniones, documentos y honorarios en un mismo lugar.',
+    professionalsCta: 'Ver qué incluye',
+    clientsHeading: 'Para clientes',
+    professionalsHeading: 'Para abogados y despachos',
+    communityEyebrow: 'Comunidad',
+    verifiedByHand: 'Revisado por una persona, nunca por una máquina',
+    clientsIntro: 'La mayoría encuentra un abogado por medio de un conocido y confía en la suerte. Dubai Legal le da los detalles para juzgar por sí mismo y un registro de todo lo que ocurre después. Todo lo de abajo es lo que obtiene como cliente: buscar es gratis y seguirá siéndolo.',
+    needLawyer: 'Necesito un abogado',
+    needLawyerBody: 'Una cuenta es lo que convierte una ficha del directorio en un caso que puede seguir. Necesita sus documentos de identidad para verificarle, y su número nunca se publica.',
+    createFreeAccount: 'Crear una cuenta gratuita',
+    searchFirst: 'Buscar primero',
+    professionalsIntro: 'Su próximo cliente está mirando su perfil ahora mismo, decidiendo si confiar en usted. Lo que encuentra aquí es un historial que un revisor comprobó de verdad, y un despacho que responde.',
   },
 
   community: {

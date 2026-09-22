@@ -99,7 +99,9 @@ export async function raiseEmergency(
   clientId: string,
   rawInput: unknown,
   meta: { ip?: string | null } = {},
-): Promise<ServiceResult<{ emergencyId: string; notified: number; optedIn: number }>> {
+): Promise<
+  ServiceResult<{ emergencyId: string; roomCode: string | null; notified: number; optedIn: number }>
+> {
   const parsed = emergencySchema.safeParse(rawInput);
   if (!parsed.success) return fromZodError(parsed.error);
 
@@ -124,8 +126,13 @@ export async function raiseEmergency(
       contactPhone: parsed.data.contactPhone,
       status: 'OPEN',
       expiresAt,
+      // A room is opened with the request, exactly as it is for somebody without
+      // an account. Without it there was nowhere for either side to go: the
+      // member waited on a call that had no room, and the professional who
+      // answered was sent to the case instead — which is why the two never met.
+      roomCode: newRoomCode(),
     },
-    select: { id: true },
+    select: { id: true, roomCode: true },
   });
 
   const client = await prisma.user.findUnique({
@@ -151,7 +158,14 @@ export async function raiseEmergency(
     ip: meta.ip ?? null,
   });
 
-  return success({ emergencyId: request.id, notified: userIds.length, optedIn });
+  return success({
+    emergencyId: request.id,
+    // The room is opened with the request, so the member has somewhere to wait
+    // and the link can be handed out before anybody answers.
+    roomCode: request.roomCode,
+    notified: userIds.length,
+    optedIn,
+  });
 }
 
 /** Open requests, newest first, for the professional queue. */
@@ -240,7 +254,9 @@ export async function acceptEmergency(
   requestId: string,
   actorUserId: string,
   meta: { ip?: string | null } = {},
-): Promise<ServiceResult<{ caseId: string | null; reference: string | null }>> {
+): Promise<
+  ServiceResult<{ caseId: string | null; reference: string | null; roomCode: string | null }>
+> {
   await expireStaleEmergencies();
 
   const request = await prisma.emergencyRequest.findUnique({
@@ -253,6 +269,7 @@ export async function acceptEmergency(
       caseType: true,
       description: true,
       expiresAt: true,
+      roomCode: true,
     },
   });
   if (!request) return failure('That emergency request no longer exists.', { status: 404 });
@@ -276,7 +293,7 @@ export async function acceptEmergency(
       ip: meta.ip ?? null,
     });
 
-    return success({ caseId: null, reference: null });
+    return success({ caseId: null, reference: null, roomCode: request.roomCode });
   }
 
   const lawyer = await prisma.lawyerProfile.findUnique({
@@ -364,8 +381,8 @@ export async function acceptEmergency(
     userId: request.clientId!,
     kind: 'emergency.accepted',
     title: `${actorName} has taken your urgent request`,
-    body: `Case ${created.reference} has been opened and assigned. Open it to message them and share documents.`,
-    link: `/cases/${created.id}`,
+    body: `Case ${created.reference} has been opened and assigned. Join the video room — they are waiting there now.`,
+    link: `/emergency/room/${request.roomCode}`,
   });
 
   await recordAudit({
@@ -377,7 +394,7 @@ export async function acceptEmergency(
     ip: meta.ip ?? null,
   });
 
-  return success({ caseId: created.id, reference: created.reference });
+  return success({ caseId: created.id, reference: created.reference, roomCode: request.roomCode });
 }
 
 export async function cancelEmergency(
@@ -390,7 +407,9 @@ export async function cancelEmergency(
   });
   if (!request) return failure('That emergency request no longer exists.', { status: 404 });
   if (request.clientId !== clientId) return failure('That request is not yours.', { status: 403 });
-  if (request.status !== 'OPEN') return failure('That request has already been answered.');
+  if (['CANCELLED', 'RESOLVED', 'EXPIRED'].includes(request.status)) {
+    return failure('That request has already been closed.');
+  }
 
   await prisma.emergencyRequest.update({
     where: { id: requestId },

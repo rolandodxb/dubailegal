@@ -22,23 +22,28 @@ export function LanguageSwitcher({
 }: {
   current: Locale;
   label: string;
-  /** `menu` for the phone menu: full width, one row per language. */
-  variant?: 'menu' | 'compact';
+  /**
+   * `menu` fills the phone menu, `sidebar` fills the desktop column, `compact`
+   * sits in the header as a dropdown.
+   */
+  variant?: 'menu' | 'compact' | 'sidebar';
 }) {
   const active = LOCALES.find((entry) => entry.code === current) ?? LOCALES[0];
   const compact = variant === 'compact';
+  const full = variant !== 'compact';
 
   return (
     <details className="dl-disclosure group relative">
       <summary
         className={cx(
           'flex items-center gap-2 rounded-lg text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100',
-          compact ? 'min-h-9 px-2.5' : 'min-h-12 w-full px-3',
+          compact ? 'min-h-9 px-2.5' : 'min-h-11 w-full px-2.5',
         )}
         aria-label={label}
       >
         <Icon name="globe" size={17} />
         <span className={compact ? 'hidden sm:inline' : 'inline'}>{active.native}</span>
+        {full && variant === 'sidebar' ? null : null}
         <Icon name="chevronDown" size={15} className="dl-disclosure-icon text-slate-400" />
       </summary>
 

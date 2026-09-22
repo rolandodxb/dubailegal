@@ -784,11 +784,21 @@ async function main(): Promise<void> {
   const loginHtml = await loginPage.text();
   const unescape = (value: string) =>
     value.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#x27;/g, "'");
+
+  // The page carries more than one form — the sign-in form and the language
+  // switcher — so the action fields have to come from the one with the email
+  // field in it rather than from whichever appears first.
+  const loginFormHtml = loginHtml
+    .split('<form')
+    .find((chunk) => chunk.includes('name="email"')) ?? loginHtml;
+  // The number in `$ACTION_<n>:0` depends on how many forms the page renders, so
+  // it is read rather than assumed.
+  const actionIndex = /name="\$ACTION_(\d+):0"/.exec(loginFormHtml)?.[1] ?? '1';
   const actionFields = [
-    ['$ACTION_REF_1', ''],
-    ['$ACTION_1:0', unescape(/name="\$ACTION_1:0" value="([^"]*)"/.exec(loginHtml)?.[1] ?? '')],
-    ['$ACTION_1:1', unescape(/name="\$ACTION_1:1" value="([^"]*)"/.exec(loginHtml)?.[1] ?? '')],
-    ['$ACTION_KEY', unescape(/name="\$ACTION_KEY" value="([^"]*)"/.exec(loginHtml)?.[1] ?? '')],
+    [`$ACTION_REF_${actionIndex}`, ''],
+    [`$ACTION_${actionIndex}:0`, unescape(new RegExp(`name="\\$ACTION_${actionIndex}:0" value="([^"]*)"`).exec(loginFormHtml)?.[1] ?? '')],
+    [`$ACTION_${actionIndex}:1`, unescape(new RegExp(`name="\\$ACTION_${actionIndex}:1" value="([^"]*)"`).exec(loginFormHtml)?.[1] ?? '')],
+    ['$ACTION_KEY', unescape(/name="\$ACTION_KEY" value="([^"]*)"/.exec(loginFormHtml)?.[1] ?? '')],
   ] as const;
 
   async function postLogin(extraHeaders: Record<string, string> = {}) {

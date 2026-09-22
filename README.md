@@ -1258,11 +1258,42 @@ page: the header and its navigation, the phone menu and its groups, the signed-i
 the footer, the landing page's hero, tabs and figures, the community panel and its composer, and the
 account forms' labels. The language switch itself.
 
-**What is not, yet.** The body of the inner pages — the directory listing, a case, payments, the
-verification tab, the console — still renders in English, and falls back to it whatever the cookie
-says. The mechanism and the dictionary are in place, so translating one is adding keys to
-`src/lib/i18n/*.ts` and using them in the page; there is no plumbing left to build. Saying this
-plainly is better than a switch that pretends.
+**Where it stands.** The switch is in the header, inside the phone menu, at the foot of the desktop
+sidebar, on the account pages, and in the footer, so it can be reached wherever somebody happens to
+be.
+
+Translated: the whole shell (header, phone menu and its groups, the signed-in sidebar in full, the
+footer), the landing page end to end including both audience sections and their calls to action, and
+the account forms' labels.
+
+**What is not, yet.** The body of the member and console pages — the directory listing, a case,
+payments, the verification tab, the admin console — still renders in English, whatever the cookie
+says. The mechanism is complete: translating one is adding keys to `src/lib/i18n/*.ts` and using them
+in the page. There is no plumbing left to build, and the compiler will not let a key be missed or
+mistyped. Saying this plainly is better than a switch that pretends.
+
+## An emergency call connects because both halves are in the same room
+
+An emergency call was holding with one party missing, and the reason was a single line: a request
+raised by a **signed-in member** was created without a room, while one raised by a guest was not. So
+the member waited on a call that had no room to wait in, and the professional who answered was sent
+to the case instead of to a room — each half in a different place, neither able to see the other.
+
+Three things were wrong and all three are fixed:
+
+- **the member's request opens a room**, exactly as a guest's does;
+- **the client who raised it is admitted to that room** — `resolveRoomForUser` recognised
+  professionals and guests but not the account holder, so their side of the call could never connect;
+- **answering takes the professional into the room**, not into the case, and the alert the client
+  receives links to the room rather than to a case.
+
+Cancelling is also fixed: a request may be withdrawn after it has been answered, which is what
+somebody who no longer needs the lawyer has to be able to do — leaving it "taken" would strand the
+professional in an empty room. A request that is already closed now says so instead of appearing to
+do nothing.
+
+Nine checks in the collaboration suite cover this, including that both halves resolve to the same
+room with opposite roles.
 
 ## Camera, microphone and calls
 

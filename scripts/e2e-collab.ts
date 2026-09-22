@@ -686,6 +686,59 @@ async function main(): Promise<void> {
       guestAlerts[0]?.link?.includes(guestRoomCode) === true,
     );
 
+    // ── Both halves of an emergency call reach the same room ─────────────────
+    //
+    // A lawyer accepting used to be sent to the case while the person who raised
+    // it waited in the room, so each half of the call was in a different place
+    // and neither ever saw the other.
+    const raiseAsMember = await emergency.raiseEmergency(
+      client.userId,
+      {
+        title: 'Urgent: hearing tomorrow morning',
+        caseType: 'ADMINISTRATIVE',
+        description:
+          'I have a hearing at nine tomorrow morning and nobody to represent me. I need a lawyer to attend with me.',
+        contactPhone: '+971 55 000 2222',
+      },
+      { ip: '203.0.114.253' },
+    );
+    check('a member can raise an emergency too', raiseAsMember.ok === true);
+    const memberRoom = raiseAsMember.ok ? (raiseAsMember.data.roomCode ?? '') : '';
+
+    const accepted = await emergency.acceptEmergency(memberRoom ? (await prisma.emergencyRequest.findUnique({
+      where: { roomCode: memberRoom },
+      select: { id: true },
+    }))!.id : '', first.userId, { ip: '203.0.114.254' });
+    check('a lawyer can take it', accepted.ok === true, accepted.ok ? '' : accepted.message);
+    check(
+      'and the acceptance names the room the professional must join',
+      accepted.ok === true && accepted.data.roomCode === memberRoom,
+    );
+
+    const proAccess = await rooms.resolveRoomForUser(memberRoom, first.userId);
+    check('the professional is admitted to that room', proAccess !== null);
+    check('as the professional side', proAccess?.role === 'PROFESSIONAL');
+
+    const clientAccess = await rooms.resolveRoomForUser(memberRoom, client.userId);
+    check(
+      'and the person who raised it is admitted as well, which is what makes the call connect',
+      clientAccess !== null,
+    );
+    check('as the client side, not the professional side', clientAccess?.role === 'CLIENT');
+    check(
+      'so both halves of the call are in the same room',
+      proAccess?.viewerKey !== clientAccess?.viewerKey && proAccess?.roomKind === 'EMERGENCY',
+    );
+    check(
+      'and the alert tells the client to join the room rather than to open a case',
+      (
+        await prisma.notification.findFirst({
+          where: { userId: client.userId, kind: 'emergency.accepted' },
+          orderBy: { createdAt: 'desc' },
+        })
+      )?.link === `/emergency/room/${memberRoom}`,
+    );
+
     // The guest is admitted by token, and by nothing else.
     const guestAccess = await rooms.resolveRoomForGuest(guestRoomCode, guestToken);
     check('the guest token admits them', guestAccess?.role === 'CLIENT');
