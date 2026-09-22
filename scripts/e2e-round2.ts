@@ -85,6 +85,8 @@ async function main(): Promise<void> {
       {
         accountType,
         email,
+        fullName: `Test ${accountType}`,
+        phone: '+971 50 000 0000',
         password: 'CorrectHorse9Battery',
         confirmPassword: 'CorrectHorse9Battery',
         acceptTerms: 'on',

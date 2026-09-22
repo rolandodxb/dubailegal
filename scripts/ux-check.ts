@@ -123,6 +123,33 @@ async function fetchJson(url: string): Promise<{ webSocketDebuggerUrl?: string }
   return (await response.json()) as { webSocketDebuggerUrl?: string };
 }
 
+
+/**
+ * Whether a browser will give this origin the camera and the microphone.
+ *
+ * `getUserMedia` exists only in a *secure context*: HTTPS, or localhost. This
+ * measures both the plain-HTTP LAN address and the HTTPS one, because the whole
+ * point is that they differ — and that difference is why a video call worked on
+ * this machine and failed on a phone.
+ */
+async function mediaSupport(devtools: Devtools, url: string): Promise<{
+  secureContext: boolean;
+  mediaDevices: boolean;
+  getUserMedia: boolean;
+}> {
+  const loaded = devtools.event('Page.loadEventFired');
+  await devtools.send('Page.navigate', { url });
+  await loaded;
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  return devtools.evaluate(`
+    ({
+      secureContext: window.isSecureContext === true,
+      mediaDevices: typeof navigator.mediaDevices !== 'undefined',
+      getUserMedia: Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+    })
+  `);
+}
+
 async function main(): Promise<void> {
   await mkdir(OUT_DIR, { recursive: true });
   await rm(PROFILE, { recursive: true, force: true });
@@ -135,6 +162,12 @@ async function main(): Promise<void> {
       '--no-sandbox',
       '--no-first-run',
       '--no-default-browser-check',
+      // The local certificate is self-signed. A browser shows a warning once and
+      // then treats the origin as secure, which is exactly what the check wants
+      // to measure.
+      '--ignore-certificate-errors',
+      '--use-fake-ui-for-media-stream',
+      '--use-fake-device-for-media-stream',
       `--remote-debugging-port=${PORT}`,
       `--user-data-dir=${PROFILE}`,
       'about:blank',
@@ -262,6 +295,32 @@ async function main(): Promise<void> {
       `document.getElementById('dl-mobile-menu') === null`,
     );
     check('tapping again closes it', closed);
+
+    // ── Camera and microphone across origins ────────────────────────────────
+    const secureUrl = process.env.UX_SECURE_URL;
+    const insecureUrl = process.env.UX_INSECURE_URL;
+
+    if (insecureUrl) {
+      const media = await mediaSupport(devtools, insecureUrl);
+      console.info(`\n── Camera access ${'─'.repeat(44)}`);
+      console.info(`  ${insecureUrl}`);
+      check(
+        'plain HTTP on a network address is not a secure context',
+        !media.secureContext,
+      );
+      check(
+        'so the browser withholds the camera and microphone there',
+        !media.getUserMedia,
+        'getUserMedia was available, which would mean the media check is meaningless',
+      );
+    }
+
+    if (secureUrl) {
+      const media = await mediaSupport(devtools, secureUrl);
+      console.info(`  ${secureUrl}`);
+      check('HTTPS is a secure context', media.secureContext);
+      check('and the camera and microphone are available', media.getUserMedia);
+    }
   } finally {
     devtools?.close();
     chrome.kill('SIGKILL');

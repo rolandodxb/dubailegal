@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getSessionUser, isReviewer } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { readUpload } from '@/lib/storage';
+import { isPurged } from '@/server/services/document-purge';
 import { recordAudit } from '@/lib/audit';
 
 /**
@@ -44,6 +45,15 @@ export async function GET(
   const isBrandMark = document.kind === 'BRAND_LOGO';
   if (!isOwner && !reviewer && !isBrandMark) {
     return new NextResponse('Not found.', { status: 404 });
+  }
+
+  // Evidence is destroyed once the account it supported is approved. Saying so
+  // is more useful than an error from the storage layer.
+  if (isPurged(document.storageKey)) {
+    return new NextResponse(
+      'This document was destroyed after the account was verified. The decision it supported is recorded in the audit log.',
+      { status: 410 },
+    );
   }
 
   let bytes: Buffer;

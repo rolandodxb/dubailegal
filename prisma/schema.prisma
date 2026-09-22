@@ -463,6 +463,11 @@ model Document {
 
   reviewNotes String?   @db.Text
   reviewedAt  DateTime?
+  /// Set when the file itself was destroyed, which happens as soon as an
+  /// account is approved: the evidence has been read and the decision recorded,
+  /// so the image of an identity document stops existing. The row survives as
+  /// the record that a document of this kind was reviewed and accepted.
+  purgedAt    DateTime?
   reviewerId  String?
   reviewer    User?     @relation("DocumentReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
 

@@ -14,7 +14,15 @@ type SignalPayload =
   | { kind: 'candidate'; candidate: RTCIceCandidateInit }
   | { kind: 'bye' };
 
-const ICE_SERVERS: RTCIceServer[] = [
+/**
+ * The public STUN servers, used when no relay is configured.
+ *
+ * STUN lets two devices discover their own addresses; it cannot relay traffic.
+ * Where both sides are behind restrictive NAT — a phone on mobile data talking to
+ * a laptop on an office network — only TURN can carry the call, which is why
+ * `iceServers` accepts a relay from the server.
+ */
+const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
 ];
@@ -39,6 +47,7 @@ export function ConferenceRoom({
   providerUrl,
   guestToken,
   context,
+  iceServers,
 }: {
   roomCode: string;
   role: Role;
@@ -54,6 +63,11 @@ export function ConferenceRoom({
   guestToken?: string;
   /** A short line explaining what this room is, shown above the call. */
   context?: string;
+  /**
+   * STUN and TURN servers, built on the server so a relay can be added by
+   * setting a variable rather than by rebuilding the client.
+   */
+  iceServers?: RTCIceServer[];
 }) {
   const [joined, setJoined] = useState(false);
   /** Set once the camera is live, so the recorder can attach to it. */
@@ -85,7 +99,20 @@ export function ConferenceRoom({
   );
 
   const attachLocalMedia = useCallback(async () => {
-    const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const media = await navigator.mediaDevices.getUserMedia({
+      video: {
+        // Ideal rather than required: a browser that cannot meet these still
+        // returns a stream instead of failing the call.
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: 'user',
+      },
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
     streamRef.current = media;
     setLiveStream(media);
     if (localVideoRef.current) {
@@ -97,7 +124,9 @@ export function ConferenceRoom({
 
   const createPeer = useCallback(
     (stream: MediaStream) => {
-      const peer = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const peer = new RTCPeerConnection({
+        iceServers: iceServers && iceServers.length > 0 ? iceServers : DEFAULT_ICE_SERVERS,
+      });
 
       for (const track of stream.getTracks()) peer.addTrack(track, stream);
 
@@ -178,8 +207,31 @@ export function ConferenceRoom({
     [sendSignal],
   );
 
+  /**
+   * Whether this page may use the camera at all.
+   *
+   * A browser grants `getUserMedia` only in a secure context — `https://`, or
+   * `http://localhost`. Opened at a network address such as
+   * `http://192.168.1.85:3100`, which is exactly what a phone has to use, the API
+   * is not merely refused, it is absent. Said plainly here rather than left to
+   * "your camera could not be started", which tells nobody anything.
+   */
+  const mediaBlockedByAddress =
+    typeof window !== 'undefined' && !window.isSecureContext;
+
   const join = useCallback(async () => {
     setError(null);
+
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setError(
+        'This page cannot use the camera or microphone because it was opened over an insecure ' +
+          'address. Browsers only allow them over https:// or on localhost. Open the site at its ' +
+          'https:// address — the one that names this machine — and the call will work.',
+      );
+      setConnectionState('idle');
+      return;
+    }
+
     setConnectionState('connecting');
 
     // Whoever is already here makes the offer; the second arrival answers.
@@ -278,6 +330,13 @@ export function ConferenceRoom({
     <div className="space-y-4">
       {context ? <Alert tone="warning" title="Urgent call">{context}</Alert> : null}
 
+      {mediaBlockedByAddress && !joined ? (
+        <Alert tone="warning" title="The camera needs a secure address">
+          This page was opened over http://, and browsers only allow the camera and microphone over
+          https:// or on localhost. Open the same room at the https:// address for this machine —
+          the certificate warning is expected once, and after accepting it the call works normally.
+        </Alert>
+      ) : null}
       {error ? <Alert tone="error" title="The call could not start">{error}</Alert> : null}
 
       <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900">

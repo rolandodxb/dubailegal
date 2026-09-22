@@ -46,6 +46,8 @@ export async function registerAction(_prev: FormState, formData: FormData): Prom
       fieldErrors: result.fieldErrors,
       values: {
         accountType: String(formData.get('accountType') ?? ''),
+        fullName: String(formData.get('fullName') ?? ''),
+        phone: String(formData.get('phone') ?? ''),
         email: String(formData.get('email') ?? ''),
         inviteToken: String(formData.get('inviteToken') ?? ''),
       },

@@ -1142,7 +1142,19 @@ gracefully — new connections are refused outright with `EMAXCONNSESSION`, whic
 occasional slow page. `DATABASE_URL` therefore carries `connection_limit=5`, and the warm-up opens
 four of them.
 
-### On a phone
+### Creating an account
+
+The account form asks for the least it can: **how you will use the platform, your full name, a phone
+number, an email address and a password**. That is enough to open an account and to be reachable
+about it.
+
+Everything else — date and place of birth, country of residence, nationality, the Emirates ID, the
+work and education history, and every document — is asked for in the **verification tab**, where it
+has a purpose and where a reviewer is waiting to read it. Asking for an identity document in the same
+breath as a password is how a form becomes a wall, and the account is usable immediately in the
+meantime.
+
+## On a phone
 
 The application is meant to be used on a phone, so the phone is the case it is designed for rather
 than the one it tolerates.
@@ -1177,6 +1189,59 @@ text selection when a button is held, no 300ms tap delay, no sideways rubber-ban
 respects the system size, and the page drawing into the notch and the home-indicator area. Vertical
 scrolling is left exactly as it is — fighting that is how a page comes to feel broken. Motion is used
 only to make a change legible, and `prefers-reduced-motion` switches all of it off.
+
+## Camera, microphone and calls
+
+A browser grants `getUserMedia` — and therefore any video call — only in a
+**secure context**: `https://…` or `http://localhost`. Opened at a network address such as
+`http://192.168.1.85:3100`, which is exactly what a phone has to use, the API is not refused but
+*absent*, and the call cannot start. The same rule is why the app cannot be installed from that
+address.
+
+**`npm run https`** terminates TLS in front of the application on port **3443** with a certificate
+that names this machine, so tablets and phones get a secure origin:
+
+| Address | Camera | Install |
+|---|---|---|
+| `http://localhost:3100` | works (localhost is trusted) | works |
+| `http://192.168.1.85:3100` | **blocked by the browser** | **blocked** |
+| `https://192.168.1.85:3443` | **works** | **works** |
+
+The certificate is self-signed: each device shows a warning once, and after accepting it the origin
+counts as secure. To remove the warning entirely, issue it from an authority the device trusts
+(`mkcert -install` on the device, then `mkcert 192.168.1.85`) and point `TLS_CERT`/`TLS_KEY` at it.
+The app is told the real protocol through `x-forwarded-proto`, so the session cookie is marked
+`Secure` on HTTPS and usable over plain HTTP, which is what it should be in both cases.
+
+The room page says this in words when it detects an insecure address, rather than failing with "your
+camera could not be started".
+
+**TURN.** Two devices on one network find each other through STUN. A phone on mobile data talking to
+a laptop behind a router usually cannot — both are behind NAT that refuses the direct path — and only
+a relay carries the call. `TURN_URL`, `TURN_USERNAME` and `TURN_CREDENTIAL` add one (coturn, Twilio,
+Cloudflare Calls, Metered); without it, "it works at my desk and not on my phone" is the expected
+outcome rather than a bug. The ICE servers are built on the server and passed to the room, so a relay
+is added by setting a variable rather than by rebuilding the client.
+
+The call itself already required an explicit tap — which iOS Safari demands before it will hand over
+the camera — and the media constraints ask for echo cancellation, noise suppression and the front
+camera, all as *ideals* so a browser that cannot meet them still returns a stream.
+
+## Evidence is destroyed when it has done its job
+
+A reviewer approves an account by reading an Emirates ID, a practising certificate or a trade licence.
+Once that decision is recorded the image has no further purpose, and keeping it is a liability rather
+than an asset. **On approval the bytes are deleted from storage** and the row is reduced to the fact
+that a document of that kind was reviewed and accepted:
+
+- the kind, when it was reviewed, who reviewed it and the notes;
+- the **SHA-256** of the file that was reviewed, so a dispute can still be answered without the file;
+- the Emirates ID fingerprint on the profile, which is what stops one identity backing two accounts.
+
+The profile photo and a firm's own billing mark are deliberately kept: they are not evidence, they are
+things the member uses every day. A **rejection** keeps everything, because the member has to be able
+to correct and resubmit. Attempting to download destroyed evidence answers **410 Gone** with an
+explanation, rather than a 404 that would look like a fault.
 
 ## Deploying to Cloudflare Workers
 

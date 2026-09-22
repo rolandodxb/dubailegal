@@ -6,6 +6,7 @@ import { env } from '@/lib/env';
 import { resolveRoomForUser } from '@/server/services/room-service';
 import { formatUaeDateTime } from '@/lib/time';
 import { ConferenceRoom } from '@/components/rooms/ConferenceRoom';
+import { iceServersForClient } from '@/lib/webrtc';
 import { BrandLockup } from '@/components/layout/Logo';
 import { CancelCallButton } from '@/components/forms/AppointmentButtons';
 import { listRecordingsForRoom } from '@/server/services/room-recording-service';
@@ -76,6 +77,7 @@ export default async function ConferenceRoomPage({
       ) : null}
 
       <ConferenceRoom
+        iceServers={iceServersForClient()}
         roomCode={code}
         role={access.role}
         otherPartyName={access.otherPartyName}

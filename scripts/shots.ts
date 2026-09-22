@@ -162,6 +162,8 @@ async function main(): Promise<void> {
     const result = await auth.registerAccount(
       {
         accountType: type,
+        fullName: `Demo ${type}`,
+        phone: '+971 50 000 0000',
         email,
         password: 'CorrectHorse9Battery',
         confirmPassword: 'CorrectHorse9Battery',

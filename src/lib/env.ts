@@ -93,6 +93,22 @@ export const env = {
   videoProviderUrl: readString('VIDEO_PROVIDER_URL', ''),
 
   /**
+   * A TURN relay, for calls that cannot connect directly.
+   *
+   * Two devices on the same network usually find each other through STUN alone.
+   * A phone on mobile data and a laptop behind a router often cannot: both are
+   * behind NAT that refuses the direct path, and the call never establishes.
+   * TURN is the relay that makes those calls work, and without it "it works on
+   * my desk and not on my phone" is the expected outcome rather than a bug.
+   *
+   * Any TURN service will do — a self-hosted coturn, Twilio, Cloudflare Calls,
+   * Metered. Leave them empty and the call falls back to STUN only.
+   */
+  turnUrl: readString('TURN_URL', ''),
+  turnUsername: readString('TURN_USERNAME', ''),
+  turnCredential: readString('TURN_CREDENTIAL', ''),
+
+  /**
    * Accounts registering with one of these addresses are granted the REVIEWER
    * role, which is how the first reviewer bootstrap happens. Empty by default —
    * reviewers are otherwise granted with `npm run grant:reviewer`.

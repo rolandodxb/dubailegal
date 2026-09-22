@@ -63,7 +63,9 @@ export function RegisterForm({
           </span>
         </legend>
         <p className="text-xs text-slate-500">
-          This decides what you must provide to become verified, and cannot be changed later.
+          This decides what you must provide to become verified, and cannot be changed later. Your
+          account opens as soon as you create it — your identity details and documents are asked for
+          in the verification tab, where a reviewer reads them.
         </p>
 
         <div className="grid gap-3">
@@ -100,6 +102,45 @@ export function RegisterForm({
           </p>
         ) : null}
       </fieldset>
+
+      <Field
+        label="Your full name"
+        htmlFor="fullName"
+        required
+        error={state?.fieldErrors?.fullName}
+        hint="As it appears on your identification, so a reviewer can match it."
+      >
+        <Input
+          id="fullName"
+          name="fullName"
+          autoComplete="name"
+          required
+          maxLength={120}
+          placeholder="Nadia Rahman"
+          defaultValue={state?.values?.fullName || ''}
+          error={state?.fieldErrors?.fullName}
+        />
+      </Field>
+
+      <Field
+        label="Phone number"
+        htmlFor="phone"
+        required
+        error={state?.fieldErrors?.phone}
+        hint="How the other side of a case reaches you, and how you are told about a reply."
+      >
+        <Input
+          id="phone"
+          name="phone"
+          type="tel"
+          autoComplete="tel"
+          required
+          inputMode="tel"
+          placeholder="+971 50 123 4567"
+          defaultValue={state?.values?.phone || ''}
+          error={state?.fieldErrors?.phone}
+        />
+      </Field>
 
       <Field label="Email address" htmlFor="email" required error={state?.fieldErrors?.email}>
         <Input

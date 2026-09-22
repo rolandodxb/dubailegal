@@ -73,6 +73,8 @@ async function main(): Promise<void> {
       {
         accountType,
         email,
+        fullName: `Test ${accountType}`,
+        phone: '+971 50 000 0000',
         password: 'CorrectHorse9Battery',
         confirmPassword: 'CorrectHorse9Battery',
         acceptTerms: 'on',
@@ -165,6 +167,39 @@ async function main(): Promise<void> {
       meta,
     );
     check('an administrator can approve a verification request', decision.ok === true);
+
+    // ── The evidence is destroyed once it has done its job ────────────────────
+    const afterApproval = await prisma.document.findMany({
+      where: { caseId },
+      select: { kind: true, storageKey: true, sizeBytes: true, purgedAt: true },
+    });
+    const evidence = afterApproval.filter(
+      (doc) => doc.kind !== 'PROFILE_PHOTO' && doc.kind !== 'BRAND_LOGO',
+    );
+    const photos = afterApproval.filter(
+      (doc) => doc.kind === 'PROFILE_PHOTO' || doc.kind === 'BRAND_LOGO',
+    );
+    check(
+      'every document of evidence is destroyed on approval',
+      evidence.length > 0 && evidence.every((doc) => doc.purgedAt !== null),
+      `${evidence.filter((doc) => doc.purgedAt !== null).length} of ${evidence.length}`,
+    );
+    check(
+      'its stored file is gone rather than merely unlinked',
+      evidence.every((doc) => doc.storageKey.startsWith('purged:')),
+    );
+    check(
+      'and no bytes are recorded against it any more',
+      evidence.every((doc) => doc.sizeBytes === 0),
+    );
+    check(
+      'while the profile photo is kept, because the member uses it every day',
+      photos.length === 0 || photos.every((doc) => doc.purgedAt === null),
+    );
+    check(
+      'and the decision it supported is still recorded',
+      (await prisma.verificationCase.count({ where: { id: caseId, status: 'APPROVED' } })) === 1,
+    );
 
     const listingId = (
       await prisma.listing.findUnique({ where: { userId: lawyer.userId }, select: { id: true } })

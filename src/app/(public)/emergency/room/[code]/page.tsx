@@ -6,6 +6,7 @@ import { guestEmergencyByRoom } from '@/server/services/emergency-service';
 import { LEGAL_AREA_LABEL } from '@/lib/constants';
 import { env } from '@/lib/env';
 import { ConferenceRoom } from '@/components/rooms/ConferenceRoom';
+import { iceServersForClient } from '@/lib/webrtc';
 import { CancelGuestEmergencyForm } from '@/components/forms/EmergencyForms';
 import { listRecordingsForRoom } from '@/server/services/room-recording-service';
 import { formatFileSize } from '@/lib/format';
@@ -81,6 +82,7 @@ export default async function GuestEmergencyRoomPage({
 
       <div className="mt-6">
         <ConferenceRoom
+        iceServers={iceServersForClient()}
           roomCode={code}
           role={access.role}
           otherPartyName={access.otherPartyName}

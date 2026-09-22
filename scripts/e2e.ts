@@ -87,7 +87,7 @@ async function main(): Promise<void> {
 
   async function registerAndConfirm(email: string, accountType: 'USER' | 'LAWYER' | 'FIRM') {
     const registration = await authService.registerAccount(
-      { accountType, email, password: 'CorrectHorse9Battery', confirmPassword: 'CorrectHorse9Battery', acceptTerms: 'on' },
+      { accountType, email, fullName: `Test ${accountType}`, phone: '+971 50 000 0000', password: 'CorrectHorse9Battery', confirmPassword: 'CorrectHorse9Battery', acceptTerms: 'on' },
       meta,
     );
     if (!registration.ok) throw new Error(`registration failed for ${email}: ${registration.message}`);
@@ -489,10 +489,23 @@ async function main(): Promise<void> {
   // NOTE: the reviewer-role grant deliberately happens AFTER these checks, so
   // the negative cases below are made by accounts that really have no reviewer
   // role. Granting the role first would have made "200 OK" the correct answer.
+  // The lawyer's identity document was destroyed when the account was approved —
+  // that is the point of the purge — so the access checks below need a document
+  // that still exists. Checking authorisation against a file that is gone would
+  // prove nothing: everybody gets 410, and every negative case would "pass".
+  // A fresh photo is uploaded for exactly that purpose.
+  const photo = await uploadDocument(
+    lawyer.userId,
+    { kind: 'PROFILE_PHOTO', file: file('photo.png', PNG_BYTES, 'image/png') },
+    meta,
+  );
+  check('a profile photo can be uploaded after verification', photo.ok === true);
   const lawyerIdDoc = await prisma.document.findFirst({
-    where: { userId: lawyer.userId, kind: 'EMIRATES_ID' },
-    select: { id: true },
+    where: { userId: lawyer.userId, kind: 'PROFILE_PHOTO' },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, purgedAt: true },
   });
+  check('and it survives the purge, because the member uses it every day', lawyerIdDoc?.purgedAt === null);
 
   const anonymous = await fetch(`${BASE_URL}/api/documents/${lawyerIdDoc?.id}`, { redirect: 'manual' });
   check('an anonymous request for a document is refused', anonymous.status === 401, `got ${anonymous.status}`);
@@ -540,6 +553,23 @@ async function main(): Promise<void> {
     redirect: 'manual',
   });
   check('the owner can read their own document', asOwner.status === 200, `got ${asOwner.status}`);
+
+  // The evidence that supported the approval is gone, and saying so is better
+  // than a 404 that would look like a fault.
+  const purgedEvidence = await prisma.document.findFirst({
+    where: { userId: lawyer.userId, kind: 'EMIRATES_ID' },
+    select: { id: true, purgedAt: true },
+  });
+  check('the evidence that supported approval is marked purged', purgedEvidence?.purgedAt !== null);
+  const asOwnerOfPurged = await fetch(`${BASE_URL}/api/documents/${purgedEvidence?.id}`, {
+    headers: { cookie: `dl_session=${lawyer.sessionToken}` },
+    redirect: 'manual',
+  });
+  check(
+    'and even its owner is told it was destroyed after verification',
+    asOwnerOfPurged.status === 410,
+    `got ${asOwnerOfPurged.status}`,
+  );
 
   const dashboardAnon = await fetch(`${BASE_URL}/dashboard`, { redirect: 'manual' });
   check('the dashboard redirects when signed out', dashboardAnon.status === 307, `got ${dashboardAnon.status}`);

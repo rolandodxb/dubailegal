@@ -39,12 +39,19 @@ export async function GET(
   const reviewer = isReviewer(viewer);
   const published = profile.user.listing?.published === true;
 
+  // Somebody who has posted in the community has put their name and face in
+  // public already: their photo belongs beside it, for anyone reading.
+  const hasPublishedPost =
+    !published && !isOwner && !reviewer
+      ? (await prisma.blogPost.count({ where: { authorId: userId, status: 'PUBLISHED' } })) > 0
+      : false;
+
   let sharesCase = false;
-  if (viewer && !isOwner && !reviewer && !published) {
+  if (viewer && !isOwner && !reviewer && !published && !hasPublishedPost) {
     sharesCase = await sharesACase(viewer.id, userId);
   }
 
-  if (!isOwner && !reviewer && !published && !sharesCase) {
+  if (!isOwner && !reviewer && !published && !hasPublishedPost && !sharesCase) {
     return new NextResponse('Not found.', { status: 404 });
   }
 

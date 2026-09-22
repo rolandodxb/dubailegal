@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { purgeCaseEvidence } from './document-purge';
 import { recordAudit } from '@/lib/audit';
 import {
   DOCUMENT_REQUIREMENTS,
@@ -539,6 +540,14 @@ export async function decideCase(
     metadata: { subjectUserId: verificationCase.userId, accountType: verificationCase.user.accountType },
     ip: meta.ip ?? null,
   });
+
+  // Approval is the end of the evidence's life. The decision is recorded, so the
+  // images that supported it are destroyed rather than kept — an identity
+  // document that nobody needs is a liability, not an asset. A rejection keeps
+  // them, because the member has to be able to correct and resubmit.
+  if (decision === 'APPROVED') {
+    await purgeCaseEvidence(caseId, reviewerId, meta);
+  }
 
   return success({ decision });
 }

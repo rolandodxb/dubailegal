@@ -22,3 +22,6 @@ npm-debug.log*
 .wrangler/
 cloudflare-env.d.ts
 .dev.vars
+
+# Local TLS certificate for the LAN address (private key)
+var/tls/

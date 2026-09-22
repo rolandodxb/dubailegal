@@ -2,7 +2,7 @@
   "name": "dubai-legal",
   "version": "0.1.0",
   "private": true,
-  "description": "Dubai Legal — verified directory of lawyers and legal firms in the UAE",
+  "description": "Dubai Legal \u2014 verified directory of lawyers and legal firms in the UAE",
   "scripts": {
     "dev": "next dev -p 3100",
     "build": "prisma generate && next build",
@@ -30,7 +30,8 @@
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "https": "tsx scripts/https-proxy.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^6.19.3",

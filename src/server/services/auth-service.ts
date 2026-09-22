@@ -38,7 +38,7 @@ export async function registerAccount(
   const parsed = registerSchema.safeParse(rawInput);
   if (!parsed.success) return fromZodError(parsed.error);
 
-  const { accountType, email, password } = parsed.data;
+  const { accountType, email, password, fullName, phone } = parsed.data;
 
   const limit = consumeRateLimit(`register:${meta.ip ?? 'unknown'}`, 10, 60 * 60);
   if (!limit.allowed) {
@@ -82,8 +82,10 @@ export async function registerAccount(
       pendingFirmInviteHash,
       profile: {
         // A profile row exists from the moment the account does, so the profile
-        // form is always an edit rather than a create-or-update branch.
-        create: { fullName: '' },
+        // form is always an edit rather than a create-or-update branch — and it
+        // carries the name and number the form asked for, not empty strings,
+        // because every screen that shows who somebody is needs them at once.
+        create: { fullName, phone },
       },
     },
     select: { id: true, email: true, accountType: true, roles: true },

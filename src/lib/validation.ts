@@ -102,6 +102,17 @@ function optionalPhone() {
     );
 }
 
+/** A phone number that must be given — what the account form asks for. */
+const phoneSchema = z
+  .string({ required_error: 'Enter a phone number.' })
+  .trim()
+  .min(7, 'Enter a valid phone number, e.g. +971 50 123 4567.')
+  .max(20, 'That phone number is too long.')
+  .refine(
+    (value) => /^\+?[\d\s()-]{7,20}$/.test(value),
+    'Enter a valid phone number, e.g. +971 50 123 4567.',
+  );
+
 function optionalYearCount(label: string, max: number) {
   return z
     .union([z.string(), z.number(), z.null(), z.undefined()])
@@ -122,11 +133,23 @@ function optionalYearCount(label: string, max: number) {
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Creating an account asks for the least it can.
+ *
+ * A name, an email address and a phone number are enough to open an account and
+ * to be reachable about it. Everything else — date and place of birth, country of
+ * residence, nationality, the Emirates ID, the work and education history, and
+ * the documents themselves — is asked for in the verification tab, where it has
+ * a purpose and where a reviewer is waiting to read it. Asking for an identity
+ * document in the same breath as a password is how a form becomes a wall.
+ */
 export const registerSchema = z
   .object({
     accountType: z.nativeEnum(AccountType, {
       errorMap: () => ({ message: 'Choose how you will use Dubai Legal.' }),
     }),
+    fullName: requiredString(2, 120, 'Full name'),
+    phone: phoneSchema,
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string(),
