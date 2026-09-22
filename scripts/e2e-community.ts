@@ -565,6 +565,90 @@ async function main(): Promise<void> {
     check('any signed-in member can read it too', aboutBystander.status === 200);
 
     // ════════════════════════════════════════════════════════════════════════
+    section('The community on the landing page');
+
+    const landingGuest = markup(await html('/?tab=community'));
+    check(
+      'the landing page has a community tab',
+      landingGuest.includes('Ask the people who have been through it'),
+    );
+    check(
+      'a visitor can read the community without leaving the page',
+      landingGuest.includes('My employer has not paid my salary'),
+    );
+    check(
+      'and is asked to sign in from that panel',
+      landingGuest.includes('Read it all; sign in to take part'),
+    );
+    check(
+      'with the sign-in returning to the community tab, not a dashboard',
+      landingGuest.includes('login?next=%2F%3Ftab%3Dcommunity'),
+    );
+    check(
+      'and no writing controls are rendered for a guest',
+      !landingGuest.includes('Write a comment…') && !landingGuest.includes('Write a post'),
+    );
+
+    const landingMember = markup(await html('/?tab=community', asker.sessionToken));
+    check('a member gets the composer in the panel', landingMember.includes('Write a post'));
+    check('and can comment on a post from it', landingMember.includes('Write a comment…'));
+    check(
+      'and can react from it',
+      landingMember.includes('👍') && landingMember.includes('❤️'),
+    );
+
+    const landingHome = markup(await html('/'));
+    check(
+      'the home tab still carries the marketing page',
+      landingHome.includes('How verification works') || landingHome.includes('verified'),
+    );
+
+    // ════════════════════════════════════════════════════════════════════════
+    section('Installable from the browser');
+
+    const manifestResponse = await get('/manifest.webmanifest');
+    const manifestText = await manifestResponse.text();
+    let manifest: { icons?: { sizes?: string; purpose?: string }[]; display?: string; start_url?: string } = {};
+    try {
+      manifest = JSON.parse(manifestText);
+    } catch {
+      manifest = {};
+    }
+    check('the manifest is served', manifestResponse.status === 200);
+    check('it declares a standalone display', manifest.display === 'standalone');
+    check('and a start url', Boolean(manifest.start_url));
+    check(
+      'and the icon sizes an install needs, including a maskable one',
+      (manifest.icons ?? []).some((icon) => icon.sizes === '192x192') &&
+        (manifest.icons ?? []).some((icon) => icon.sizes === '512x512') &&
+        (manifest.icons ?? []).some((icon) => icon.purpose === 'maskable'),
+    );
+
+    const home = await html('/');
+    check('the page links the manifest', home.includes('rel="manifest" href="/manifest.webmanifest"'));
+    check(
+      'and carries the full-screen capability for iOS and Android',
+      home.includes('mobile-web-app-capable') && home.includes('apple-mobile-web-app-capable'),
+    );
+
+    const worker = await (await get('/sw.js')).text();
+    check(
+      'the service worker handles fetches, which is what makes it installable',
+      worker.includes("addEventListener('fetch'"),
+    );
+    check(
+      'but never caches an API response or a document',
+      worker.includes("startsWith('/api/')"),
+    );
+
+    const offline = await get('/offline');
+    check('there is an offline page for the installed app', offline.status === 200);
+    check(
+      'which says what has happened',
+      (await offline.text()).includes('You are offline'),
+    );
+
+    // ════════════════════════════════════════════════════════════════════════
     section('Clean up');
 
     const strayAlerts = await prisma.notification.deleteMany({

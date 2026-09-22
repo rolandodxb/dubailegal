@@ -102,9 +102,97 @@
 
   /* Bottom navigation must clear the iOS home indicator. */
   .dl-safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+
+  /* ── Phone behaviour ───────────────────────────────────────────────────────
+     An installed app should not feel like a web page: no grey flash when a link
+     is tapped, no accidental text selection when a button is held, no 300ms tap
+     delay, and no rubber-banding of the page sideways under a swipe. Vertical
+     scrolling is left exactly as it is — fighting that is how a page comes to
+     feel broken. */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-x: none;
+  }
+
+  button,
+  a,
+  [role='button'],
+  summary,
+  label {
+    touch-action: manipulation;
+  }
+
+  /* Nothing in an app-like interface should be selectable by accident, except
+     the things somebody actually wants to select or copy. */
+  button,
+  summary,
+  nav a {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable],
+  .dl-selectable {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* The notch and the home indicator, for an app running full screen. */
+  .dl-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .dl-safe-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* A collapsible section that looks and behaves the same everywhere it is used,
+     and whose marker is a proper chevron rather than a browser triangle. */
+  .dl-disclosure > summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .dl-disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .dl-disclosure[open] > summary .dl-disclosure-icon {
+    transform: rotate(180deg);
+  }
+
+  .dl-disclosure-icon {
+    transition: transform 150ms ease;
+  }
+
+  /* Motion is used to make a change legible, never to decorate. Somebody who has
+     asked their device for less of it gets none of ours. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
+
 
 /* ── Printing ────────────────────────────────────────────────────────────────
    The receipt is the one thing in this application that is meant to leave the

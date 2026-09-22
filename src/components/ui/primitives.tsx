@@ -25,10 +25,15 @@ const VARIANTS: Record<Variant, string> = {
     'bg-white text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50 active:bg-red-100 disabled:text-red-300',
 };
 
+/**
+ * Sizes carry a minimum height so every control is a comfortable thumb target —
+ * 36px for a small button, 44px for a normal one, 48px for a large one. That is
+ * the whole reason the numbers are explicit rather than left to padding.
+ */
 const SIZES: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2.5 text-sm',
-  lg: 'px-5 py-3 text-base',
+  sm: 'min-h-9 px-3 py-1.5 text-sm',
+  md: 'min-h-11 px-4 py-2.5 text-sm',
+  lg: 'min-h-12 px-5 py-3 text-base',
 };
 
 export function buttonClasses(variant: Variant = 'primary', size: Size = 'md', extra?: string): string {

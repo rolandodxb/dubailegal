@@ -2,7 +2,10 @@ import Link from 'next/link';
 import type { AccountType } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { cached } from '@/lib/ttl-cache';
-import { listRecentPosts } from '@/server/services/blog-service';
+import { getSessionUser } from '@/lib/auth';
+import { listPosts } from '@/server/services/blog-service';
+import { CommunityPanel } from '@/components/community/CommunityPanel';
+import { LandingTabs } from '@/components/layout/LandingTabs';
 import { BADGE, DOCUMENT_REQUIREMENTS } from '@/lib/constants';
 import { VerificationBadge } from '@/components/VerificationBadge';
 import { Icon, type IconName } from '@/components/icons';
@@ -149,11 +152,52 @@ const BADGE_EXPLANATIONS: { type: AccountType; who: string }[] = [
   },
 ];
 
-export default async function LandingPage() {
-  const [facts, posts] = await Promise.all([getFacts(), listRecentPosts(3)]);
+/** How many community posts the panel on this page shows. */
+const COMMUNITY_PREVIEW = 4;
+
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const [params, user] = await Promise.all([searchParams, getSessionUser()]);
+  const activeTab = params.tab === 'community' ? 'community' : 'home';
+
+  // The community feed is identical for every visitor, so a signed-out reader
+  // gets the cached copy; a member gets a live one, because their own votes and
+  // reactions are in it.
+  const [facts, communityPosts, listings] = await Promise.all([
+    getFacts(),
+    user
+      ? listPosts(user.id, { limit: COMMUNITY_PREVIEW })
+      : cached('community:landing', 30_000, () => listPosts(null, { limit: COMMUNITY_PREVIEW })),
+    user
+      ? prisma.listing.findMany({
+          where: { published: true },
+          orderBy: { displayName: 'asc' },
+          take: 200,
+          select: { id: true, displayName: true, kind: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const community = (
+    <CommunityPanel
+      user={user ? { id: user.id } : null}
+      posts={communityPosts}
+      listings={listings}
+      nextPath={activeTab === 'community' ? '/?tab=community' : '/#community'}
+    />
+  );
 
   return (
     <>
+      <LandingTabs active={activeTab} />
+
+      {activeTab === 'community' ? (
+        <div className="bg-slate-50/60">{community}</div>
+      ) : (
+        <>
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 to-white">
         <div className="dl-container py-16 sm:py-24">
@@ -482,75 +526,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Community ────────────────────────────────────────────────────── */}
-      <section id="community" className="dl-container py-16 sm:py-20">
-        <span className={domainChip('review', 'lg')}>
-          <Icon name="community" size={22} />
-        </span>
-        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-          Ask the people who have been through it
-        </h2>
-        <p className="mt-3 max-w-2xl text-slate-600">
-          The community is where members recommend the lawyers and firms they actually used, ask what
-          a process really involves, and answer each other. Vote the useful answers up and the next
-          person finds them first.
-        </p>
-
-        {posts.length === 0 ? (
-          <Card className="mt-8">
-            <p className="text-sm text-slate-700">
-              Nothing has been posted yet. The feed is empty rather than filled with examples —
-              recommendations here come from real clients, and the first one will be real too.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link href="/blog" className={buttonClasses('primary', 'md')}>
-                Open the community
-              </Link>
-              <Link href="/register" className={buttonClasses('secondary', 'md')}>
-                Create an account to post
-              </Link>
-            </div>
-          </Card>
-        ) : (
-          <>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-3">
-              {posts.map((post) => (
-                <Card as="li" key={post.id}>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {post.kind === 'RECOMMENDATION'
-                      ? 'Recommendation'
-                      : post.kind === 'QUESTION'
-                        ? 'Question'
-                        : 'Experience'}
-                  </p>
-                  <h3 className="mt-2 font-semibold text-slate-900">
-                    <Link href={`/blog/${post.id}`} className="hover:underline">
-                      {post.title}
-                    </Link>
-                  </h3>
-                  <p className="mt-1.5 line-clamp-3 text-sm text-slate-600">{post.body}</p>
-                  <p className="mt-3 text-xs text-slate-500">
-                    {post.score} point{post.score === 1 ? '' : 's'} · {post._count.comments} comment
-                    {post._count.comments === 1 ? '' : 's'}
-                    {post.listing ? ` · about ${post.listing.displayName}` : ''}
-                  </p>
-                </Card>
-              ))}
-            </ul>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {/*
-                A member goes straight in; somebody signed out still gets a link to
-                the feed, and an account is what lets them write.
-              */}
-              <Link href="/blog" className={buttonClasses('primary', 'lg')}>
-                Read the community
-              </Link>
-              <Link href="/register" className={buttonClasses('secondary', 'lg')}>
-                Join to recommend a lawyer
-              </Link>
-            </div>
-          </>
-        )}
-      </section>
+      {community}
 
       {/* ── Enquiry pool ─────────────────────────────────────────────────── */}
       <section id="enquiry" className="border-y border-slate-200 bg-slate-50">
@@ -703,6 +679,8 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+        </>
+      )}
     </>
   );
 }

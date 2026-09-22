@@ -7,6 +7,7 @@ import { VerificationBadge } from '@/components/VerificationBadge';
 import { buttonClasses } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 import { Logo } from './Logo';
+import { MobileMenu, type MenuGroup } from './MobileMenu';
 
 export type HeaderUser = {
   id: string;
@@ -48,7 +49,10 @@ export function SiteHeader({
             // Directory and the community are the two things a visitor is most
             // likely to want, so both are in the header at every width. The
             // explanation page is a desktop-only nicety.
-            <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Main">
+            // On a phone these live behind the menu button instead: three inline
+            // links do not fit beside the logo, and half-visible navigation is
+            // worse than one clear button.
+            <nav className="hidden items-center gap-1 sm:flex" aria-label="Main">
               <Link href="/directory" className={buttonClasses('ghost', 'sm')}>
                 Directory
               </Link>
@@ -101,20 +105,67 @@ export function SiteHeader({
                 {ACCOUNT_TYPE_LABEL[user.accountType]} account
               </span>
             </Link>
-            <form action={logoutAction}>
+            <form action={logoutAction} className="hidden sm:block">
               <button type="submit" className={buttonClasses('secondary', 'sm')}>
                 Sign out
               </button>
             </form>
+            <MobileMenu
+              label="Menu"
+              signOut={logoutAction}
+              groups={[
+                {
+                  title: 'Explore',
+                  items: [
+                    { href: '/blog', label: 'Community', icon: 'community' },
+                    { href: '/directory', label: 'Directory', icon: 'search' },
+                    { href: '/emergency/desk', label: 'Emergency desk', icon: 'alert' },
+                  ],
+                },
+                {
+                  title: 'Your account',
+                  items: [
+                    { href: accountHref, label: 'Dashboard', icon: 'home' },
+                    { href: '/notifications', label: 'Alerts', icon: 'bell', badge: alertCount },
+                    { href: '/profile', label: 'My profile', icon: 'user' },
+                    { href: '/account', label: 'Account & security', icon: 'lock' },
+                  ],
+                },
+              ]}
+            />
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <Link href="/login" className={buttonClasses('secondary', 'sm')}>
-              Sign in
-            </Link>
-            <Link href="/register" className={buttonClasses('primary', 'sm')}>
-              Create account
-            </Link>
+            {/* Wrapped rather than hidden individually: a display utility on the
+                button cannot beat the `inline-flex` its own class list sets. */}
+            <div className="hidden items-center gap-2 sm:flex">
+              <Link href="/login" className={buttonClasses('secondary', 'sm')}>
+                Sign in
+              </Link>
+              <Link href="/register" className={buttonClasses('primary', 'sm')}>
+                Create account
+              </Link>
+            </div>
+            <MobileMenu
+              groups={[
+                {
+                  title: 'Explore',
+                  items: [
+                    { href: '/?tab=community', label: 'Community', icon: 'community', description: 'Read it all; sign in to take part' },
+                    { href: '/directory', label: 'Directory', icon: 'search', description: 'Lawyers and firms, by area and emirate' },
+                    { href: '/how-verification-works', label: 'How verification works', icon: 'shieldCheck' },
+                    { href: '/emergency', label: 'Emergency help', icon: 'alert', description: 'Without an account, day or night' },
+                  ],
+                },
+                {
+                  title: 'Your account',
+                  items: [
+                    { href: '/login', label: 'Sign in', icon: 'lock' },
+                    { href: '/register', label: 'Create an account', icon: 'userPlus' },
+                  ],
+                },
+              ]}
+            />
           </div>
         )}
       </div>

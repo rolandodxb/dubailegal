@@ -711,6 +711,19 @@ members recommend the lawyers and firms they actually used, ask what a process r
 answer each other. It is the one public thing members write here, so nothing confidential belongs in a
 post — the case conversation is the private channel.
 
+### The community is reachable without a dashboard
+
+It appears in two places, and neither of them is behind a sign-in wall:
+
+- **On the landing page, as a tab** (`/?tab=community`). A visitor reads it there. The invitation to
+  take part is on that panel, and its sign-in link carries `next=/?tab=community` — so somebody who
+  signs in from the community **comes back to the community tab**, not to a dashboard. Once they are
+  in, the same panel grows the composer, the reaction bars and the comment boxes in place.
+- **At `/blog`, the full board index**: every topic, sorted, with the whole thread on each post.
+
+The tabs are plain links, not a client-side widget: they work with JavaScript off, they can be
+bookmarked and shared, and the page behind them is rendered on the server.
+
 ### Boards
 
 The community opens on a **topic index**, because somebody arriving with a problem has a subject in
@@ -1124,7 +1137,51 @@ gracefully — new connections are refused outright with `EMAXCONNSESSION`, whic
 occasional slow page. `DATABASE_URL` therefore carries `connection_limit=5`, and the warm-up opens
 four of them.
 
-### Performance: what a network-away database costs, and what was done about it
+### On a phone
+
+The application is meant to be used on a phone, so the phone is the case it is designed for rather
+than the one it tolerates.
+
+**Navigation is one button, not a squeezed row.** Below 640px the header keeps its logo, the alert
+bell, the avatar and a menu button; everything else is gathered behind it in groups — *Explore* and
+*Your account* — as full-width rows 48px tall. Three inline links do not fit beside a logo, and
+half-visible navigation is worse than one clear button. A signed-in member also gets the bottom tab
+bar, so the sections they use constantly are one thumb-reach away without opening anything.
+
+**Controls are sized for a thumb.** Every button carries a minimum height — 36px small, 44px normal,
+48px large — set on the shared button primitive rather than left to padding, so it holds everywhere.
+The menu closes on navigation, on Escape and on a press outside, and it is a real `<button>` with
+`aria-expanded`, so a keyboard and a screen reader both work.
+
+**Content collapses instead of scrolling forever.** Filter panels and the post composer are
+`<details>` disclosures with a rotating chevron. The directory's filters open themselves when a
+filter is active, so a narrowed list never hides the reason it is narrow.
+
+**The small things that make it feel native**: no grey flash when a link is tapped, no accidental
+text selection when a button is held, no 300ms tap delay, no sideways rubber-banding, text that
+respects the system size, and the page drawing into the notch and the home-indicator area. Vertical
+scrolling is left exactly as it is — fighting that is how a page comes to feel broken. Motion is used
+only to make a change legible, and `prefers-reduced-motion` switches all of it off.
+
+## Installable from the browser
+
+It installs from the browser like an app: **Add to Home Screen** on iOS, **Install app** on Android
+and Chrome, an install button in the desktop address bar.
+
+| | |
+|---|---|
+| `public/manifest.webmanifest` | name, short name, standalone display, theme colour, start url, and three icons |
+| Icons | 192px and 512px, plus a **maskable** 512px drawn with the mark inside the safe zone so Android can crop it to a circle without cutting it |
+| `public/sw.js` | the push worker, extended with a **fetch** handler — which is what a browser waits for before offering to install |
+| `/offline` | what an installed app shows with no connection: no session, no settings, no database, because the point is that it works when nothing can be reached |
+
+The fetch handler is deliberately conservative. Navigations are **network-first**, so a page is never
+stale while the network is there, with the last good copy as the fallback. Icons and stylesheets are
+cache-first, because they never change. **Nothing else is cached** — not an API route, not an uploaded
+document, not a page that reads the session — because caching a response that belongs to one
+signed-in member and serving it to another would be a leak.
+
+## Performance: what a network-away database costs, and what was done about it
 
 | | Measured |
 |---|---|

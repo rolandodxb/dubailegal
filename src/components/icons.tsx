@@ -287,6 +287,8 @@ const ICONS = {
     </>
   ),
   x: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
+  /** The phone menu: three rules, the shape everybody already reads as "more". */
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   arrowUp: <path d="M12 19V6m-6 6 6-6 6 6" />,
   arrowDown: <path d="M12 5v13m6-6-6 6-6-6" />,
   community: (

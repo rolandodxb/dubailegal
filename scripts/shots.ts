@@ -84,6 +84,12 @@ const SHOTS: Shot[] = [
   { name: 'rooms-client', path: '/rooms', as: 'client' },
   { name: 'support-client', path: '/support', as: 'client' },
   { name: 'support-ticket', path: '', as: 'client', resolve: (ids) => `/support?ticket=${ids.ticketId}` },
+  { name: 'landing-community', path: '/?tab=community', as: 'guest' },
+  {
+    name: 'landing-community-joined',
+    path: '/?tab=community',
+    as: 'client',
+  },
   { name: 'community', path: '/blog', as: 'client' },
   { name: 'community-board', path: '/blog?topic=LABOUR_EMPLOYMENT', as: 'guest' },
   { name: 'community-post', path: '', as: 'client', resolve: (ids) => `/blog/${ids.postId}` },
