@@ -1113,7 +1113,7 @@ touch them.
 | Region | **`us-west-2`** — found by the pooler's tenant lookup; `eu-central-1` does not host it |
 | Publishable key | in `.env` as `SUPABASE_PUBLISHABLE_KEY` |
 | Direct host | `db.zfjhudomfgypcghgylea.supabase.co` — **IPv6 only**, confirmed unreachable from this machine |
-| Connection | the **session pooler** on 5432, for the application and for migrations |
+| Connection | the **session pooler** on 5432 — but see *Speed* below before using it from here |
 | Schema | 42 tables, applied from the single baseline migration |
 | Data | copied from the local database: 4 accounts, 3 cases, 1 post, all rows matched |
 
@@ -1155,6 +1155,27 @@ the host, the role, the table and migration counts, whether the URL is pooled, a
 `npm run db:check` is the two-second answer to "is it actually connected, and to what?" — it prints
 the host, the role, the table and migration counts, whether the URL is pooled, and whether
 `ENCRYPTION_KEY` is set.
+
+### Speed: put the database next to the application
+
+The first attempt at this pointed the application at a Supabase project in **`us-west-2`** while the
+machine running it was in **Argentina**. Every page took three to four seconds, because every query
+crossed the Atlantic and back twice.
+
+Measured from this machine, TCP connect time:
+
+| Region | Connect |
+|---|---|
+| **`sa-east-1`** (São Paulo) | **74 ms** |
+| `us-east-1` | 190 ms |
+| `us-west-2` | 250 ms |
+| `eu-central-1`, `eu-west-*` | ~400 ms |
+
+São Paulo is **3.4× closer than the region this project is in**, and a project there would answer in
+about 35 ms per query instead of 210 ms. There is no setting that fixes distance: **the database and
+the application belong in the same region**, or the database belongs in the region the users are in.
+Until the project moves, this installation runs against the local PostgreSQL, and the Supabase
+connection sits in `.env` commented out and ready.
 
 ### Which pooler, and why it matters
 
@@ -1240,6 +1261,29 @@ first commit is already made and the branch is `main`, so the push is the only s
 `.env` is ignored and never committed — it holds the database password, `APP_SECRET` and
 `ENCRYPTION_KEY` — and so is `var/`, which holds uploaded identity documents. `.env.example` carries
 the shape of every setting without any of the values.
+
+## Performance
+
+Two things were done about page speed, and both hold whatever database is behind the application.
+
+**The session and the settings are read once per request.** The layout and the page both ask who is
+signed in and whether the application is in maintenance; `getSessionUser` and `getAvailability` are
+now wrapped in React's `cache()`, so a request makes one session query and one settings query rather
+than two or three of each.
+
+**The landing page's five counts are one query.** They were five `count()` calls against the same two
+tables — the first thing any visitor waits for. They are now a single statement.
+
+Measured on this machine, warm, best of three:
+
+| Page | Before | After |
+|---|---|---|
+| Landing | 463 ms | **56–93 ms** |
+| Directory | 170 ms | **46–52 ms** |
+| Community | 100 ms | **45–54 ms** |
+| Dashboard (signed in) | — | 70–108 ms |
+| Cases, rooms, payments, profile | — | 43–56 ms |
+| Console pages | — | 51–106 ms |
 
 ## Going live
 

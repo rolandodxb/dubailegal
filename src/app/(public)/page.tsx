@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { AccountType } from '@prisma/client';
 import { prisma } from '@/lib/db';
-import { publicDirectoryWhere } from '@/server/services/directory-service';
 import { listRecentPosts } from '@/server/services/blog-service';
 import { BADGE, DOCUMENT_REQUIREMENTS } from '@/lib/constants';
 import { VerificationBadge } from '@/components/VerificationBadge';
@@ -10,18 +9,41 @@ import { DOMAINS, domainChip, type Domain } from '@/lib/domains';
 import { PublicEnquiryForm } from '@/components/forms/PublicEnquiryForm';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 
-/** Real numbers from the database — never invented, and honestly zero when empty. */
+/**
+ * Real numbers from the database — never invented, and honestly zero when empty.
+ *
+ * One query rather than five: they are five questions about the same two tables,
+ * and the landing page is the first thing anybody sees.
+ */
 async function getFacts() {
-  const [published, verified, reviews, lawyers, firms] = await Promise.all([
-    prisma.listing.count({ where: publicDirectoryWhere() }),
-    prisma.listing.count({
-      where: { ...publicDirectoryWhere(), user: { is: { verificationStatus: 'APPROVED' } } },
-    }),
-    prisma.review.count({ where: { status: 'PUBLISHED' } }),
-    prisma.listing.count({ where: { ...publicDirectoryWhere(), kind: 'LAWYER' } }),
-    prisma.listing.count({ where: { ...publicDirectoryWhere(), kind: 'FIRM' } }),
-  ]);
-  return { published, verified, reviews, lawyers, firms };
+  const [row] = await prisma.$queryRaw<
+    { published: number; verified: number; reviews: number; lawyers: number; firms: number }[]
+  >`
+    select
+      (select count(*)::int from listing l
+        where l.published = true
+          and not exists (
+            select 1 from lawyer_profile lp
+             where lp."userId" = l."userId" and lp."createdByFirmId" is not null and lp."affiliatedFirmId" is not null
+          )) as published,
+      (select count(*)::int from listing l
+        join "user" u on u.id = l."userId"
+        where l.published = true and u."verificationStatus" = 'APPROVED'
+          and not exists (
+            select 1 from lawyer_profile lp
+             where lp."userId" = l."userId" and lp."createdByFirmId" is not null and lp."affiliatedFirmId" is not null
+          )) as verified,
+      (select count(*)::int from review where status = 'PUBLISHED') as reviews,
+      (select count(*)::int from listing l
+        where l.published = true and l.kind = 'LAWYER'
+          and not exists (
+            select 1 from lawyer_profile lp
+             where lp."userId" = l."userId" and lp."createdByFirmId" is not null and lp."affiliatedFirmId" is not null
+          )) as lawyers,
+      (select count(*)::int from listing l
+        where l.published = true and l.kind = 'FIRM') as firms`;
+
+  return row ?? { published: 0, verified: 0, reviews: 0, lawyers: 0, firms: 0 };
 }
 
 const CLIENT_FEATURES: { icon: IconName; domain: Domain; title: string; body: string }[] = [

@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { AccountType, Prisma, Role, VerificationStatus } from '@prisma/client';
@@ -89,7 +90,7 @@ async function readSessionToken(): Promise<string | null> {
  * for longer than SESSION_IDLE_DAYS. `lastSeenAt` is only written when it is
  * more than five minutes stale, so page views do not each cost a write.
  */
-export async function getSessionUser(): Promise<SessionUser | null> {
+export const getSessionUser = cache(async function getSessionUser(): Promise<SessionUser | null> {
   const token = await readSessionToken();
   if (!token) return null;
 
@@ -122,7 +123,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     twoFactorSatisfied:
       user.twoFactorEnabledAt === null || session.twoFactorPassedAt !== null,
   };
-}
+});
 
 export async function revokeSessionByToken(token: string): Promise<void> {
   await prisma.session.updateMany({

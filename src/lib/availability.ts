@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { prisma } from '@/lib/db';
 import { getSettings, type SettingKey, type AppSettings } from '@/server/services/settings-service';
 
@@ -16,14 +17,19 @@ export type Availability = {
   settings: AppSettings;
 };
 
-export async function getAvailability(): Promise<Availability> {
+/**
+ * Cached for the duration of one request: the layout and the page both ask
+ * whether the app is in maintenance, and that is one read of the settings
+ * rather than two.
+ */
+export const getAvailability = cache(async function getAvailability(): Promise<Availability> {
   const settings = await getSettings();
   return {
     maintenance: settings['maintenance.enabled'] === 'true',
     message: settings['maintenance.message'],
     settings,
   };
-}
+});
 
 /**
  * Whether the current viewer may pass through maintenance mode. Reviewers can,
