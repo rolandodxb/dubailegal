@@ -65,17 +65,26 @@ export function LanguageSwitcher({
               type="submit"
               name="locale"
               value={locale.code}
+              disabled={!locale.ready}
+              title={locale.ready ? undefined : `${locale.english} — coming soon`}
               lang={locale.code}
               aria-current={isActive ? 'true' : undefined}
               className={cx(
                 'flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-start text-sm',
                 isActive
                   ? 'bg-brand-50 font-semibold text-brand-900'
-                  : 'text-slate-700 hover:bg-slate-100',
+                  : locale.ready
+                    ? 'text-slate-700 hover:bg-slate-100'
+                    : 'cursor-not-allowed text-slate-400',
               )}
             >
               <span className="min-w-0 flex-1 truncate">{locale.native}</span>
               {isActive ? <Icon name="check" size={16} /> : null}
+              {!locale.ready ? (
+                <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                  soon
+                </span>
+              ) : null}
             </button>
           );
         })}

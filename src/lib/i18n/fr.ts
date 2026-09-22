@@ -1,7 +1,14 @@
-import type { Dictionary } from './en';
-
-/** French. Typed against English, so nothing can be forgotten. */
-export const fr: Dictionary = {
+/**
+ * French — **not finished, and not offered**.
+ *
+ * Kept because the work in it is real, and because the writing direction and the
+ * structure are already handled. It is deliberately *not* typed against the
+ * English dictionary: requiring an unfinished language to keep pace with every
+ * new string would mean either writing it under pressure or letting the build
+ * fail, and neither produces a good translation. The switcher shows it as coming
+ * soon and refuses to select it until it is complete.
+ */
+export const fr = {
   language: { label: 'Langue', change: 'Changer de langue' },
 
   nav: {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { getVerificationOverview } from '@/server/services/verification-service';
 import { listCasesForClient, listCasesForFirm, listCasesForLawyer, listClientsForLawyer } from '@/server/services/case-service';
 import {
@@ -38,7 +39,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ notice?: string }>;
 }) {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
   const { notice } = await searchParams;
 
   const isReviewer = user.roles.includes('REVIEWER');
@@ -124,7 +125,7 @@ export default async function DashboardPage({
       </header>
 
       {isReviewer ? (
-        <Alert tone="info" title="You have reviewer access">
+        <Alert tone="info" title={t.dashboard.reviewerAccess}>
           Decide verification requests, manage accounts and read the outbox in the reviewer console.
           <div className="mt-3">
             <Link href="/admin/verifications" className={buttonClasses('primary', 'md')}>
@@ -154,7 +155,7 @@ export default async function DashboardPage({
           </div>
 
           <Card>
-            <h2 className="font-semibold text-slate-900">Today&rsquo;s diary</h2>
+            <h2 className="font-semibold text-slate-900">{t.dashboard.todayDiary}</h2>
             {todayAppointments.length === 0 ? (
               <p className="mt-1 text-sm text-slate-600">
                 No meetings booked for today.{' '}
@@ -179,7 +180,7 @@ export default async function DashboardPage({
           {pendingPreview.length > 0 ? (
             <section>
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-semibold text-slate-900">Waiting for you</h2>
+                <h2 className="font-semibold text-slate-900">{t.dashboard.waitingForYou}</h2>
                 <Link href="/pending" className="text-sm font-medium text-brand-700 hover:underline">
                   See all
                 </Link>
@@ -199,7 +200,7 @@ export default async function DashboardPage({
 
           {isFirm ? (
             <Card>
-              <h2 className="font-semibold text-slate-900">Lawyers registered</h2>
+              <h2 className="font-semibold text-slate-900">{t.dashboard.lawyersRegistered}</h2>
               <p className="mt-1 text-sm text-slate-600">
                 Only a lawyer registered with your firm can accept a case submitted to it. Add your
                 professionals so nothing sits unaccepted.
@@ -228,8 +229,8 @@ export default async function DashboardPage({
           </div>
           {clientCases.length === 0 ? (
             <EmptyState
-              title="You have not sent a case yet"
-              description="Open a lawyer or firm in the directory and choose “Get in touch” to send your first case."
+              title={t.dashboard.noCasesYet}
+              description={t.dashboard.noCasesBody}
               action={
                 <Link href="/directory" className={buttonClasses('primary', 'md')}>
                   Browse the directory
@@ -267,7 +268,7 @@ export default async function DashboardPage({
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="font-semibold text-slate-900">Verification</h2>
+            <h2 className="font-semibold text-slate-900">{t.dashboard.verification}</h2>
             <p className="mt-1 max-w-xl text-sm text-slate-600">
               {verified ? (
                 <>
@@ -292,7 +293,7 @@ export default async function DashboardPage({
 
         {!verified && overview.blockers.length > 0 ? (
           <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-800">Still outstanding</p>
+            <p className="text-sm font-medium text-slate-800">{t.dashboard.stillOutstanding}</p>
             <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-slate-700">
               {overview.blockers.map((blocker) => (
                 <li key={blocker}>{blocker}</li>
@@ -303,7 +304,7 @@ export default async function DashboardPage({
 
         <dl className="mt-4 grid gap-4 border-t border-slate-100 pt-4 text-sm sm:grid-cols-3">
           <div>
-            <dt className="text-slate-600">Emirates ID</dt>
+            <dt className="text-slate-600">{t.dashboard.emiratesId}</dt>
             <dd className="font-medium text-slate-900">
               {overview.profile?.emiratesIdNumber
                 ? maskEmiratesId(overview.profile.emiratesIdNumber)
@@ -311,13 +312,13 @@ export default async function DashboardPage({
             </dd>
           </div>
           <div>
-            <dt className="text-slate-600">Documents on file</dt>
+            <dt className="text-slate-600">{t.dashboard.documentsOnFile}</dt>
             <dd className="font-medium text-slate-900">
               {overview.documents.filter((doc) => doc.status !== 'SUPERSEDED').length}
             </dd>
           </div>
           <div>
-            <dt className="text-slate-600">Verification requests</dt>
+            <dt className="text-slate-600">{t.dashboard.verificationRequests}</dt>
             <dd className="font-medium text-slate-900">{overview.cases.length}</dd>
           </div>
         </dl>
@@ -326,7 +327,7 @@ export default async function DashboardPage({
       {/* ── Listing ──────────────────────────────────────────────────────── */}
       {isProfessional ? (
         <Card>
-          <h2 className="font-semibold text-slate-900">Your directory listing</h2>
+          <h2 className="font-semibold text-slate-900">{t.dashboard.yourListing}</h2>
           {listing ? (
             <>
               <p className="mt-1 text-sm text-slate-600">
@@ -355,8 +356,8 @@ export default async function DashboardPage({
             </>
           ) : (
             <EmptyState
-              title="You do not have a directory listing yet"
-              description="Create one so that people searching by area of law and emirate can find you and send you a case. You choose when to publish it."
+              title={t.dashboard.noListing}
+              description={t.dashboard.noListingBody}
               action={
                 <Link href="/listing" className={buttonClasses('primary', 'md')}>
                   Create my listing
@@ -368,10 +369,10 @@ export default async function DashboardPage({
       ) : null}
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Common tasks</h2>
+        <h2 className="font-semibold text-slate-900">{t.dashboard.commonTasks}</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Link href="/profile" className={buttonClasses('secondary', 'md', 'w-full')}>
-            Edit my profile
+            {t.dashboard.editProfile}
           </Link>
           {isProfessional ? (
             <Link href="/credentials" className={buttonClasses('secondary', 'md', 'w-full')}>

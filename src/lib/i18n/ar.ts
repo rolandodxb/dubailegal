@@ -8,7 +8,7 @@ import type { Dictionary } from './en';
  * ID is «الهوية الإماراتية», verification is «التوثيق», and a legal firm is
  * «مكتب محاماة» rather than a literal "legal company".
  */
-export const ar: Dictionary = {
+export const ar = {
   language: { label: 'اللغة', change: 'تغيير اللغة' },
 
   nav: {

@@ -68,9 +68,19 @@ function ContactChannel({
 export function ListingCard({
   listing,
   reviewSummary,
+  labels,
 }: {
   listing: DirectoryListing;
   reviewSummary?: ReviewSummary;
+  /** The words this card shows, in the reader's language. */
+  labels: {
+    emirates: string;
+    languages: string;
+    contact: string;
+    experience: string;
+    years: string;
+    noReviewsYet: string;
+  };
 }) {
   const owner = listing.user;
   const profile = owner.profile;
@@ -121,20 +131,20 @@ export function ListingCard({
             <span className="text-xs text-slate-500">({reviewSummary.count})</span>
           </span>
         ) : (
-          <span className="text-xs text-slate-400">No reviews yet</span>
+          <span className="text-xs text-slate-400">{labels.noReviewsYet}</span>
         )}
       </div>
 
       {/* ── Facts ──────────────────────────────────────────────────────── */}
       <dl className="grid grid-cols-[6.5rem_1fr] items-baseline gap-x-3 gap-y-2 border-t border-slate-100 px-5 py-4 text-sm">
         {listing.yearsOfExperience ? (
-          <Fact label="Experience">
-            <span className="tabular-nums">{listing.yearsOfExperience} years</span>
+          <Fact label={labels.experience}>
+            <span className="tabular-nums">{labels.years.replace('{count}', String(listing.yearsOfExperience))}</span>
           </Fact>
         ) : null}
-        <Fact label="Emirates">{listWithOverflow(listing.emirates.map((e) => EMIRATE_LABEL[e]))}</Fact>
-        <Fact label="Languages">{listWithOverflow(listing.languages)}</Fact>
-        <Fact label="Contact">
+        <Fact label={labels.emirates}>{listWithOverflow(listing.emirates.map((e) => EMIRATE_LABEL[e]))}</Fact>
+        <Fact label={labels.languages}>{listWithOverflow(listing.languages)}</Fact>
+        <Fact label={labels.contact}>
           <span className="inline-flex items-center gap-3">
             <ContactChannel icon="phone" label="Phone" present={Boolean(listing.contactPhone)} />
             <ContactChannel icon="mail" label="Email" present={Boolean(listing.contactEmail)} />

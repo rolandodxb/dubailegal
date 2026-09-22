@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getSessionUser, homePathFor } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { LoginForm } from '@/components/forms/LoginForm';
 import { safeNextPath } from '@/lib/redirect';
 import { Card } from '@/components/ui/primitives';
@@ -18,7 +19,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ notice?: string; next?: string }>;
 }) {
-  const { notice, next: rawNext } = await searchParams;
+  const [{ t }, { notice, next: rawNext }] = await Promise.all([getI18n(), searchParams]);
   // Checked here as well as in the action, so a redirect cannot be smuggled in
   // through the sign-in link itself.
   const next = safeNextPath(rawNext, '');
@@ -30,11 +31,9 @@ export default async function LoginPage({
 
   return (
     <Card className="p-6 sm:p-8">
-      <h1 className="text-xl font-semibold text-slate-900">Sign in</h1>
-      <p className="mt-1 mb-6 text-sm text-slate-600">
-        Welcome back. Sign in to manage your profile, documents and verification.
-      </p>
-      <LoginForm notice={notice ? NOTICES[notice] : undefined} next={next || undefined} />
+      <h1 className="text-xl font-semibold text-slate-900">{t.auth.signInTitle}</h1>
+      <p className="mt-1 mb-6 text-sm text-slate-600">{t.auth.signInIntro}</p>
+      <LoginForm t={t} notice={notice ? NOTICES[notice] : undefined} next={next || undefined} />
     </Card>
   );
 }

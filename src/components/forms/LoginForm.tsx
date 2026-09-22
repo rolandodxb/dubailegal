@@ -6,8 +6,24 @@ import { loginAction } from '@/app/actions/auth-actions';
 import { initialFormState } from '@/lib/form-state';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input } from '@/components/ui/primitives';
+import type { Dictionary } from '@/lib/i18n/en';
 
-export function LoginForm({ notice, next }: { notice?: string; next?: string }) {
+/**
+ * Signing in.
+ *
+ * The words come from the dictionary passed by the page rather than being written
+ * here, so the form speaks the reader's language — including the labels, which is
+ * where a half-translated interface is most obvious.
+ */
+export function LoginForm({
+  t,
+  notice,
+  next,
+}: {
+  t: Dictionary;
+  notice?: string;
+  next?: string;
+}) {
   const [state, formAction] = useActionState(loginAction, initialFormState);
 
   return (
@@ -17,12 +33,12 @@ export function LoginForm({ notice, next }: { notice?: string; next?: string }) 
       {next ? <input type="hidden" name="next" value={next} /> : null}
 
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="Sign-in failed">
+        <Alert tone="error" title={t.auth.signInFailed}>
           {state.message}
         </Alert>
       ) : null}
 
-      <Field label="Email address" htmlFor="email" required error={state?.fieldErrors?.email}>
+      <Field label={t.auth.email} htmlFor="email" required error={state?.fieldErrors?.email}>
         <Input
           id="email"
           name="email"
@@ -36,7 +52,7 @@ export function LoginForm({ notice, next }: { notice?: string; next?: string }) 
         />
       </Field>
 
-      <Field label="Password" htmlFor="password" required error={state?.fieldErrors?.password}>
+      <Field label={t.auth.password} htmlFor="password" required error={state?.fieldErrors?.password}>
         <Input
           id="password"
           name="password"
@@ -47,19 +63,19 @@ export function LoginForm({ notice, next }: { notice?: string; next?: string }) 
         />
       </Field>
 
-      <SubmitButton className="w-full" size="lg" pendingLabel="Signing in…">
-        Sign in
+      <SubmitButton className="w-full" size="lg" pendingLabel={t.auth.signingIn}>
+        {t.auth.signInTitle}
       </SubmitButton>
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <Link href="/forgot-password" className="font-medium text-brand-700 hover:underline">
-          Forgotten your password?
+          {t.auth.forgotPassword}
         </Link>
         <Link
           href={next ? `/register?next=${encodeURIComponent(next)}` : '/register'}
           className="font-medium text-brand-700 hover:underline"
         >
-          Create an account
+          {t.nav.createAccount}
         </Link>
       </div>
     </form>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getSessionUser } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import {
   buildDirectoryUrl,
   hasActiveFilters,
@@ -26,7 +27,7 @@ export default async function DirectoryPage({
 }: {
   searchParams: Promise<RawSearchParams>;
 }) {
-  const params = await searchParams;
+  const [{ t }, params] = await Promise.all([getI18n(), searchParams]);
   const query = parseDirectoryParams(params);
 
   const [results, facets, viewer, availability] = await Promise.all([
@@ -43,7 +44,7 @@ export default async function DirectoryPage({
     return (
       <div className="dl-container py-16">
         <EmptyState
-          title="The directory is switched off"
+          title={t.directory.switchedOff}
           description="An administrator has temporarily disabled the public directory. It will be back once they switch it on again."
         />
       </div>
@@ -107,7 +108,7 @@ export default async function DirectoryPage({
       </details>
 
       {/* ── Results ───────────────────────────────────────────────────── */}
-      <section aria-label="Results">
+      <section aria-label={t.directory.results}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-600">
             {facets.totalPublished === 0 ? (
@@ -130,7 +131,7 @@ export default async function DirectoryPage({
           {showUnverified && unverifiedInResults > 0 ? (
             <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
               {unverifiedInResults === 1 ? 'One profile in these results has' : `${unverifiedInResults} profiles in these results have`}{' '}
-              not had documents reviewed yet. Tick <em>Verified members only</em> to hide them.
+              not had documents reviewed yet. Tick <em>{t.directory.verifiedOnly}</em> to hide them.
             </p>
           ) : null}
 
@@ -158,8 +159,8 @@ export default async function DirectoryPage({
               />
             ) : (
               <EmptyState
-                title="No profile matches these filters"
-                description="Try removing a filter or widening the area of law."
+                title={t.directory.nothingMatches}
+                description={t.directory.nothingMatchesBody}
                 action={
                   <Link href="/directory" className={buttonClasses('secondary', 'md')}>
                     Clear all filters
@@ -172,6 +173,14 @@ export default async function DirectoryPage({
               <ul className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
                 {results.rows.map((listing) => (
                   <ListingCard
+                    labels={{
+                      emirates: t.directory.emirates,
+                      languages: t.directory.languages,
+                      contact: t.directory.contact,
+                      experience: t.directory.experience,
+                      years: t.directory.years,
+                      noReviewsYet: t.directory.noReviewsYet,
+                    }}
                     key={listing.id}
                     listing={listing}
                     reviewSummary={ratings.get(listing.user.id)}
@@ -182,7 +191,7 @@ export default async function DirectoryPage({
               {results.pageCount > 1 ? (
                 <nav
                   className="mt-8 flex items-center justify-between gap-3"
-                  aria-label="Pagination"
+                  aria-label={t.directory.pagination}
                 >
                   {results.page > 1 ? (
                     <Link
@@ -214,7 +223,7 @@ export default async function DirectoryPage({
 
           {viewer && (viewer.accountType === 'LAWYER' || viewer.accountType === 'FIRM') ? (
             <Card className="mt-8">
-              <h2 className="font-medium text-slate-900">Are you listed here?</h2>
+              <h2 className="font-medium text-slate-900">{t.directory.areYouListed}</h2>
               <p className="mt-1 text-sm text-slate-600">
                 You are signed in as a {viewer.accountType === 'FIRM' ? 'legal firm' : 'lawyer'}.
                 Manage how your profile appears, or publish it if it is still a draft.

@@ -3,15 +3,21 @@ import { cache } from 'react';
 import { DEFAULT_LOCALE, LOCALE_COOKIE, directionOf, isLocale, type Direction, type Locale } from './locales';
 import type { Dictionary } from './en';
 import { en } from './en';
-import { ar } from './ar';
 import { es } from './es';
-import { fr } from './fr';
 
 export { LOCALES, LOCALE_COOKIE, DEFAULT_LOCALE, isLocale, directionOf } from './locales';
 export type { Locale, Direction } from './locales';
 export type { Dictionary } from './en';
 
-const DICTIONARIES: Record<Locale, Dictionary> = { en, ar, es, fr };
+/**
+ * The dictionaries that are complete.
+ *
+ * A locale with no entry here falls back to English — which is why the two
+ * unfinished languages are also marked `ready: false` in the switcher and cannot
+ * be chosen. The fallback exists so the site never breaks, not so it can quietly
+ * serve English under another language's name.
+ */
+const DICTIONARIES: Partial<Record<Locale, Dictionary>> = { en, es };
 
 /**
  * The language this request is in.
@@ -26,7 +32,15 @@ export const currentLocale = cache(async (): Promise<Locale> => {
   return isLocale(value) ? value : DEFAULT_LOCALE;
 });
 
-export type I18n = { locale: Locale; dir: Direction; t: Dictionary };
+export type I18n = {
+  /** The language that was asked for. */
+  locale: Locale;
+  dir: Direction;
+  t: Dictionary;
+  /** False when the chosen language has no dictionary yet and English is shown. */
+  isTranslated: boolean;
+  effectiveLocale: Locale;
+};
 
 /**
  * Everything a page needs to render in the reader's language: the locale, the
@@ -38,5 +52,14 @@ export type I18n = { locale: Locale; dir: Direction; t: Dictionary };
  */
 export const getI18n = cache(async (): Promise<I18n> => {
   const locale = await currentLocale();
-  return { locale, dir: directionOf(locale), t: DICTIONARIES[locale] };
+  const dictionary = DICTIONARIES[locale];
+  // An unfinished language still renders, in English, rather than throwing.
+  const effective: Locale = dictionary ? locale : DEFAULT_LOCALE;
+  return {
+    locale,
+    dir: directionOf(locale),
+    t: dictionary ?? en,
+    isTranslated: Boolean(dictionary),
+    effectiveLocale: effective,
+  };
 });

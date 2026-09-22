@@ -1258,19 +1258,27 @@ page: the header and its navigation, the phone menu and its groups, the signed-i
 the footer, the landing page's hero, tabs and figures, the community panel and its composer, and the
 account forms' labels. The language switch itself.
 
+**Two languages are offered; two say so.** English and Spanish are complete and selectable. Arabic
+and French appear in the switcher marked *soon* and **cannot be chosen** — a half-translated language
+is worse than one that admits it, because a reader cannot tell a missing string from a broken one.
+Their dictionaries are kept (the writing direction and the RTL plumbing are already done for Arabic),
+and they are deliberately not typed against the English dictionary: forcing an unfinished language to
+keep pace with every new string means either writing it under pressure or letting the build fail.
+
 **Where it stands.** The switch is in the header, inside the phone menu, at the foot of the desktop
 sidebar, on the account pages, and in the footer, so it can be reached wherever somebody happens to
 be.
 
-Translated: the whole shell (header, phone menu and its groups, the signed-in sidebar in full, the
-footer), the landing page end to end including both audience sections and their calls to action, and
-the account forms' labels.
+Translated so far: the whole shell (header, phone menu and its groups, the signed-in sidebar in
+full, the footer), the landing page end to end, the sign-in page and its form, the directory — listing
+and card — and the dashboard, plus a shared vocabulary of the words that recur on nearly every page
+(save, cancel, search, filters, status, country, language…), which is what keeps each remaining page
+cheap to translate.
 
-**What is not, yet.** The body of the member and console pages — the directory listing, a case,
-payments, the verification tab, the admin console — still renders in English, whatever the cookie
-says. The mechanism is complete: translating one is adding keys to `src/lib/i18n/*.ts` and using them
-in the page. There is no plumbing left to build, and the compiler will not let a key be missed or
-mistyped. Saying this plainly is better than a switch that pretends.
+**What is not, yet.** The rest of the member and console pages — a case, payments, the verification
+tab, the admin console — still renders in English whatever the cookie says. The mechanism is complete
+and the compiler will not let a key be missed or mistyped, so translating one is adding keys and using
+them. Saying this plainly is better than a switch that pretends.
 
 ## An emergency call: two people, one room, one negotiation
 
