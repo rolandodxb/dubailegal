@@ -207,6 +207,17 @@ async function main(): Promise<void> {
     });
     await devtools.send('Emulation.setTouchEmulationEnabled', { enabled: true });
 
+    const locale = process.env.UX_LOCALE;
+    if (locale) {
+      await devtools.send('Network.enable');
+      await devtools.send('Network.setCookie', {
+        name: 'dl_locale',
+        value: locale,
+        domain: 'localhost',
+        path: '/',
+      });
+    }
+
     const loaded = devtools.event('Page.loadEventFired');
     await devtools.send('Page.navigate', { url: `${BASE_URL}/?tab=community` });
     await loaded;
@@ -281,8 +292,19 @@ async function main(): Promise<void> {
     check('with links to navigate by', opened.links >= 4, `${opened.links} links`);
     check('and there is no bottom navigation bar', !opened.bottomBar);
 
+    const direction = await devtools.evaluate<string>(
+      `document.documentElement.getAttribute('dir') ?? 'ltr'`,
+    );
+    if (locale) {
+      console.info(`  language ${locale}, writing direction ${direction}`);
+      check(
+        `the page is laid out ${locale === 'ar' ? 'right to left' : 'left to right'} in ${locale}`,
+        locale === 'ar' ? direction === 'rtl' : direction === 'ltr',
+      );
+    }
+
     const shot = await devtools.send<{ data: string }>('Page.captureScreenshot', { format: 'png' });
-    const out = path.join(OUT_DIR, 'menu-open-phone.png');
+    const out = path.join(OUT_DIR, `menu-open-phone${locale ? `-${locale}` : ''}.png`);
     await writeFile(out, Buffer.from(shot.data, 'base64'));
     console.info(`  →  ${path.relative(process.cwd(), out)}`);
 

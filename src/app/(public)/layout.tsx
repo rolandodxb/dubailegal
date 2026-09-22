@@ -4,6 +4,7 @@ import { logLayoutView } from '@/lib/traffic';
 import { navCounts } from '@/server/services/nav-counts';
 import { MaintenanceScreen } from '@/components/layout/MaintenanceScreen';
 import { SiteFooter, SiteHeader } from '@/components/layout/SiteHeader';
+import { getI18n } from '@/lib/i18n';
 import { SideNav } from '@/components/layout/SideNav';
 import { buildMemberNav } from '@/components/layout/memberNav';
 
@@ -11,6 +12,7 @@ export default async function PublicLayout({ children }: { children: React.React
   // Who is signed in and whether the app is in maintenance are independent
   // questions: asking them one after the other cost a second round trip on
   // every page before anything else could start.
+  const { t, locale } = await getI18n();
   const [user, availability] = await Promise.all([getSessionUser(), getAvailability()]);
   if (availability.maintenance && !(await mayBypassMaintenance(user?.id ?? null))) {
     return <MaintenanceScreen message={availability.message} signedIn={Boolean(user)} />;
@@ -22,9 +24,9 @@ export default async function PublicLayout({ children }: { children: React.React
   if (!user) {
     return (
       <div className="flex min-h-screen flex-col">
-        <SiteHeader user={null} />
+        <SiteHeader user={null} t={t} locale={locale} />
         <main className="flex-1">{children}</main>
-        <SiteFooter />
+        <SiteFooter t={t} locale={locale} />
       </div>
     );
   }
@@ -37,6 +39,7 @@ export default async function PublicLayout({ children }: { children: React.React
     user.roles,
   );
   const { groups, navItems } = buildMemberNav({
+    t,
     accountType: user.accountType,
     roles: user.roles,
     unreadAlerts,
@@ -47,6 +50,8 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader
+        t={t}
+        locale={locale}
         menuGroups={groups}
         user={{
           id: user.id,
@@ -72,7 +77,7 @@ export default async function PublicLayout({ children }: { children: React.React
         </div>
       </div>
 
-      <SiteFooter signedIn />
+      <SiteFooter signedIn t={t} locale={locale} />
     </div>
   );
 }

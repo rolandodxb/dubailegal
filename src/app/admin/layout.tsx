@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { requireReviewer } from '@/lib/auth';
 import { logLayoutView } from '@/lib/traffic';
 import { SiteHeader } from '@/components/layout/SiteHeader';
+import { getI18n } from '@/lib/i18n';
 import { SideNav, type NavItem } from '@/components/layout/SideNav';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Reviewers see members' full Emirates IDs, so this gate is the access
   // control for the most sensitive data in the product.
-  const user = await requireReviewer();
+  const [{ t, locale }, user] = await Promise.all([getI18n(), requireReviewer()]);
   await logLayoutView('/admin', user.id);
 
   const navItems: NavItem[] = [
@@ -34,6 +35,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader
+        t={t}
+        locale={locale}
         menuGroups={[{ title: 'Console', items: navItems }]}
         user={{
           id: user.id,

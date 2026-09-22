@@ -3,6 +3,7 @@ import { CommunityPostCard, type CommunityAuthor, type CommunityComment } from '
 import { PostForm } from '@/components/forms/BlogForms';
 import { Alert, Card, buttonClasses } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
+import type { Dictionary } from '@/lib/i18n';
 
 type Post = {
   id: string;
@@ -37,8 +38,9 @@ export function CommunityPanel({
   posts,
   listings,
   nextPath,
-  heading = 'Ask the people who have been through it',
-  intro = 'Real answers from members who have been through it: what a process involves, what it cost, who helped. Anyone can read it; an account is what lets you react, reply or ask your own question.',
+  t,
+  heading,
+  intro,
   compact = false,
 }: {
   user: { id: string } | null;
@@ -46,10 +48,14 @@ export function CommunityPanel({
   listings: { id: string; displayName: string; kind: string }[];
   /** Where to come back to after signing in — the tab this panel is on. */
   nextPath: string;
+  /** The dictionary for this request. */
+  t: Dictionary;
   heading?: string;
   intro?: string;
   compact?: boolean;
 }) {
+  const title = heading ?? t.community.heading;
+  const lead = intro ?? t.community.intro;
   const signIn = `/login?next=${encodeURIComponent(nextPath)}`;
   const register = `/register?next=${encodeURIComponent(nextPath)}`;
 
@@ -60,10 +66,10 @@ export function CommunityPanel({
           <Icon name="community" size={20} />
         </span>
         <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-          {heading}
+          {title}
         </h2>
       </div>
-      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-600">{intro}</p>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-600">{lead}</p>
 
       {user ? (
         <Card className="mt-6">
@@ -71,39 +77,31 @@ export function CommunityPanel({
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 font-semibold text-slate-900">
               <span className="inline-flex items-center gap-2">
                 <Icon name="pencil" size={17} />
-                Write a post
+                {t.community.writePost}
               </span>
               <Icon name="chevronDown" size={18} />
             </summary>
-            <p className="mt-2 mb-4 text-sm text-slate-600">
-              Ask something, recommend a professional you used, or write down what happened. A
-              moderator reads it first — mostly to check the question has not been answered already.
-            </p>
-            <PostForm listings={listings} />
+            <p className="mt-2 mb-4 text-sm text-slate-600">{t.community.writePostHelp}</p>
+            <PostForm listings={listings} t={t} />
           </details>
         </Card>
       ) : (
-        <Alert tone="info" className="mt-6" title="Read it all; sign in to take part">
-          <p>
-            Every post and reply here is open to anyone. To react, comment or ask your own question,{' '}
+        <Alert tone="info" className="mt-6" title={t.community.readOnlyTitle}>
+          <p>{t.community.readOnlyBody}</p>
+          <p className="mt-2 flex flex-wrap gap-3">
             <Link href={signIn} className="font-semibold underline">
-              sign in
-            </Link>{' '}
-            or{' '}
+              {t.nav.signIn}
+            </Link>
             <Link href={register} className="font-semibold underline">
-              create an account
-            </Link>{' '}
-            — you will come straight back to this page.
+              {t.nav.createAccount}
+            </Link>
           </p>
         </Alert>
       )}
 
       {posts.length === 0 ? (
         <Card className="mt-5">
-          <p className="text-sm text-slate-700">
-            Nothing has been posted yet. The feed is empty rather than filled with examples —
-            recommendations here come from real clients, and the first one will be real too.
-          </p>
+          <p className="text-sm text-slate-700">{t.community.empty}</p>
         </Card>
       ) : (
         <ul className="mt-5 space-y-4">
@@ -137,15 +135,15 @@ export function CommunityPanel({
       <div className="mt-6 flex flex-wrap gap-3">
         <Link href="/blog" className={buttonClasses('secondary', 'md')}>
           <Icon name="inbox" size={17} />
-          Browse the boards
+          {t.community.browseBoards}
         </Link>
         {!user ? (
           <Link href={register} className={buttonClasses('primary', 'md')}>
-            Create an account to post
+            {t.community.createToPost}
           </Link>
         ) : (
           <Link href="/blog" className={buttonClasses('primary', 'md')}>
-            Open the full community
+            {t.community.openFull}
           </Link>
         )}
       </div>

@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon, type IconName } from '@/components/icons';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import type { Locale } from '@/lib/i18n/locales';
 import { cx } from '@/components/ui/primitives';
 
 export type MenuGroup = {
@@ -26,13 +28,21 @@ export type MenuGroup = {
  */
 export function MobileMenu({
   groups,
-  label = 'Menu',
+  labels,
   signOut,
+  locale,
 }: {
   groups: MenuGroup[];
-  label?: string;
   /** The sign-out server action, rendered as a form: leaving is a POST. */
   signOut?: () => Promise<void>;
+  /**
+   * Only the strings this menu actually renders, rather than the whole
+   * dictionary: everything passed to a client component is serialised into the
+   * page, so a whole dictionary would put every page's words into every other
+   * page's payload.
+   */
+  labels: { menu: string; closeMenu: string; signOut: string; changeLanguage: string };
+  locale: Locale;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -68,7 +78,7 @@ export function MobileMenu({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls="dl-mobile-menu"
-        aria-label={open ? 'Close menu' : label}
+        aria-label={open ? labels.closeMenu : labels.menu}
         className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 sm:hidden"
       >
         <Icon name={open ? 'x' : 'menu'} size={22} />
@@ -89,12 +99,12 @@ export function MobileMenu({
             <div className="fixed inset-0 z-40 sm:hidden" role="dialog" aria-modal="true" id="dl-mobile-menu">
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={labels.closeMenu}
             onClick={() => setOpen(false)}
             className="absolute inset-0 h-full w-full bg-slate-900/30 backdrop-blur-[2px]"
           />
           <div className="dl-safe-bottom absolute inset-x-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-b border-slate-200 bg-white shadow-xl">
-            <nav className="px-4 py-4" aria-label="All sections">
+            <nav className="px-4 py-4" aria-label={labels.menu}>
               {groups.map((group) => (
                 <div key={group.title} className="mb-5 last:mb-1">
                   <p className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
@@ -139,6 +149,10 @@ export function MobileMenu({
                 </div>
               ))}
 
+              <div className="mb-5 border-t border-slate-100 pt-4">
+                <LanguageSwitcher current={locale} label={labels.changeLanguage} variant="stacked" />
+              </div>
+
               {signOut ? (
                 <form action={signOut} className="mt-1">
                   <button
@@ -146,7 +160,7 @@ export function MobileMenu({
                     className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-red-700 active:bg-red-50"
                   >
                     <Icon name="logout" size={19} />
-                    Sign out
+                    {labels.signOut}
                   </button>
                 </form>
               ) : null}

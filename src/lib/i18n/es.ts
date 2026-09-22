@@ -1,0 +1,138 @@
+import type { Dictionary } from './en';
+
+/** Spanish. Typed against English, so nothing can be forgotten. */
+export const es: Dictionary = {
+  language: { label: 'Idioma', change: 'Cambiar de idioma' },
+
+  nav: {
+    menu: 'Menú',
+    closeMenu: 'Cerrar el menú',
+    openMenu: 'Abrir el menú',
+    directory: 'Directorio',
+    community: 'Comunidad',
+    howVerificationWorks: 'Cómo funciona la verificación',
+    emergency: 'Ayuda urgente',
+    signIn: 'Iniciar sesión',
+    createAccount: 'Crear cuenta',
+    signOut: 'Cerrar sesión',
+    skipToContent: 'Ir al contenido',
+  },
+
+  groups: {
+    explore: 'Explorar',
+    yourCases: 'Sus casos',
+    findHelp: 'Buscar ayuda',
+    yourAccount: 'Su cuenta',
+    yourPractice: 'Su despacho',
+    yourProfile: 'Su perfil',
+    communityAndHelp: 'Comunidad y ayuda',
+    console: 'Consola',
+    public: 'Público',
+  },
+
+  items: {
+    dashboard: 'Panel',
+    myCases: 'Mis casos',
+    fees: 'Honorarios y recibos',
+    rooms: 'Salas de conferencia',
+    reviews: 'Opiniones',
+    inquiries: 'Consultas',
+    verification: 'Verificación',
+    support: 'Soporte',
+    alerts: 'Avisos',
+    myProfile: 'Mi perfil',
+    accountSecurity: 'Cuenta y seguridad',
+    publicDirectory: 'Directorio público',
+    portfolio: 'Mi cartera',
+    pending: 'Casos pendientes de revisión',
+    clients: 'Clientes',
+    calendar: 'Agenda',
+    emergencyDesk: 'Mesa de urgencias',
+    enquiryPool: 'Bolsa de consultas',
+    legalDetails: 'Datos profesionales',
+    listing: 'Ficha del directorio',
+    receiptLayout: 'Formato del recibo',
+    firmLawyers: 'Abogados registrados',
+    invitations: 'Invitaciones del despacho',
+    practiceOversight: 'Supervisión del despacho',
+    myDetails: 'Mis datos',
+    myAlerts: 'Mis avisos',
+    pushNotifications: 'Notificaciones push',
+    activityRegister: 'Registro de actividad',
+    settings: 'Configuración',
+    accounts: 'Cuentas',
+    verificationQueue: 'Cola de verificación',
+    casesOversight: 'Casos (supervisión)',
+    emergencies: 'Urgencias',
+    meetings: 'Reuniones y salas',
+    payments: 'Pagos',
+  },
+
+  tabs: { home: 'Inicio', community: 'Comunidad', allBoards: 'Todos los tableros' },
+
+  landing: {
+    badge: 'Emiratos Árabes Unidos',
+    heroTitle: 'Encuentre un abogado que realmente pueda comprobar.',
+    heroBody:
+      'Dubai Legal le conecta con abogados y despachos de todos los Emiratos: con sus credenciales verificadas, su caso seguido desde el primer mensaje hasta el último y todo lo importante en un solo lugar.',
+    findLawyer: 'Buscar un abogado',
+    iAmProfessional: 'Soy abogado o despacho',
+    urgentHelp: 'Ayuda urgente, sin cuenta',
+    legalFirms: 'Despachos',
+    lawyers: 'Abogados',
+    clientReviews: 'Opiniones de clientes',
+  },
+
+  community: {
+    heading: 'Pregunte a quienes ya pasaron por ello',
+    intro:
+      'Respuestas reales de miembros que ya pasaron por ello: en qué consiste un trámite, cuánto costó y quién ayudó. Cualquiera puede leerlo; una cuenta es lo que le permite reaccionar, responder o plantear su propia pregunta.',
+    readOnlyTitle: 'Léalo todo; inicie sesión para participar',
+    readOnlyBody:
+      'Cada publicación y respuesta es abierta para cualquiera. Para reaccionar, comentar o preguntar, inicie sesión o cree una cuenta: volverá directamente a esta página.',
+    writePost: 'Escribir una publicación',
+    writePostHelp:
+      'Pregunte algo, recomiende a un profesional que haya utilizado o cuente lo que ocurrió. Un moderador lo lee primero, sobre todo para comprobar que la pregunta no esté ya respondida.',
+    empty:
+      'Todavía no hay nada publicado. El muro está vacío en lugar de lleno de ejemplos: las recomendaciones vienen de clientes reales, y la primera también lo será.',
+    browseBoards: 'Ver los tableros',
+    createToPost: 'Cree una cuenta para publicar',
+    openFull: 'Abrir la comunidad completa',
+    writeComment: 'Escriba un comentario…',
+    reply: 'Responder',
+    comment: 'Comentar',
+    reactions: { like: 'Me gusta', love: 'Me encanta', surprised: 'Me sorprende' },
+  },
+
+  auth: {
+    signInTitle: 'Iniciar sesión',
+    email: 'Correo electrónico',
+    password: 'Contraseña',
+    fullName: 'Su nombre completo',
+    fullNameHint: 'Tal como figura en su identificación, para que un revisor pueda cotejarlo.',
+    phone: 'Número de teléfono',
+    phoneHint: 'Cómo le contacta la otra parte de un caso y cómo se le avisa de una respuesta.',
+    accountType: '¿Cómo utilizará Dubai Legal?',
+    accountTypeHint:
+      'Esto determina lo que debe aportar para verificarse y no puede cambiarse después. Sus datos de identidad y sus documentos se solicitan en la pestaña de verificación, donde los lee un revisor.',
+    createAccountTitle: 'Cree su cuenta',
+    haveAccount: '¿Ya tiene una cuenta?',
+    noAccount: '¿Es nuevo en Dubai Legal?',
+    forgotPassword: '¿Olvidó su contraseña?',
+  },
+
+  common: {
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    delete: 'Eliminar',
+    back: 'Volver',
+    loading: 'Cargando…',
+    readMore: 'Leer más',
+    comingSoon: 'En desarrollo',
+  },
+
+  footer: {
+    disclaimer:
+      'Dubai Legal no es un despacho de abogados y no ofrece asesoramiento jurídico. La información del directorio la facilitan sus miembros. Confirme siempre que un profesional esté colegiado antes de contratarlo.',
+  },
+};

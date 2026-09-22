@@ -6,6 +6,7 @@ import { getSessionUser } from '@/lib/auth';
 import { listPosts } from '@/server/services/blog-service';
 import { CommunityPanel } from '@/components/community/CommunityPanel';
 import { LandingTabs } from '@/components/layout/LandingTabs';
+import { getI18n } from '@/lib/i18n';
 import { BADGE, DOCUMENT_REQUIREMENTS } from '@/lib/constants';
 import { VerificationBadge } from '@/components/VerificationBadge';
 import { Icon, type IconName } from '@/components/icons';
@@ -160,7 +161,11 @@ export default async function LandingPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const [params, user] = await Promise.all([searchParams, getSessionUser()]);
+  const [{ t, locale }, params, user] = await Promise.all([
+    getI18n(),
+    searchParams,
+    getSessionUser(),
+  ]);
   const activeTab = params.tab === 'community' ? 'community' : 'home';
 
   // The community feed is identical for every visitor, so a signed-out reader
@@ -183,6 +188,7 @@ export default async function LandingPage({
 
   const community = (
     <CommunityPanel
+      t={t}
       user={user ? { id: user.id } : null}
       posts={communityPosts}
       listings={listings}
@@ -192,7 +198,7 @@ export default async function LandingPage({
 
   return (
     <>
-      <LandingTabs active={activeTab} />
+      <LandingTabs active={activeTab} t={t} />
 
       {activeTab === 'community' ? (
         <div className="bg-slate-50/60">{community}</div>
@@ -204,48 +210,46 @@ export default async function LandingPage({
           <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]">
             <div>
               <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-800 ring-1 ring-brand-200">
-                United Arab Emirates
+                {t.landing.badge}
               </p>
 
               <h1 className="text-4xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-                Find a lawyer you can actually check.
+                {t.landing.heroTitle}
               </h1>
 
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-700">
-                Dubai Legal connects you with lawyers and legal firms across the Emirates — with
-                their credentials verified, your case tracked from the first message to the last,
-                and everything that matters kept in one place.
+                {t.landing.heroBody}
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/directory" className={buttonClasses('primary', 'lg')}>
-                  Find a lawyer
+                  {t.landing.findLawyer}
                 </Link>
                 <Link href="#for-professionals" className={buttonClasses('secondary', 'lg')}>
-                  I am a lawyer or a firm
+                  {t.landing.iAmProfessional}
                 </Link>
                 <Link href="/emergency" className={buttonClasses('ghost', 'lg')}>
                   <Icon name="alert" size={18} className={DOMAINS.emergency.text} />
-                  Urgent help, no account
+                  {t.landing.urgentHelp}
                 </Link>
               </div>
 
               <dl className="mt-10 grid max-w-lg grid-cols-3 gap-6 border-t border-slate-200 pt-6">
                 <div>
-                  <dt className="text-xs uppercase tracking-wider text-slate-500">Legal firms</dt>
+                  <dt className="text-xs uppercase tracking-wider text-slate-500">{t.landing.legalFirms}</dt>
                   <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
                     {facts.firms}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-wider text-slate-500">Lawyers</dt>
+                  <dt className="text-xs uppercase tracking-wider text-slate-500">{t.landing.lawyers}</dt>
                   <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
                     {facts.lawyers}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-xs uppercase tracking-wider text-slate-500">
-                    Client reviews
+                    {t.landing.clientReviews}
                   </dt>
                   <dd className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
                     {facts.reviews}

@@ -8,6 +8,9 @@ import { buttonClasses } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 import { Logo } from './Logo';
 import { MobileMenu, type MenuGroup } from './MobileMenu';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import type { Dictionary } from '@/lib/i18n/en';
+import type { Locale } from '@/lib/i18n/locales';
 
 export type HeaderUser = {
   id: string;
@@ -27,6 +30,8 @@ export function SiteHeader({
   user,
   alertCount = 0,
   menuGroups,
+  t,
+  locale,
 }: {
   user: HeaderUser;
   /** Unread in-app alerts, shown as a bell badge for a signed-in member. */
@@ -36,6 +41,9 @@ export function SiteHeader({
    * the sidebar renders, so the two cannot disagree.
    */
   menuGroups?: MenuGroup[];
+  /** The dictionary for this request, and the language it is in. */
+  t: Dictionary;
+  locale: Locale;
 }) {
   const displayName = user?.profile?.fullName?.trim() || user?.email || '';
   const isReviewer = user?.roles.includes('REVIEWER') ?? false;
@@ -60,17 +68,18 @@ export function SiteHeader({
             // worse than one clear button.
             <nav className="hidden items-center gap-1 sm:flex" aria-label="Main">
               <Link href="/directory" className={buttonClasses('ghost', 'sm')}>
-                Directory
+                {t.nav.directory}
               </Link>
-              <Link href="/blog" className={buttonClasses('ghost', 'sm')}>
-                Community
+              <Link href="/?tab=community" className={buttonClasses('ghost', 'sm')}>
+                {t.nav.community}
               </Link>
               <Link
                 href="/how-verification-works"
                 className={buttonClasses('ghost', 'sm', 'hidden sm:inline-flex')}
               >
-                How verification works
+                {t.nav.howVerificationWorks}
               </Link>
+              <LanguageSwitcher current={locale} label={t.language.change} />
             </nav>
           ) : null}
         </div>
@@ -113,13 +122,19 @@ export function SiteHeader({
             </Link>
             <form action={logoutAction} className="hidden sm:block">
               <button type="submit" className={buttonClasses('secondary', 'sm')}>
-                Sign out
+                {t.nav.signOut}
               </button>
             </form>
             <MobileMenu
-              label="Menu"
               signOut={logoutAction}
-              groups={menuGroups ?? [{ title: 'Your account', items: [] }]}
+              labels={{
+                menu: t.nav.menu,
+                closeMenu: t.nav.closeMenu,
+                signOut: t.nav.signOut,
+                changeLanguage: t.language.change,
+              }}
+              locale={locale}
+              groups={menuGroups ?? []}
             />
           </div>
         ) : (
@@ -128,28 +143,35 @@ export function SiteHeader({
                 button cannot beat the `inline-flex` its own class list sets. */}
             <div className="hidden items-center gap-2 sm:flex">
               <Link href="/login" className={buttonClasses('secondary', 'sm')}>
-                Sign in
+                {t.nav.signIn}
               </Link>
               <Link href="/register" className={buttonClasses('primary', 'sm')}>
-                Create account
+                {t.nav.createAccount}
               </Link>
             </div>
             <MobileMenu
+              labels={{
+                menu: t.nav.menu,
+                closeMenu: t.nav.closeMenu,
+                signOut: t.nav.signOut,
+                changeLanguage: t.language.change,
+              }}
+              locale={locale}
               groups={[
                 {
-                  title: 'Explore',
+                  title: t.groups.explore,
                   items: [
-                    { href: '/?tab=community', label: 'Community', icon: 'community', description: 'Read it all; sign in to take part' },
-                    { href: '/directory', label: 'Directory', icon: 'search', description: 'Lawyers and firms, by area and emirate' },
-                    { href: '/how-verification-works', label: 'How verification works', icon: 'shieldCheck' },
-                    { href: '/emergency', label: 'Emergency help', icon: 'alert', description: 'Without an account, day or night' },
+                    { href: '/?tab=community', label: t.nav.community, icon: 'community', description: t.community.readOnlyTitle },
+                    { href: '/directory', label: t.nav.directory, icon: 'search' },
+                    { href: '/how-verification-works', label: t.nav.howVerificationWorks, icon: 'shieldCheck' },
+                    { href: '/emergency', label: t.nav.emergency, icon: 'alert' },
                   ],
                 },
                 {
-                  title: 'Your account',
+                  title: t.groups.yourAccount,
                   items: [
-                    { href: '/login', label: 'Sign in', icon: 'lock' },
-                    { href: '/register', label: 'Create an account', icon: 'userPlus' },
+                    { href: '/login', label: t.nav.signIn, icon: 'lock' },
+                    { href: '/register', label: t.nav.createAccount, icon: 'userPlus' },
                   ],
                 },
               ]}
@@ -168,7 +190,16 @@ export function SiteHeader({
  * account, offering them "Create an account" and a second copy of the sidebar's
  * links is noise. The disclaimer stays either way.
  */
-export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
+export function SiteFooter({
+  signedIn = false,
+  t,
+  locale,
+}: {
+  signedIn?: boolean;
+  /** The dictionary for this request. */
+  t: Dictionary;
+  locale: Locale;
+}) {
   return (
     <footer className="mt-16 border-t border-slate-200 bg-slate-50">
       <div className="dl-container py-8 text-sm text-slate-600">
@@ -176,33 +207,36 @@ export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
           <div className="max-w-md space-y-2">
             <Logo />
             <p>
-              A directory of lawyers and legal firms in the United Arab Emirates. Verification
-              badges are issued by a named human reviewer against documents that were actually
-              uploaded — never automatically, and never without evidence.
+              {locale === 'ar'
+                ? 'دليل المحامين ومكاتب المحاماة في الإمارات العربية المتحدة. تُمنح شارات التوثيق من مراجع بشري مُسمّى بناءً على مستندات رُفعت فعلاً — لا تلقائياً أبداً، ولا دون دليل.'
+                : locale === 'es'
+                  ? 'Un directorio de abogados y despachos de los Emiratos Árabes Unidos. Las insignias de verificación las otorga un revisor humano identificado a partir de documentos realmente subidos: nunca de forma automática ni sin pruebas.'
+                  : locale === 'fr'
+                    ? 'Un annuaire d’avocats et de cabinets des Émirats arabes unis. Les badges de vérification sont délivrés par un vérificateur humain nommé, sur des documents réellement téléversés — jamais automatiquement, jamais sans preuve.'
+                    : 'A directory of lawyers and legal firms in the United Arab Emirates. Verification badges are issued by a named human reviewer against documents that were actually uploaded — never automatically, and never without evidence.'}
             </p>
           </div>
           {signedIn ? null : (
             <nav className="flex flex-col gap-2" aria-label="Footer">
               <Link href="/directory" className="hover:text-brand-700">
-                Browse the directory
+                {t.nav.directory}
               </Link>
-              <Link href="/blog" className="hover:text-brand-700">
-                Community
+              <Link href="/?tab=community" className="hover:text-brand-700">
+                {t.nav.community}
               </Link>
               <Link href="/how-verification-works" className="hover:text-brand-700">
-                How verification works
+                {t.nav.howVerificationWorks}
               </Link>
               <Link href="/register" className="hover:text-brand-700">
-                Create an account
+                {t.nav.createAccount}
               </Link>
+              <div className="pt-2">
+                <LanguageSwitcher current={locale} label={t.language.change} />
+              </div>
             </nav>
           )}
         </div>
-        <p className="mt-8 text-xs text-slate-500">
-          Dubai Legal is not a law firm and does not give legal advice. Information in the
-          directory is supplied by its members. Always confirm that a professional is licensed
-          before instructing them.
-        </p>
+        <p className="mt-8 text-xs text-slate-500">{t.footer.disclaimer}</p>
       </div>
     </footer>
   );

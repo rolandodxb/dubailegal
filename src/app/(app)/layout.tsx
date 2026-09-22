@@ -5,10 +5,12 @@ import { logLayoutView } from '@/lib/traffic';
 import { MaintenanceScreen } from '@/components/layout/MaintenanceScreen';
 import { navCounts } from '@/server/services/nav-counts';
 import { SiteHeader } from '@/components/layout/SiteHeader';
+import { getI18n } from '@/lib/i18n';
 import { SideNav, type NavItem } from '@/components/layout/SideNav';
 import { PrintBrand } from '@/components/layout/Logo';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const { t, locale } = await getI18n();
   const [user, availability] = await Promise.all([requireActiveUser(), getAvailability()]);
   if (availability.maintenance && !(await mayBypassMaintenance(user.id))) {
     return <MaintenanceScreen message={availability.message} signedIn />;
@@ -24,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
 
   const { groups, navItems } = buildMemberNav({
+    t,
     accountType: user.accountType,
     roles: user.roles,
     unreadAlerts,
@@ -34,6 +37,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen flex-col print:block print:min-h-0">
       <SiteHeader
+        t={t}
+        locale={locale}
         menuGroups={groups}
         user={{
           id: user.id,

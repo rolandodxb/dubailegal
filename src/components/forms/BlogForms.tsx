@@ -32,12 +32,15 @@ export function PostForm({
   listings,
   defaultListingId = '',
   defaultTopic = '',
+  t,
 }: {
   listings: RecommendableListing[];
   /** Preselected when somebody arrives from a profile page to recommend them. */
   defaultListingId?: string;
   /** Preselected from the board they were reading. */
   defaultTopic?: string;
+  /** The dictionary, so the composer speaks the reader's language. */
+  t?: { community: { writePost: string } };
 }) {
   const [state, formAction] = useActionState(createPostAction, initialFormState);
 
@@ -133,9 +136,9 @@ export function PostForm({
         while it waits — nothing is lost.
       </Alert>
 
-      <SubmitButton pendingLabel="Sending for review…">
+      <SubmitButton pendingLabel={t ? `${t.community.writePost}…` : 'Sending for review…'}>
         <Icon name="message" size={17} />
-        Send for review
+        {t ? t.community.writePost : 'Send for review'}
       </SubmitButton>
     </form>
   );

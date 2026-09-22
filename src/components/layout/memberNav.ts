@@ -1,5 +1,6 @@
 import type { AccountType, Role } from '@prisma/client';
 import type { NavItem } from '@/components/layout/SideNav';
+import type { Dictionary } from '@/lib/i18n/en';
 import { isAdministratorRole } from './navRoles';
 
 /** A named group of navigation entries, as the phone menu shows them. */
@@ -19,8 +20,12 @@ export function buildMemberNav(params: {
   unreadAlerts: number;
   pendingCount: number;
   supportCount: number;
+  /** The dictionary, so the navigation is in the reader's language. */
+  t: Dictionary;
 }): { groups: NavGroup[]; navItems: NavItem[] } {
-  const { accountType, roles, unreadAlerts, pendingCount, supportCount } = params;
+  const { accountType, roles, unreadAlerts, pendingCount, supportCount, t } = params;
+  const label = t.items;
+  const group = t.groups;
   const isFirm = accountType === 'FIRM';
   const isProfessional = accountType === 'LAWYER' || isFirm;
   const isReviewer = roles.includes('REVIEWER');
@@ -33,88 +38,88 @@ export function buildMemberNav(params: {
   if (adminOnly) {
     groups.push(
       {
-        title: 'Console',
+        title: group.console,
         items: [
-          { href: '/admin/verifications', label: 'Verification queue', icon: 'shieldCheck' },
-          { href: '/admin/cases', label: 'Cases (oversight)', icon: 'folder' },
-          { href: '/admin/emergency', label: 'Emergencies', icon: 'alert' },
-          { href: '/admin/meetings', label: 'Meetings and rooms', icon: 'video' },
-          { href: '/admin/payments', label: 'Payments', icon: 'creditCard' },
-          { href: '/admin/enquiries', label: 'Enquiry pool', icon: 'inbox' },
-          { href: '/admin/support', label: 'Support', icon: 'lifeBuoy', badge: supportCount },
-          { href: '/admin/blog', label: 'Community', icon: 'community' },
-          { href: '/admin/users', label: 'Accounts', icon: 'users' },
-          { href: '/admin/reviews', label: 'Reviews', icon: 'star' },
-          { href: '/admin/notifications', label: 'Push notifications', icon: 'bell' },
-          { href: '/admin/traffic', label: 'Activity register', icon: 'activity' },
-          { href: '/admin/settings', label: 'Settings', icon: 'sliders' },
+          { href: '/admin/verifications', label: label.verificationQueue, icon: 'shieldCheck' },
+          { href: '/admin/cases', label: label.casesOversight, icon: 'folder' },
+          { href: '/admin/emergency', label: label.emergencies, icon: 'alert' },
+          { href: '/admin/meetings', label: label.meetings, icon: 'video' },
+          { href: '/admin/payments', label: label.payments, icon: 'creditCard' },
+          { href: '/admin/enquiries', label: label.enquiryPool, icon: 'inbox' },
+          { href: '/admin/support', label: label.support, icon: 'lifeBuoy', badge: supportCount },
+          { href: '/admin/blog', label: t.nav.community, icon: 'community' },
+          { href: '/admin/users', label: label.accounts, icon: 'users' },
+          { href: '/admin/reviews', label: label.reviews, icon: 'star' },
+          { href: '/admin/notifications', label: label.pushNotifications, icon: 'bell' },
+          { href: '/admin/traffic', label: label.activityRegister, icon: 'activity' },
+          { href: '/admin/settings', label: label.settings, icon: 'sliders' },
         ],
       },
       {
-        title: 'Your account',
+        title: group.yourAccount,
         items: [
-          { href: '/notifications', label: 'My alerts', icon: 'bell', badge: unreadAlerts },
-          { href: '/profile', label: 'My details', icon: 'user' },
-          { href: '/account', label: 'Account & security', icon: 'lock' },
+          { href: '/notifications', label: label.myAlerts, icon: 'bell', badge: unreadAlerts },
+          { href: '/profile', label: label.myDetails, icon: 'user' },
+          { href: '/account', label: label.accountSecurity, icon: 'lock' },
         ],
       },
       {
-        title: 'Public',
-        items: [{ href: '/directory', label: 'Public directory', icon: 'search' }],
+        title: group.public,
+        items: [{ href: '/directory', label: label.publicDirectory, icon: 'search' }],
       },
     );
   } else if (isProfessional) {
     groups.push(
       {
-        title: 'Your practice',
+        title: group.yourPractice,
         items: [
-          { href: '/dashboard', label: 'Dashboard', icon: 'home' },
-          { href: '/portfolio', label: 'My portfolio', icon: 'briefcase' },
-          { href: '/pending', label: 'Cases pending review', icon: 'inbox', badge: pendingCount },
-          { href: '/clients', label: 'Clients', icon: 'users' },
-          { href: '/calendar', label: 'Calendar', icon: 'calendar' },
-          { href: '/rooms', label: 'Conference rooms', icon: 'video' },
-          { href: '/emergency/desk', label: 'Emergency desk', icon: 'alert' },
-          { href: '/enquiries', label: 'Enquiry pool', icon: 'inbox' },
-          { href: '/reviews', label: 'Reviews', icon: 'star' },
+          { href: '/dashboard', label: label.dashboard, icon: 'home' },
+          { href: '/portfolio', label: label.portfolio, icon: 'briefcase' },
+          { href: '/pending', label: label.pending, icon: 'inbox', badge: pendingCount },
+          { href: '/clients', label: label.clients, icon: 'users' },
+          { href: '/calendar', label: label.calendar, icon: 'calendar' },
+          { href: '/rooms', label: label.rooms, icon: 'video' },
+          { href: '/emergency/desk', label: label.emergencyDesk, icon: 'alert' },
+          { href: '/enquiries', label: label.enquiryPool, icon: 'inbox' },
+          { href: '/reviews', label: label.reviews, icon: 'star' },
           ...(isFirm
-            ? [{ href: '/firm/oversight', label: 'Practice oversight', icon: 'chart' } as NavItem]
+            ? [{ href: '/firm/oversight', label: label.practiceOversight, icon: 'chart' } as NavItem]
             : []),
-          { href: '/inquiries', label: 'Inquiries', icon: 'mail' },
+          { href: '/inquiries', label: label.inquiries, icon: 'mail' },
         ],
       },
       {
-        title: 'Your profile',
+        title: group.yourProfile,
         items: [
-          { href: '/profile', label: 'My profile', icon: 'user' },
-          { href: '/credentials', label: 'Legal details', icon: 'fileText' },
-          { href: '/listing', label: 'Directory listing', icon: 'idCard' },
-          { href: '/receipt-template', label: 'Receipt layout', icon: 'idCard' },
-          { href: '/payments', label: 'Fees & receipts', icon: 'creditCard' },
+          { href: '/profile', label: label.myProfile, icon: 'user' },
+          { href: '/credentials', label: label.legalDetails, icon: 'fileText' },
+          { href: '/listing', label: label.listing, icon: 'idCard' },
+          { href: '/receipt-template', label: label.receiptLayout, icon: 'idCard' },
+          { href: '/payments', label: label.fees, icon: 'creditCard' },
           ...(isFirm
-            ? [{ href: '/firm/lawyers', label: 'Lawyers registered', icon: 'scale' } as NavItem]
-            : [{ href: '/invitations', label: 'Firm invitations', icon: 'mailPlus' } as NavItem]),
-          { href: '/verification', label: 'Verification', icon: 'shieldCheck' },
+            ? [{ href: '/firm/lawyers', label: label.firmLawyers, icon: 'scale' } as NavItem]
+            : [{ href: '/invitations', label: label.invitations, icon: 'mailPlus' } as NavItem]),
+          { href: '/verification', label: label.verification, icon: 'shieldCheck' },
         ],
       },
       {
-        title: 'Community and help',
+        title: group.communityAndHelp,
         items: [
-          { href: '/blog', label: 'Community', icon: 'community' },
-          { href: '/support', label: 'Support', icon: 'lifeBuoy', badge: supportCount },
-          { href: '/directory', label: 'Public directory', icon: 'search' },
+          { href: '/blog', label: t.nav.community, icon: 'community' },
+          { href: '/support', label: label.support, icon: 'lifeBuoy', badge: supportCount },
+          { href: '/directory', label: label.publicDirectory, icon: 'search' },
         ],
       },
       {
-        title: 'Your account',
+        title: group.yourAccount,
         items: [
-          { href: '/notifications', label: 'Alerts', icon: 'bell', badge: unreadAlerts },
-          { href: '/account', label: 'Account & security', icon: 'lock' },
+          { href: '/notifications', label: label.alerts, icon: 'bell', badge: unreadAlerts },
+          { href: '/account', label: label.accountSecurity, icon: 'lock' },
           ...(isReviewer
             ? [
                 {
                   href: '/admin/verifications',
-                  label: 'Reviewer console',
+                  label: label.verificationQueue,
                   icon: 'shieldCheck',
                 } as NavItem,
               ]
@@ -125,36 +130,36 @@ export function buildMemberNav(params: {
   } else {
     groups.push(
       {
-        title: 'Your cases',
+        title: group.yourCases,
         items: [
-          { href: '/dashboard', label: 'Dashboard', icon: 'home' },
-          { href: '/cases', label: 'My cases', icon: 'folder' },
-          { href: '/payments', label: 'Fees & receipts', icon: 'creditCard' },
-          { href: '/rooms', label: 'Conference rooms', icon: 'video' },
-          { href: '/reviews', label: 'Reviews', icon: 'star' },
+          { href: '/dashboard', label: label.dashboard, icon: 'home' },
+          { href: '/cases', label: label.myCases, icon: 'folder' },
+          { href: '/payments', label: label.fees, icon: 'creditCard' },
+          { href: '/rooms', label: label.rooms, icon: 'video' },
+          { href: '/reviews', label: label.reviews, icon: 'star' },
         ],
       },
       {
-        title: 'Find help',
+        title: group.findHelp,
         items: [
-          { href: '/directory', label: 'Directory', icon: 'search' },
-          { href: '/inquiries', label: 'Inquiries', icon: 'mail' },
-          { href: '/blog', label: 'Community', icon: 'community' },
+          { href: '/directory', label: t.nav.directory, icon: 'search' },
+          { href: '/inquiries', label: label.inquiries, icon: 'mail' },
+          { href: '/blog', label: t.nav.community, icon: 'community' },
         ],
       },
       {
-        title: 'Your account',
+        title: group.yourAccount,
         items: [
-          { href: '/notifications', label: 'Alerts', icon: 'bell', badge: unreadAlerts },
-          { href: '/profile', label: 'My profile', icon: 'user' },
-          { href: '/verification', label: 'Verification', icon: 'shieldCheck' },
-          { href: '/account', label: 'Account & security', icon: 'lock' },
-          { href: '/support', label: 'Support', icon: 'lifeBuoy', badge: supportCount },
+          { href: '/notifications', label: label.alerts, icon: 'bell', badge: unreadAlerts },
+          { href: '/profile', label: label.myProfile, icon: 'user' },
+          { href: '/verification', label: label.verification, icon: 'shieldCheck' },
+          { href: '/account', label: label.accountSecurity, icon: 'lock' },
+          { href: '/support', label: label.support, icon: 'lifeBuoy', badge: supportCount },
           ...(isReviewer
             ? [
                 {
                   href: '/admin/verifications',
-                  label: 'Reviewer console',
+                  label: label.verificationQueue,
                   icon: 'shieldCheck',
                 } as NavItem,
               ]

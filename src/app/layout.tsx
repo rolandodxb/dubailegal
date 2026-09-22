@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ServiceWorkerRegistrar } from '@/components/layout/ServiceWorkerRegistrar';
+import { getI18n } from '@/lib/i18n';
 
 export const metadata: Metadata = {
   // Installable as an app: the manifest, the iOS equivalents of what it carries,
@@ -43,9 +44,14 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const { locale, dir } = await getI18n();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    // `lang` and `dir` belong on the html element: a screen reader picks the
+    // pronunciation from the first and the browser lays the page out from the
+    // second, so Arabic reads and flows right to left without a second stylesheet.
+    <html lang={locale} dir={dir} suppressHydrationWarning>
       <body className="min-h-screen bg-white antialiased">
         {children}
         <ServiceWorkerRegistrar />

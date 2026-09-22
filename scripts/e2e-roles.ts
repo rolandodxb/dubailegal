@@ -456,9 +456,13 @@ async function main(): Promise<void> {
         redirect: 'manual',
       })
     ).text();
+    // Read the visible page rather than the raw response: the client components
+    // carry their own labels in the embedded payload, so a phrase being present
+    // in the HTML is not the same as it being shown.
+    const visibleDirectory = signedInDirectory.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
     check(
       'a signed-in member is not shown the header links',
-      !signedInDirectory.includes('How verification works'),
+      !visibleDirectory.includes('How verification works'),
     );
     check(
       'because navigation is in the sidebar',

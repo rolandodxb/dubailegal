@@ -1190,6 +1190,40 @@ respects the system size, and the page drawing into the notch and the home-indic
 scrolling is left exactly as it is — fighting that is how a page comes to feel broken. Motion is used
 only to make a change legible, and `prefers-reduced-motion` switches all of it off.
 
+## Languages
+
+Four languages, chosen from a switch that appears in the header on a desktop and inside the phone
+menu, with each name written in its own script — a list that says "Arabic" to somebody who reads
+Arabic is a list written for the wrong person.
+
+| | |
+|---|---|
+| English | `en` — the source of truth |
+| العربية | `ar` — **the page is laid out right to left** |
+| Español | `es` |
+| Français | `fr` |
+
+The choice is a **cookie**, not a URL prefix: every link already shared keeps working, and no route
+had to be rewritten to carry a locale. `lang` and `dir` are set on `<html>`, so a screen reader takes
+its pronunciation from the first and the browser lays the page out from the second — Arabic flows
+right to left without a second stylesheet.
+
+**A missing translation is a build error.** The English dictionary is `as const`, the others are typed
+against it, so a French page cannot quietly contain an English sentence and a key cannot be
+misspelled: `t.nav.directory` is checked by the compiler rather than looked up by a string at
+runtime.
+
+**What is translated today.** The shell, which is what a visitor meets first and what surrounds every
+page: the header and its navigation, the phone menu and its groups, the signed-in sidebar in full,
+the footer, the landing page's hero, tabs and figures, the community panel and its composer, and the
+account forms' labels. The language switch itself.
+
+**What is not, yet.** The body of the inner pages — the directory listing, a case, payments, the
+verification tab, the console — still renders in English, and falls back to it whatever the cookie
+says. The mechanism and the dictionary are in place, so translating one is adding keys to
+`src/lib/i18n/*.ts` and using them in the page; there is no plumbing left to build. Saying this
+plainly is better than a switch that pretends.
+
 ## Camera, microphone and calls
 
 A browser grants `getUserMedia` — and therefore any video call — only in a
