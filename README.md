@@ -1039,8 +1039,13 @@ by the UI and by the end-to-end suites. The suites therefore test the real thing
 
 - **Passwords** use scrypt (N=16384, r=8, p=1) from Node's built-in crypto. Verification is
   constant-time.
-- **Sessions** store only a SHA-256 digest of the token; cookies are `httpOnly`, `SameSite=Lax` and
-  `Secure` in production, with idle and absolute expiry.
+- **Sessions** store only a SHA-256 digest of the token; cookies are `httpOnly`, `SameSite=Lax`, and
+  `Secure` **when the connection is HTTPS**, with idle and absolute expiry. The flag follows the
+  connection rather than `NODE_ENV`, because a browser refuses a `Secure` cookie over plain HTTP —
+  with one exception, `http://localhost`, which it treats as trustworthy. Deciding it from the build
+  therefore worked on localhost and signed people out the moment the app was opened at a local
+  network address such as `http://192.168.1.85:3100`. A proxy's `x-forwarded-proto` decides it when
+  one is present; otherwise the scheme of `APP_URL` does.
 - **Emirates IDs** are stored in full (a reviewer must read them) and masked everywhere else. A keyed
   HMAC fingerprint alongside is **unique**, so one identity cannot verify two accounts.
 - **Identity documents are never public.** Owner or reviewer only, non-cacheable, `nosniff`, no
@@ -1174,6 +1179,12 @@ and Chrome, an install button in the desktop address bar.
 | Icons | 192px and 512px, plus a **maskable** 512px drawn with the mark inside the safe zone so Android can crop it to a circle without cutting it |
 | `public/sw.js` | the push worker, extended with a **fetch** handler — which is what a browser waits for before offering to install |
 | `/offline` | what an installed app shows with no connection: no session, no settings, no database, because the point is that it works when nothing can be reached |
+
+**Installing needs HTTPS.** A service worker only runs in a *secure context*, and a browser will not
+offer to install an app without one. `https://…` and `http://localhost` qualify; a bare network
+address such as `http://192.168.1.85:3100` does not, so on a phone the install prompt will not appear
+until the app is served over HTTPS — through a tunnel, a reverse proxy with a certificate, or the real
+deployment. The app itself works fine over plain HTTP on a local network; only the install does not.
 
 The fetch handler is deliberately conservative. Navigations are **network-first**, so a page is never
 stale while the network is there, with the last good copy as the fallback. Icons and stylesheets are
@@ -1552,8 +1563,10 @@ server {
 }
 ```
 
-`APP_URL` must be the `https://` address: the session cookie is `Secure` in production, and a
-mismatch between the two is the usual cause of "it signs me out immediately".
+`APP_URL` should be the `https://` address. It decides two things: the links the application puts in
+email, and — when no proxy announces the protocol — whether the session cookie carries `Secure`. A
+`Secure` cookie is refused over plain HTTP, so pointing the app at an `http://` address while
+claiming `https://` here (or the reverse) is the usual cause of "it signs me out immediately".
 
 ### 6. The first administrator
 

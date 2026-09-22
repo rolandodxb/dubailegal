@@ -53,13 +53,34 @@ export async function createSession(
   return { token, expiresAt };
 }
 
+/**
+ * Whether a cookie should carry the `Secure` flag.
+ *
+ * This follows the **connection**, not the build. A browser refuses a `Secure`
+ * cookie over plain HTTP, with exactly one exception — `http://localhost`, which
+ * it treats as trustworthy. Deciding the flag from NODE_ENV therefore works when
+ * the app is opened on localhost and fails silently as soon as it is opened at a
+ * local network address such as `http://192.168.1.85:3100`: the browser drops the
+ * `Set-Cookie` on the floor and the member is signed out again on the next page.
+ *
+ * A proxy in front of the application announces the real protocol in
+ * `x-forwarded-proto`. On a direct connection there is no such header, so the
+ * configured public URL decides instead — which is what an HTTPS deployment sets.
+ */
+async function cookieShouldBeSecure(): Promise<boolean> {
+  const headerList = await headers();
+  const forwarded = headerList.get('x-forwarded-proto');
+  if (forwarded) return forwarded.split(',')[0]!.trim().toLowerCase() === 'https';
+  return env.appUrl.startsWith('https://');
+}
+
 /** Only callable from a Server Action or Route Handler. */
 export async function setSessionCookie(token: string, expiresAt: Date): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(env.sessionCookieName, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: env.isProduction,
+    secure: await cookieShouldBeSecure(),
     path: '/',
     expires: expiresAt,
   });
@@ -71,7 +92,8 @@ export async function clearSessionCookie(): Promise<void> {
   cookieStore.set(env.sessionCookieName, '', {
     httpOnly: true,
     sameSite: 'lax',
-    secure: env.isProduction,
+    // The same rule as setting it, so the browser accepts the removal.
+    secure: await cookieShouldBeSecure(),
     path: '/',
     maxAge: 0,
   });

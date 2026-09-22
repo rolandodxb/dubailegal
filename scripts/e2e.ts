@@ -660,6 +660,60 @@ async function main(): Promise<void> {
   check('a revoked session can no longer reach the dashboard', afterRevoke.status === 307, `got ${afterRevoke.status}`);
 
   // ══════════════════════════════════════════════════════════════════════════
+  section('The session cookie follows the connection, not the build');
+
+  /**
+   * A browser refuses a `Secure` cookie over plain HTTP, with one exception:
+   * `http://localhost`. Marking the cookie from NODE_ENV therefore worked on
+   * localhost and silently signed people out the moment the app was opened at a
+   * local network address. This signs in over real HTTP and reads the header.
+   */
+  const loginPage = await fetch(`${BASE_URL}/login`);
+  const loginHtml = await loginPage.text();
+  const unescape = (value: string) =>
+    value.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#x27;/g, "'");
+  const actionFields = [
+    ['$ACTION_REF_1', ''],
+    ['$ACTION_1:0', unescape(/name="\$ACTION_1:0" value="([^"]*)"/.exec(loginHtml)?.[1] ?? '')],
+    ['$ACTION_1:1', unescape(/name="\$ACTION_1:1" value="([^"]*)"/.exec(loginHtml)?.[1] ?? '')],
+    ['$ACTION_KEY', unescape(/name="\$ACTION_KEY" value="([^"]*)"/.exec(loginHtml)?.[1] ?? '')],
+  ] as const;
+
+  async function postLogin(extraHeaders: Record<string, string> = {}) {
+    const body = new FormData();
+    for (const [name, value] of actionFields) body.set(name, value);
+    body.set('email', individual.email);
+    body.set('password', 'CorrectHorse9Battery');
+    return fetch(`${BASE_URL}/login`, {
+      method: 'POST',
+      body,
+      redirect: 'manual',
+      headers: extraHeaders,
+    });
+  }
+
+  const overHttp = await postLogin();
+  const httpCookie = overHttp.headers.get('set-cookie') ?? '';
+  check('signing in over plain HTTP returns a session cookie', httpCookie.includes('dl_session='));
+  check(
+    'and the cookie is not marked Secure, which a browser would refuse over HTTP',
+    !/;\s*Secure/i.test(httpCookie),
+    httpCookie.replace(/dl_session=[^;]+/, 'dl_session=…'),
+  );
+  check(
+    'while still being HttpOnly and SameSite',
+    /HttpOnly/i.test(httpCookie) && /SameSite=lax/i.test(httpCookie),
+  );
+
+  const behindHttpsProxy = await postLogin({ 'x-forwarded-proto': 'https' });
+  const httpsCookie = behindHttpsProxy.headers.get('set-cookie') ?? '';
+  check(
+    'behind an HTTPS proxy the same cookie is marked Secure',
+    /;\s*Secure/i.test(httpsCookie),
+    httpsCookie.replace(/dl_session=[^;]+/, 'dl_session=…'),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
   section('Cleanup');
   if (keep) {
     console.info('  --keep was passed, so the accounts created by this run are retained.');
