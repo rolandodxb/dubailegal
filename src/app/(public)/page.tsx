@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { AccountType } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { cached } from '@/lib/ttl-cache';
 import { listRecentPosts } from '@/server/services/blog-service';
 import { BADGE, DOCUMENT_REQUIREMENTS } from '@/lib/constants';
 import { VerificationBadge } from '@/components/VerificationBadge';
@@ -16,6 +17,12 @@ import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
  * and the landing page is the first thing anybody sees.
  */
 async function getFacts() {
+  // Five totals that change only when somebody joins or is verified: cached for
+  // a minute, because the landing page is the first thing anybody loads.
+  return cached('landing:facts', 60_000, loadFacts);
+}
+
+async function loadFacts() {
   const [row] = await prisma.$queryRaw<
     { published: number; verified: number; reviews: number; lawyers: number; firms: number }[]
   >`

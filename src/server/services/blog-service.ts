@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { COMMUNITY_TOPICS, isCommunityTopic } from '@/lib/community';
+import { cached, invalidate } from '@/lib/ttl-cache';
 import { prisma } from '@/lib/db';
 import { recordAudit } from '@/lib/audit';
 import { notify, notifyMany } from './notification-service';
@@ -202,6 +203,7 @@ function hotness(score: number, createdAt: Date, now: number): number {
 export async function getPost(postId: string, viewerId: string | null) {
   const post = await prisma.blogPost.findUnique({
     where: { id: postId },
+    relationLoadStrategy: 'join',
     select: {
       id: true,
       kind: true,
@@ -348,6 +350,10 @@ export async function listPostsForProfile(listingId: string, ownerUserId: string
  * say and hiding it would make the place look fuller than it is.
  */
 export async function listTopicCounts() {
+  return cached('community:topics', 30_000, loadTopicCounts);
+}
+
+async function loadTopicCounts() {
   const [posts, comments] = await Promise.all([
     prisma.blogPost.groupBy({
       by: ['topic'],
@@ -390,6 +396,7 @@ export async function listTopicCounts() {
 export async function listPostsAboutListing(listingId: string, limit = 5) {
   return prisma.blogPost.findMany({
     where: { listingId, status: 'PUBLISHED' },
+    relationLoadStrategy: 'join',
     orderBy: [{ score: 'desc' }, { createdAt: 'desc' }],
     take: limit,
     select: {
@@ -414,8 +421,13 @@ export async function listPostsAboutListing(listingId: string, limit = 5) {
 
 /** The most recent posts, for the landing page. Real rows only: an empty feed is empty. */
 export async function listRecentPosts(limit = 3) {
+  return cached(`community:recent:${limit}`, 30_000, () => loadRecentPosts(limit));
+}
+
+async function loadRecentPosts(limit: number) {
   return prisma.blogPost.findMany({
     where: { status: 'PUBLISHED' },
+    relationLoadStrategy: 'join',
     orderBy: { createdAt: 'desc' },
     take: limit,
     select: {
@@ -566,6 +578,7 @@ export async function findSimilarPosts(
 export async function listPendingPosts() {
   const rows = await prisma.blogPost.findMany({
     where: { status: 'PENDING' },
+    relationLoadStrategy: 'join',
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,
@@ -604,6 +617,7 @@ export async function listPendingPosts() {
 export async function getPostForReview(postId: string) {
   const post = await prisma.blogPost.findUnique({
     where: { id: postId },
+    relationLoadStrategy: 'join',
     select: {
       id: true,
       kind: true,
@@ -709,6 +723,11 @@ export async function addComment(
     metadata: { postId: post.id, reply: Boolean(comment.parentId) },
     ip: meta.ip ?? null,
   });
+
+  // Published data is cached, so a change clears it rather than waiting out the TTL.
+  invalidate('directory:');
+  invalidate('reviews:');
+  invalidate('community:');
 
   return success({ commentId: comment.id });
 }
@@ -910,6 +929,11 @@ export async function deleteOwnPost(
     entityId: post.id,
     ip: meta.ip ?? null,
   });
+  // Published data is cached, so a change clears it rather than waiting out the TTL.
+  invalidate('directory:');
+  invalidate('reviews:');
+  invalidate('community:');
+
   return success();
 }
 
@@ -1110,6 +1134,11 @@ export async function decidePost(
     },
     ip: meta.ip ?? null,
   });
+
+  // Published data is cached, so a change clears it rather than waiting out the TTL.
+  invalidate('directory:');
+  invalidate('reviews:');
+  invalidate('community:');
 
   return success({ status });
 }

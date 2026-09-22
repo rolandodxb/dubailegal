@@ -1136,15 +1136,21 @@ four of them.
 So a page costs roughly *(round trips × 57 ms)* divided by however much of it can run in parallel.
 Measured on one clean server:
 
-| Page | Time | Round trips |
+| Page | Before this work | Now (median of 7) |
 |---|---|---|
-| Landing | 240–475 ms | ~8 |
-| Directory | 490–920 ms | ~11 |
-| Community | 500–1000 ms | ~11 |
-| Emergency | 88–150 ms | ~14, almost all parallel |
-| Simple pages | 87–99 ms | ~3 |
+| Landing | 240–475 ms | **115 ms** |
+| Directory | 490–920 ms | **114 ms** |
+| Community | 500–1000 ms | **112 ms** |
+| Emergency | 88–150 ms | **170 ms** |
+| A page with no lists (verification, auth) | 87–99 ms | **40–140 ms** |
+| Signed-in pages (dashboard, cases, payments) | — | **130–250 ms** |
 
-Five changes were made to remove round trips and handshakes, none of which alters behaviour:
+Two caveats, stated plainly. The **first** load after the cache expires is slower — 300–600 ms —
+because it is the one that actually asks the database. And the network to São Paulo is jittery: a
+round trip measures 58 ms at the median but has been seen at 1,127 ms, which is what makes an
+occasional page slow for no visible reason.
+
+Seven changes were made, none of which alters behaviour:
 
 1. **One Prisma client per process.** `src/lib/db.ts` cached the client on `globalThis` only outside
    production. Next.js bundles server code per route, so the same module was loaded more than once
@@ -1157,9 +1163,38 @@ Five changes were made to remove round trips and handshakes, none of which alter
    conditions — and a test asserts the badge agrees with the list.
 4. **Session and settings are read together.** All three layouts awaited them one after the other;
    they are independent questions, so they are asked in parallel.
-5. **The pool is opened at boot and kept open.** `src/instrumentation.ts` warms it before the first
+5. **Relations are fetched as JOINs.** Prisma's `relationJoins` feature (one line in the `generator`
+   block, no model or migration change) fetches a listing with its user, profile, firm, licence and
+   documents in one statement instead of five more queries.
+6. **The public reads are cached** for a few seconds, as above — a repeated page load does not reach
+   the database at all.
+7. **The pool is opened at boot and kept open.** `src/instrumentation.ts` warms it before the first
    request, and a ping every 45 seconds stops the pooler closing an idle connection — which would
    otherwise bring the 790 ms handshake back for whoever arrived next.
+
+### Reading less: the cache in front of the public pages
+
+The public pages — the directory, the community, the landing page — are the ones anybody can open,
+and none of what they show belongs to a signed-in member. Those reads are cached in the server process
+for a few seconds (`src/lib/ttl-cache.ts`):
+
+| Cached | For | Cleared when |
+|---|---|---|
+| A directory search | 30 s | a listing is saved or unpublished |
+| Directory facet counts | 60 s | the same |
+| Review averages | 30 s | a review is written or hidden |
+| Community topic counts, recent posts | 30 s | a post is decided, commented on or deleted |
+| The landing page's totals | 60 s | on the timer |
+| The sidebar's three counters | 5 s, per member | on the timer |
+
+Three properties make it safe: a failed load is never cached, concurrent readers share one in-flight
+query, and every write that changes public data clears it in the same process. The settings — the
+maintenance switch and the feature flags — are deliberately **not** cached across requests: they decide
+what the whole application shows, and they must be true the moment an administrator saves them.
+
+The end-to-end suites write fixtures from **their own process**, which an in-process cache cannot be
+told about, so they run against a server started with `DISABLE_READ_CACHE=1`. That is what keeps the
+960 checks honest about business logic; the cache itself is checked separately.
 
 **The remaining cost is distance, not code.** A page making eleven round trips to another continent
 cannot be as fast as one making eleven round trips to a socket. The honest fixes are to **run the

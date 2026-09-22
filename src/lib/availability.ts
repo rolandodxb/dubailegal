@@ -22,6 +22,12 @@ export type Availability = {
  * whether the app is in maintenance, and that is one read of the settings
  * rather than two.
  */
+/**
+ * Deliberately **not** cached across requests, only within one: the maintenance
+ * switch and the feature flags decide what the whole application shows, and they
+ * have to be true the moment an administrator saves them. It costs one round
+ * trip per page and it is worth it.
+ */
 export const getAvailability = cache(async function getAvailability(): Promise<Availability> {
   const settings = await getSettings();
   return {

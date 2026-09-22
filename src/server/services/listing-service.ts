@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { invalidate } from '@/lib/ttl-cache';
 import { recordAudit } from '@/lib/audit';
 import { listingSchema } from '@/lib/validation';
 import { fromZodError, failure, success, type ServiceResult } from './result';
@@ -43,6 +44,11 @@ export async function saveListing(
     ip: meta.ip ?? null,
   });
 
+  // Published data is cached, so a change clears it rather than waiting out the TTL.
+  invalidate('directory:');
+  invalidate('reviews:');
+  invalidate('community:');
+
   return success({ published: data.published });
 }
 
@@ -66,6 +72,11 @@ export async function unpublishListing(
     entityId: existing.id,
     ip: meta.ip ?? null,
   });
+  // Published data is cached, so a change clears it rather than waiting out the TTL.
+  invalidate('directory:');
+  invalidate('reviews:');
+  invalidate('community:');
+
   return success();
 }
 

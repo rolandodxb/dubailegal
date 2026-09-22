@@ -1,5 +1,6 @@
 import { AccountType, Emirate, LegalArea, Prisma, VerificationStatus } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { cached } from '@/lib/ttl-cache';
 import { DIRECTORY_PAGE_SIZE } from '@/lib/constants';
 
 export type DirectoryQuery = {
@@ -138,6 +139,14 @@ export function publicDirectoryWhere(): Prisma.ListingWhereInput {
  * one professional above another on anything but verifiable facts.
  */
 export async function searchDirectory(query: DirectoryQuery) {
+  // Public and identical for everybody: cached for a few seconds so a popular
+  // directory page costs one query rather than one per visit.
+  return cached(`directory:search:${JSON.stringify(query)}`, 30_000, () =>
+    runSearchDirectory(query),
+  );
+}
+
+async function runSearchDirectory(query: DirectoryQuery) {
   const page = Math.max(1, query.page ?? 1);
 
   const where: Prisma.ListingWhereInput = publicDirectoryWhere();
@@ -172,6 +181,7 @@ export async function searchDirectory(query: DirectoryQuery) {
     prisma.listing.count({ where }),
     prisma.listing.findMany({
       where,
+      relationLoadStrategy: 'join',
       include: LISTING_INCLUDE,
       orderBy: [
         // Verified profiles first; verifiedAt is null for everyone else, and
@@ -203,6 +213,7 @@ export async function searchDirectory(query: DirectoryQuery) {
 export async function getListingById(listingId: string) {
   return prisma.listing.findFirst({
     where: { id: listingId },
+    relationLoadStrategy: 'join',
     include: LISTING_INCLUDE,
   });
 }
@@ -212,6 +223,10 @@ export async function getListingById(listingId: string) {
  * show real totals instead of invented ones. Empty categories are omitted.
  */
 export async function directoryFacetCounts() {
+  return cached('directory:facets', 60_000, loadFacetCounts);
+}
+
+async function loadFacetCounts() {
   const rows = await prisma.listing.findMany({
     where: publicDirectoryWhere(),
     select: { areas: true, emirates: true, kind: true },

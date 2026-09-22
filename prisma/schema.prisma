@@ -14,6 +14,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  /// Relations are fetched in the same statement as their parent when a query
+  /// asks for it (`relationLoadStrategy: 'join'`), instead of one extra query per
+  /// relation. On a local database that is a nicety; on a database a network away
+  /// it removes five of the eleven round trips behind a directory listing. It
+  /// changes generated SQL only — no model, column, index or migration is
+  /// affected.
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { invalidate } from '@/lib/ttl-cache';
+import { cached } from '@/lib/ttl-cache';
 import { recordAudit } from '@/lib/audit';
 import { notify } from './notification-service';
 import { fromZodError, failure, success, type ServiceResult } from './result';
@@ -146,6 +148,11 @@ export async function createReview(
     ip: meta.ip ?? null,
   });
 
+  // Published data is cached, so a change clears it rather than waiting out the TTL.
+  invalidate('directory:');
+  invalidate('reviews:');
+  invalidate('community:');
+
   return success({ reviewId: review.id, listingId: legalCase.listingId });
 }
 
@@ -217,6 +224,17 @@ export function summariseReviews(ratings: number[]): ReviewSummary {
 export async function reviewSummariesFor(targetUserIds: string[]): Promise<Map<string, ReviewSummary>> {
   if (targetUserIds.length === 0) return new Map();
 
+  // Published averages, the same for every visitor: cached briefly so a directory
+  // page does not recompute them on every load.
+  return cached(`reviews:${[...targetUserIds].sort().join(',')}`, 30_000, () =>
+    loadReviewSummaries(targetUserIds),
+  );
+}
+
+async function loadReviewSummaries(
+  targetUserIds: string[],
+): Promise<Map<string, ReviewSummary>> {
+
   const rows = await prisma.review.groupBy({
     by: ['targetUserId'],
     where: { targetUserId: { in: targetUserIds }, status: 'PUBLISHED' },
@@ -277,6 +295,11 @@ export async function setReviewVisibility(
       : 'Your review is visible again.',
     link: '/reviews',
   });
+
+  // Published data is cached, so a change clears it rather than waiting out the TTL.
+  invalidate('directory:');
+  invalidate('reviews:');
+  invalidate('community:');
 
   return success();
 }

@@ -127,6 +127,7 @@ export async function setSetting(
     metadata: { key, from: previous, to: value },
     ip: meta.ip ?? null,
   });
+
 }
 
 /** What an administrator sees on the settings screen. */

@@ -67,8 +67,17 @@ export default async function DashboardPage({
   let pendingPreview: Awaited<ReturnType<typeof listCasesForLawyer>>['pending'] = [];
 
   if (isProfessional) {
-    const lawyerCases = isLawyer ? await listCasesForLawyer(user.id) : null;
-    const firmCases = isFirm ? await listCasesForFirm(user.id) : null;
+    // These four answer different questions about the same member and none of
+    // them depends on another, so they are asked together: four round trips in
+    // the time of one, which on a remote database is most of this page's cost.
+    const [lawyerCases, firmCases, clients, bookable, scope] = await Promise.all([
+      isLawyer ? listCasesForLawyer(user.id) : Promise.resolve(null),
+      isFirm ? listCasesForFirm(user.id) : Promise.resolve(null),
+      listClientsForLawyer(user.id),
+      listBookableClients(user.id),
+      // A firm has no diary of its own, but it does have its lawyers' diaries.
+      diaryScope(user.id),
+    ]);
 
     portfolioCount = isFirm
       ? (firmCases?.active.length ?? 0)
@@ -77,13 +86,9 @@ export default async function DashboardPage({
       ? (firmCases?.submitted.length ?? 0)
       : (lawyerCases?.pending.length ?? 0) + (lawyerCases?.reviewing.length ?? 0);
     pendingPreview = lawyerCases?.pending.slice(0, 2) ?? [];
-
-    const clients = await listClientsForLawyer(user.id);
     clientCount = clients.length;
 
-    const { lawyerProfileId } = await listBookableClients(user.id);
-    // A firm has no diary of its own, but it does have its lawyers' diaries.
-    const scope = await diaryScope(user.id);
+    const { lawyerProfileId } = bookable;
     const ids = scope.isFirm ? scope.lawyerIds : lawyerProfileId ? [lawyerProfileId] : [];
     if (ids.length > 0) {
       const key = todayKey();

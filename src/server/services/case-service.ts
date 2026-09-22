@@ -458,6 +458,7 @@ export async function listCasesForLawyer(lawyerUserId: string) {
 
   const all = await prisma.legalCase.findMany({
     where: { OR: or },
+    relationLoadStrategy: 'join',
     orderBy: { submittedAt: 'desc' },
     include: CASE_INCLUDE,
   });
@@ -492,6 +493,7 @@ export async function listCasesForFirm(firmUserId: string) {
 
   const all = await prisma.legalCase.findMany({
     where: { firmId: firm.id },
+    relationLoadStrategy: 'join',
     orderBy: { submittedAt: 'desc' },
     include: CASE_INCLUDE,
   });
