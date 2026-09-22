@@ -23,52 +23,9 @@ function Counter({ count }: { count: number }) {
 }
 
 /**
- * Mobile bottom tab bar. Hidden from sm upwards, where the side navigation takes
- * over. Each tab is a real link so it works without JavaScript.
- */
-export function BottomNav({ items }: { items: NavItem[] }) {
-  const pathname = usePathname();
-
-  return (
-    <nav
-      className="dl-safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white sm:hidden print:hidden"
-      aria-label="Sections"
-    >
-      <ul className="grid" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
-        {items.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={cx(
-                  'relative flex flex-col items-center gap-1 px-1 py-2.5 text-[11px]',
-                  active ? 'font-semibold text-slate-900' : 'font-medium text-slate-500',
-                )}
-              >
-                <Icon name={item.icon} size={20} />
-                <span className="truncate">{item.label}</span>
-                {item.badge && item.badge > 0 ? (
-                  <span className="absolute right-[22%] top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-slate-900 px-1 text-[9px] font-semibold tabular-nums text-white">
-                    {item.badge > 9 ? '9+' : item.badge}
-                  </span>
-                ) : null}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
-}
-
-/**
- * Desktop side navigation.
- *
- * Monochrome by design: dark icons and labels on white, with the current section
- * marked by weight and a subtle surface rather than colour. The blue in this
- * product is reserved for actions, so the navigation never competes with them.
+ * The desktop sidebar. Hidden below 640px, where the header's menu button takes
+ * over and carries the same entries — grouped, because a phone menu is a list
+ * rather than a column.
  */
 export function SideNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();

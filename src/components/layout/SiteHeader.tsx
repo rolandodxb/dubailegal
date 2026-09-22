@@ -26,10 +26,16 @@ export type HeaderUser = {
 export function SiteHeader({
   user,
   alertCount = 0,
+  menuGroups,
 }: {
   user: HeaderUser;
   /** Unread in-app alerts, shown as a bell badge for a signed-in member. */
   alertCount?: number;
+  /**
+   * The signed-in navigation, grouped, for the phone menu. It is the same list
+   * the sidebar renders, so the two cannot disagree.
+   */
+  menuGroups?: MenuGroup[];
 }) {
   const displayName = user?.profile?.fullName?.trim() || user?.email || '';
   const isReviewer = user?.roles.includes('REVIEWER') ?? false;
@@ -113,25 +119,7 @@ export function SiteHeader({
             <MobileMenu
               label="Menu"
               signOut={logoutAction}
-              groups={[
-                {
-                  title: 'Explore',
-                  items: [
-                    { href: '/blog', label: 'Community', icon: 'community' },
-                    { href: '/directory', label: 'Directory', icon: 'search' },
-                    { href: '/emergency/desk', label: 'Emergency desk', icon: 'alert' },
-                  ],
-                },
-                {
-                  title: 'Your account',
-                  items: [
-                    { href: accountHref, label: 'Dashboard', icon: 'home' },
-                    { href: '/notifications', label: 'Alerts', icon: 'bell', badge: alertCount },
-                    { href: '/profile', label: 'My profile', icon: 'user' },
-                    { href: '/account', label: 'Account & security', icon: 'lock' },
-                  ],
-                },
-              ]}
+              groups={menuGroups ?? [{ title: 'Your account', items: [] }]}
             />
           </div>
         ) : (

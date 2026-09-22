@@ -4,7 +4,7 @@ import { logLayoutView } from '@/lib/traffic';
 import { navCounts } from '@/server/services/nav-counts';
 import { MaintenanceScreen } from '@/components/layout/MaintenanceScreen';
 import { SiteFooter, SiteHeader } from '@/components/layout/SiteHeader';
-import { BottomNav, SideNav } from '@/components/layout/BottomNav';
+import { SideNav } from '@/components/layout/SideNav';
 import { buildMemberNav } from '@/components/layout/memberNav';
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -36,7 +36,7 @@ export default async function PublicLayout({ children }: { children: React.React
     user.accountType,
     user.roles,
   );
-  const { navItems, bottomItems } = buildMemberNav({
+  const { groups, navItems } = buildMemberNav({
     accountType: user.accountType,
     roles: user.roles,
     unreadAlerts,
@@ -47,6 +47,7 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader
+        menuGroups={groups}
         user={{
           id: user.id,
           email: user.email,
@@ -72,7 +73,6 @@ export default async function PublicLayout({ children }: { children: React.React
       </div>
 
       <SiteFooter signedIn />
-      <BottomNav items={bottomItems} />
     </div>
   );
 }

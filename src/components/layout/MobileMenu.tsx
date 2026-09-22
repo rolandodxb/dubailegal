@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon, type IconName } from '@/components/icons';
@@ -34,7 +35,11 @@ export function MobileMenu({
   signOut?: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  // A portal needs a document, which does not exist while the server renders.
+  useEffect(() => setMounted(true), []);
 
   // Any navigation closes it: the menu should never be left open behind a page.
   useEffect(() => {
@@ -69,15 +74,26 @@ export function MobileMenu({
         <Icon name={open ? 'x' : 'menu'} size={22} />
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 top-16 z-40 sm:hidden" role="dialog" aria-modal="true" id="dl-mobile-menu">
+      {open && mounted
+        ? createPortal(
+            /*
+             * Rendered into the document body, not here.
+             *
+             * The header is `position: sticky` with `backdrop-blur`, and a
+             * backdrop filter makes an element the *containing block* for its
+             * fixed-position descendants. A panel with `fixed inset-0` therefore
+             * resolved against the 64px-tall header instead of the viewport and
+             * never appeared — which is exactly what tapping the button did
+             * nothing about. The portal takes it out of that context.
+             */
+            <div className="fixed inset-0 z-40 sm:hidden" role="dialog" aria-modal="true" id="dl-mobile-menu">
           <button
             type="button"
             aria-label="Close menu"
             onClick={() => setOpen(false)}
             className="absolute inset-0 h-full w-full bg-slate-900/30 backdrop-blur-[2px]"
           />
-          <div className="dl-safe-bottom absolute inset-x-0 top-0 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-b border-slate-200 bg-white shadow-xl">
+          <div className="dl-safe-bottom absolute inset-x-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-b border-slate-200 bg-white shadow-xl">
             <nav className="px-4 py-4" aria-label="All sections">
               {groups.map((group) => (
                 <div key={group.title} className="mb-5 last:mb-1">
@@ -136,8 +152,10 @@ export function MobileMenu({
               ) : null}
             </nav>
           </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

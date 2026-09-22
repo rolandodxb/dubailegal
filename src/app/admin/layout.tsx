@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { requireReviewer } from '@/lib/auth';
 import { logLayoutView } from '@/lib/traffic';
 import { SiteHeader } from '@/components/layout/SiteHeader';
-import { BottomNav, SideNav, type NavItem } from '@/components/layout/BottomNav';
+import { SideNav, type NavItem } from '@/components/layout/SideNav';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Reviewers see members' full Emirates IDs, so this gate is the access
@@ -34,6 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader
+        menuGroups={[{ title: 'Console', items: navItems }]}
         user={{
           id: user.id,
           email: user.email,
@@ -64,7 +65,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </div>
 
-      <BottomNav items={navItems.slice(0, 4)} />
     </div>
   );
 }

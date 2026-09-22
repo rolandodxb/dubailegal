@@ -2,7 +2,7 @@
   "name": "dubai-legal",
   "version": "0.1.0",
   "private": true,
-  "description": "Dubai Legal \u2014 verified directory of lawyers and legal firms in the UAE",
+  "description": "Dubai Legal — verified directory of lawyers and legal firms in the UAE",
   "scripts": {
     "dev": "next dev -p 3100",
     "build": "prisma generate && next build",
@@ -25,12 +25,19 @@
     "e2e:brand": "tsx scripts/e2e-brand.ts",
     "e2e:round2": "tsx scripts/e2e-round2.ts",
     "db:check": "tsx scripts/db-check.ts",
-    "e2e:community": "tsx scripts/e2e-community.ts"
+    "e2e:community": "tsx scripts/e2e-community.ts",
+    "ux:check": "tsx scripts/ux-check.ts",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "^6.16.2",
     "next": "^15.5.0",
     "otplib": "^12.0.1",
+    "pg": "^8.23.0",
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -38,8 +45,10 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.18.1",
+    "@types/pg": "^8.23.1",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
@@ -47,6 +56,7 @@
     "prisma": "^6.16.2",
     "tailwindcss": "^4.1.0",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "wrangler": "^4.136.3"
   }
 }

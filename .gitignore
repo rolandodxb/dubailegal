@@ -16,3 +16,9 @@ var/
 
 .DS_Store
 npm-debug.log*
+
+# Cloudflare Workers build output
+.open-next/
+.wrangler/
+cloudflare-env.d.ts
+.dev.vars

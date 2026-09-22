@@ -20,7 +20,7 @@ generator client {
   /// it removes five of the eleven round trips behind a directory listing. It
   /// changes generated SQL only — no model, column, index or migration is
   /// affected.
-  previewFeatures = ["relationJoins"]
+  previewFeatures = ["relationJoins", "driverAdapters"]
 }
 
 datasource db {

@@ -1,0 +1,45 @@
+{
+  // Cloudflare Workers deployment.
+  //
+  // The application is built by the OpenNext Cloudflare adapter, which turns the
+  // Next.js server output into a Worker. `npm run cf:build` produces it; this file
+  // tells Wrangler what to run and what it may touch.
+  //
+  "name": "dubai-legal",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-23",
+  // Required: Next.js on Workers needs the Node.js compatibility layer (crypto,
+  // buffers, streams). Without it the build runs but the first request fails.
+  "compatibility_flags": ["nodejs_compat"],
+  // Static assets are served from the edge without invoking the Worker, which is
+  // what keeps icons and stylesheets free.
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Run the Worker near the database rather than near the visitor. Supabase is in
+  // sa-east-1, so without this a request from anywhere else crosses an ocean to
+  // reach Postgres and the pages are slow again.
+  "placement": { "mode": "smart" },
+  "observability": { "enabled": true },
+  "vars": {
+    "NODE_ENV": "production",
+    // Explicit rather than inferred: this is what makes the client use the
+    // PostgreSQL driver adapter instead of Prisma's native engine, which cannot
+    // run in a Worker.
+    "DB_DRIVER": "pg"
+  },
+  // Secrets are NOT stored here. Set them with:
+  //   npx wrangler secret put DATABASE_URL
+  //   npx wrangler secret put DIRECT_URL
+  //   npx wrangler secret put APP_SECRET
+  //   npx wrangler secret put ENCRYPTION_KEY
+  //   npx wrangler secret put BOOTSTRAP_REVIEWER_EMAILS
+  // ...and the rest of the list in README → Deploying to Cloudflare Workers.
+  //
+  // Object storage for uploaded documents. Workers have no filesystem, so
+  // `UPLOAD_DIR` cannot be used there: identity documents and case files must go
+  // to a bucket. Uncomment once the bucket exists:
+  //
+  // "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "dubai-legal-uploads" }]
+}

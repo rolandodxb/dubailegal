@@ -1147,11 +1147,21 @@ four of them.
 The application is meant to be used on a phone, so the phone is the case it is designed for rather
 than the one it tolerates.
 
-**Navigation is one button, not a squeezed row.** Below 640px the header keeps its logo, the alert
-bell, the avatar and a menu button; everything else is gathered behind it in groups — *Explore* and
-*Your account* — as full-width rows 48px tall. Three inline links do not fit beside a logo, and
-half-visible navigation is worse than one clear button. A signed-in member also gets the bottom tab
-bar, so the sections they use constantly are one thumb-reach away without opening anything.
+**Navigation is one button, and it carries everything.** Below 640px the header keeps its logo, the
+alert bell, the avatar and a menu button; every destination is gathered behind it in named groups —
+*Your cases*, *Find help*, *Your account*, or *Your practice* / *Your profile* for a professional —
+as full-width rows at least 48px tall. There is **no bottom tab bar**: two navigations for the same
+links was confusing, and a bar that covers the bottom of every screen is a poor trade for one tap.
+
+The groups are the single source of truth. The desktop sidebar is those groups flattened in order and
+the phone menu is the groups themselves, so the two cannot list different things — which they did
+when the sidebar, the header and the bottom bar each carried their own copy.
+
+**A fixed panel inside a blurred header does not work.** The menu is rendered through a React portal
+into `document.body`, and that is not decoration: the header is `position: sticky` with
+`backdrop-blur`, and a backdrop filter makes an element the *containing block* for its fixed-position
+descendants. A panel with `fixed inset-0` therefore resolved against the 64px-tall header instead of
+the viewport — it was in the DOM, and invisible on screen. Tapping the button appeared to do nothing.
 
 **Controls are sized for a thumb.** Every button carries a minimum height — 36px small, 44px normal,
 48px large — set on the shared button primitive rather than left to padding, so it holds everywhere.
@@ -1167,6 +1177,42 @@ text selection when a button is held, no 300ms tap delay, no sideways rubber-ban
 respects the system size, and the page drawing into the notch and the home-indicator area. Vertical
 scrolling is left exactly as it is — fighting that is how a page comes to feel broken. Motion is used
 only to make a change legible, and `prefers-reduced-motion` switches all of it off.
+
+## Deploying to Cloudflare Workers
+
+Partly prepared, and the parts that are not are named precisely below rather than glossed over.
+
+**What works.** `npm run cf:build` builds the app with the OpenNext Cloudflare adapter and writes
+`.open-next/worker.js`; `wrangler.jsonc` sets `nodejs_compat`, static-asset serving, and
+`placement: { mode: "smart" }` so the Worker runs near the database rather than near the visitor. The
+Worker boots under `wrangler dev` and serves static assets and pages that need no database. The
+Prisma client is created lazily, which is required there: Workers populate `process.env` per request,
+so a client built at module load finds no `DATABASE_URL`.
+
+**The blocker.** Pages that query the database fail inside the Worker with:
+
+```
+PrismaClientInitializationError: Prisma Client could not locate the Query Engine for runtime
+"debian-openssl-1.1.x"
+```
+
+Prisma's default engine is a native binary, which cannot exist in a V8 isolate. The documented answer
+is a driver adapter, and `@prisma/adapter-pg` is installed, wired, and **verified working** — forced
+with `DB_DRIVER=pg` on Node it queries this database correctly. It is not enough yet: in the Worker
+bundle `PrismaPg` does not appear at all while `libquery_engine` does, so the adapter is being
+dropped at build time and the client falls back to the engine it cannot load. Closing that gap needs
+one of:
+
+1. Prisma's newer **`prisma-client` generator** (no Rust engine at all), which means changing the
+   generator block and the client import path across the codebase; or
+2. **Prisma Accelerate**, which moves the engine off the Worker entirely.
+
+**The second blocker is storage.** Workers have no filesystem, so `UPLOAD_DIR` and `src/lib/storage.ts`
+cannot work there: identity documents and case files must go to a bucket. The seam is small — four
+functions — and Cloudflare R2 is the natural target, but it is unverified until a bucket exists.
+
+Both are real work, not configuration, and neither has been guessed at. The Node deployment is
+unaffected: it is what the application runs on today, and all 983 checks pass on it.
 
 ## Installable from the browser
 

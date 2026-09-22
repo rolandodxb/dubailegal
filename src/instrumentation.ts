@@ -10,7 +10,11 @@ export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
   if (process.env.NEXT_PHASE === 'phase-production-build') return;
 
-  const { warmPool, keepPoolAlive } = await import('@/lib/db');
+  const { warmPool, keepPoolAlive, isCloudflareWorkers } = await import('@/lib/db');
+  // On Workers there is no long-lived connection pool to warm: each isolate
+  // connects through the driver on first use and is discarded with it.
+  if (isCloudflareWorkers()) return;
+
   await warmPool();
   keepPoolAlive();
 }
