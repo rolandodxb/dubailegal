@@ -1,0 +1,129 @@
+@import 'tailwindcss';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dubai Legal design tokens — white and blue.
+
+   The palette is deliberately narrow: white surfaces, one blue family for
+   everything interactive, and exactly three reserved colours for verification
+   badges, which must never be reused for decoration or a badge colour would
+   stop meaning anything.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  /* Reserved: verification badge colours. Nothing else may use these. */
+  --color-verified-user: #1d9bf0;
+  --color-verified-lawyer: #16a34a;
+  --color-verified-firm: #0a0a0a;
+
+  /* ── Domain accents ────────────────────────────────────────────────────────
+     Colour here is assigned by *subject*, not decoration: one accent belongs to
+     one part of the product and is used for it everywhere, so a violet chip means
+     a meeting on any screen and a rose one means an emergency. Nothing picks a
+     colour at random, and the reserved badge colours above are never reused. */
+  --color-domain-directory: #2563eb;
+  --color-domain-verification: #059669;
+  --color-domain-case: #4f46e5;
+  --color-domain-emergency: #e11d48;
+  --color-domain-meeting: #7c3aed;
+  --color-domain-payment: #0d9488;
+  --color-domain-review: #d97706;
+  --color-domain-enquiry: #0891b2;
+  --color-domain-oversight: #475569;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #ffffff;
+    color: var(--color-slate-900);
+    font-family: var(--font-sans);
+    /* Prevents iOS Safari zooming when a form control is focused. */
+    font-size: 16px;
+  }
+
+  /* A single visible focus treatment everywhere, for keyboard users. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-100);
+  }
+}
+
+@layer components {
+  /* Safe-area aware page container. Mobile-first: one column, generous
+     padding, then progressively wider on larger screens. */
+  .dl-container {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 72rem;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .dl-container {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  /* Scrolling without a visible bar.
+     The side navigation is long and has to scroll, but a permanent scrollbar in
+     a 15rem column is visual noise. The overflow behaviour is untouched: the
+     wheel, the trackpad, the keyboard and touch all still work. */
+  .dl-scroll-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .dl-scroll-hidden::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  /* Bottom navigation must clear the iOS home indicator. */
+  .dl-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* ── Printing ────────────────────────────────────────────────────────────────
+   The receipt is the one thing in this application that is meant to leave the
+   screen. When it does, the page prints on its own: no navigation, no sidebar,
+   no shadows, and nothing that would waste a sheet of paper. */
+@media print {
+  .dl-container {
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  /* A card on a sheet of paper is a box drawn for nothing. */
+  .dl-print-plain {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+

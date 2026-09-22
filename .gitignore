@@ -1,0 +1,18 @@
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Private uploaded identity documents — never commit.
+var/uploads/
+var/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+npm-debug.log*

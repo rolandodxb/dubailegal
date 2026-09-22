@@ -1,0 +1,53 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { buttonClasses } from '@/components/ui/primitives';
+import { Icon } from '@/components/icons';
+
+/**
+ * Print, save as a PDF, and go back to the conversation.
+ *
+ * "Download the receipt as a PDF" is the browser's own print-to-PDF, which is
+ * what every web receipt does and needs no library. Once the print dialog closes
+ * — whether the client saved a file or cancelled — the page returns to the case
+ * conversation, where the fee card now reads as paid.
+ */
+export function ReceiptActions({ caseId, receiptNumber }: { caseId: string; receiptNumber: string }) {
+  const router = useRouter();
+  const [returning, setReturning] = useState(false);
+
+  const goBack = useCallback(() => {
+    setReturning(true);
+    router.push(`/cases/${caseId}`);
+  }, [caseId, router]);
+
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      // Give the "saved" line a moment to be read before the page moves on.
+      setReturning(true);
+      window.setTimeout(() => router.push(`/cases/${caseId}`), 900);
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, [caseId, router]);
+
+  return (
+    <div className="mt-6 flex flex-wrap items-center gap-3 print:hidden">
+      <button type="button" onClick={() => window.print()} className={buttonClasses('primary', 'lg')}>
+        <Icon name="printer" size={18} />
+        Download receipt as PDF
+      </button>
+
+      <button type="button" onClick={goBack} className={buttonClasses('secondary', 'lg')}>
+        Back to the case
+      </button>
+
+      <span className="text-xs text-slate-500">
+        {returning
+          ? 'Receipt saved. Returning to the case conversation…'
+          : `Receipt ${receiptNumber}. Choosing “Save as PDF” in the print dialog downloads it.`}
+      </span>
+    </div>
+  );
+}

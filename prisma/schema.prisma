@@ -1,0 +1,1743 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Dubai Legal — data model
+//
+// Principles enforced here, not just in the UI:
+//  · A "verified" badge can only exist if a named human reviewer recorded a
+//    decision (VerificationCase.reviewerId + decidedAt + decisionNotes).
+//  · Every account type must supply an Emirates ID document before it can be
+//    submitted for verification (required-document rules live in
+//    src/lib/constants.ts and are enforced server-side).
+//  · One Emirates ID may back at most one account (emiratesIdFingerprint is
+//    unique), which blocks duplicate verified identities.
+//  · No table in this schema is ever populated with fabricated demo records.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  /// The pooled connection the application uses. On Supabase that is the
+  /// transaction pooler on port 6543, which is what keeps a serverless or
+  /// many-instance deployment inside the connection limit.
+  url       = env("DATABASE_URL")
+  /// Migrations need a session, and the transaction pooler does not offer one.
+  /// On Supabase this is the direct connection on port 5432. It defaults to
+  /// DATABASE_URL when it is not set, so a local Postgres needs nothing.
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+/// Who the person or organisation is. Chosen at signup and immutable afterwards.
+enum AccountType {
+  USER
+  LAWYER
+  FIRM
+}
+
+/// Platform capability. MEMBER is every account; REVIEWER may decide
+/// verification cases from /admin.
+enum Role {
+  MEMBER
+  REVIEWER
+}
+
+enum AccountStatus {
+  /// Registered, email not yet confirmed.
+  PENDING_EMAIL
+  ACTIVE
+  SUSPENDED
+}
+
+/// Account-level verification state, derived from the latest VerificationCase.
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum LegalArea {
+  CRIMINAL_PENAL
+  CIVIL
+  COMMERCIAL
+  FAMILY_PERSONAL_STATUS
+  LABOUR_EMPLOYMENT
+  REAL_ESTATE_PROPERTY
+  IMMIGRATION_RESIDENCY
+  ARBITRATION
+  INTELLECTUAL_PROPERTY
+  BANKING_FINANCE
+  TAX
+  ADMINISTRATIVE
+  MARITIME
+  CYBERCRIME
+  OTHER
+}
+
+enum Emirate {
+  ABU_DHABI
+  DUBAI
+  SHARJAH
+  AJMAN
+  UMM_AL_QUWAIN
+  RAS_AL_KHAIMAH
+  FUJAIRAH
+}
+
+/// The kind of evidence an account uploads. Required/optional sets per account
+/// type are defined once in src/lib/constants.ts.
+enum DocumentKind {
+  EMIRATES_ID
+  PASSPORT
+  PROFILE_PHOTO
+  LAWYER_LICENSE
+  FIRM_TRADE_LICENSE
+  POWER_OF_ATTORNEY
+  PROFESSIONAL_INDEMNITY_INSURANCE
+  /// The mark a lawyer or firm prints on their own billing receipts. It is not
+  /// evidence of anything, so it never appears in a verification request.
+  BRAND_LOGO
+  OTHER
+}
+
+enum DocumentStatus {
+  AWAITING_REVIEW
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+enum CaseStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  /// Withdrawn by the applicant before a decision was recorded.
+  WITHDRAWN
+}
+
+enum TokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum EmailStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+enum InquiryStatus {
+  NEW
+  READ
+  RESPONDED
+  CLOSED
+}
+
+// ── Identity ─────────────────────────────────────────────────────────────────
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  accountType  AccountType
+  status       AccountStatus @default(PENDING_EMAIL)
+  roles        Role[]        @default([MEMBER])
+
+  /// Email confirmation. Null until the address is confirmed.
+  emailVerifiedAt DateTime?
+
+  /// Account-level verification, driven by VerificationCase decisions.
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  verifiedAt         DateTime?
+  verifiedById       String?
+  verifiedBy         User?              @relation("VerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAccounts   User[]             @relation("VerifiedBy")
+
+  suspendedReason String?
+  lastLoginAt     DateTime?
+
+  /// Two-factor authentication. The secret is only meaningful once enabled, and
+  /// the recovery codes are stored as digests so a database read cannot use them.
+  twoFactorSecret        String?
+  twoFactorEnabledAt     DateTime?
+  twoFactorRecoveryCodes String[]  @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile           Profile?
+  lawyerProfile     LawyerProfile?
+  firmProfile       FirmProfile?
+  listing           Listing?
+  documents         Document[]
+  verificationCases VerificationCase[] @relation("CaseSubject")
+  reviewsPerformed  VerificationCase[] @relation("CaseReviewer")
+  documentReviews   Document[]         @relation("DocumentReviewer")
+  sessions          Session[]
+  tokens            EmailToken[]
+  emails            EmailMessage[]
+  inquiriesSent     Inquiry[]          @relation("InquirySender")
+  inquiriesReceived Inquiry[]          @relation("InquiryRecipient")
+  auditLogs         AuditLog[]
+
+  /// Cases this account opened as a client.
+  clientCases          LegalCase[]       @relation("CaseClient")
+  /// Cases this account actioned as a reviewer or accepting lawyer.
+  actionedCases        LegalCase[]       @relation("CaseActionedBy")
+  caseMessages         CaseMessage[]
+  caseFilesUploaded    CaseFile[]
+  caseStatusEvents     CaseStatusEvent[]
+  notifications        Notification[]
+  appointmentsAsClient Appointment[]     @relation("AppointmentClient")
+  createdAppointments  Appointment[]     @relation("AppointmentCreator")
+  invitationsCreated   FirmInvitation[]  @relation("InvitationCreator")
+  invitationsReceived  FirmInvitation[]  @relation("InvitationLawyer")
+
+  enquiriesClaimed PublicEnquiry[] @relation("EnquiryClaimedBy")
+  reviewsWritten   Review[]        @relation("ReviewAuthor")
+  reviewsReceived  Review[]        @relation("ReviewTarget")
+  reviewsModerated Review[]        @relation("ReviewModerator")
+  settingsChanged  AppSetting[]    @relation("SettingUpdatedBy")
+  trafficLogs      TrafficLog[]
+
+  pushSubscriptions     PushSubscription[]
+  emergencyRequests     EmergencyRequest[] @relation("EmergencyClient")
+  emergenciesTaken      EmergencyRequest[] @relation("EmergencyLawyer")
+  paymentRequestsRaised PaymentRequest[]   @relation("PaymentRequestedBy")
+  paymentsMade          PaymentRequest[]   @relation("PaymentPaidBy")
+  roomSignals           RoomSignal[]
+  roomPresence          RoomPresence[]
+
+  /// Urgent calls the client asked for from their own case.
+  appointmentsRequested Appointment[]    @relation("AppointmentRequester")
+  supportTickets        SupportTicket[]  @relation("SupportTicketOwner")
+  supportMessages       SupportMessage[]
+  supportTicketsClosed  SupportTicket[]  @relation("SupportTicketCloser")
+  moderatedPosts        BlogPost[]       @relation("BlogModerator")
+  roomRecordings        RoomRecording[]
+
+  /// Seeded sample accounts created by scripts/seed-demo.ts. They are real rows
+  /// in every other respect, and are labelled in the reviewer console so they
+  /// are never mistaken for genuine members.
+  isDemo Boolean @default(false)
+
+  /// Set when someone registers through a firm's invitation link. The invitation
+  /// is claimed once they create their lawyer profile, because the affiliation
+  /// needs a LawyerProfile to attach to.
+  pendingFirmInviteHash String?
+  receiptTemplate       ReceiptTemplate?
+  blogPosts             BlogPost[]
+  blogComments          BlogComment[]
+  blogVotes             BlogVote[]
+  blogCommentVotes      BlogCommentVote[]
+  blogReactions         BlogReaction[]
+  blogCommentReactions  BlogCommentReaction[]
+
+  @@index([accountType, verificationStatus])
+  @@index([status])
+  @@map("user")
+}
+
+/// Profile basics required of every account, whatever its type.
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName           String
+  /// Age is derived from dateOfBirth at render time so the two can never
+  /// disagree; it is never stored independently.
+  dateOfBirth        DateTime? @db.Date
+  placeOfBirth       String?
+  countryOfResidence String?
+  nationality        String?
+  phone              String?
+
+  /// Emirates ID of the account holder. Required before verification can be
+  /// submitted. Never shown in the public directory — only masked, and only in
+  /// full to a reviewer.
+  emiratesIdNumber       String?
+  emiratesIdExpiry       DateTime? @db.Date
+  /// HMAC-SHA256 of the normalised Emirates ID. Unique, so one identity cannot
+  /// be used to verify several accounts.
+  emiratesIdFingerprint  String?   @unique
+  /// Result of the Emirates ID check-digit test at the time it was entered.
+  /// Advisory only — a mismatch never blocks a user, it tells the reviewer to
+  /// look more closely at the uploaded ID. Null when no check has been run.
+  emiratesIdCheckDigitOk Boolean?
+
+  workDescription     String? @db.Text
+  educationBackground String? @db.Text
+
+  /// Private avatar, stored as a Document of kind PROFILE_PHOTO.
+  avatarDocumentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profile")
+}
+
+/// Extra legal-information required for lawyer accounts.
+model LawyerProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Licence / registration to provide legal representation in the UAE.
+  licenseNumber        String
+  licensingAuthority   String
+  licenseIssuedOn      DateTime?    @db.Date
+  licenseExpiresOn     DateTime?    @db.Date
+  yearsOfExperience    Int?
+  barAssociationNumber String?
+  /// Optional affiliation with a registered firm on this platform.
+  affiliatedFirmId     String?
+  affiliatedFirm       FirmProfile? @relation("FirmLawyers", fields: [affiliatedFirmId], references: [id], onDelete: SetNull)
+
+  /// Set when a firm created this account directly from its roster rather than
+  /// the lawyer registering themselves. Kept for provenance: whoever set the
+  /// initial password is visible to the lawyer and to a reviewer.
+  createdByFirmId String?
+  createdByFirm   FirmProfile? @relation("FirmCreatedLawyers", fields: [createdByFirmId], references: [id], onDelete: SetNull)
+
+  /// Opted in to receive emergency requests.
+  acceptsEmergency Boolean @default(false)
+  /// Free text shown with their emergency availability, e.g. "24/7, criminal only".
+  emergencyNote    String?
+  /// Set by a firm to designate this lawyer as its always-active emergency
+  /// contact, so an urgent request reaches the firm even out of hours.
+  isFirmEmergency  Boolean @default(false)
+
+  /// Cases this lawyer is assigned to, and the meetings in their diary.
+  cases        LegalCase[]   @relation("CaseLawyer")
+  appointments Appointment[]
+  /// Cases a firm offered to this lawyer, which they may take or pass.
+  caseOffers   CaseOffer[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  /// Where a client sends a fee. Fee requests are paid by bank transfer, so a
+  /// professional cannot raise one until these are filled in: they are copied
+  /// onto the request itself, so a client is never sent to a page that has since
+  /// changed under them.
+  bankAccountName   String?
+  bankName          String?
+  bankIban          String?
+  bankAccountNumber String?
+  bankSwift         String?
+  bankBranch        String?
+  bankInstructions  String?  @db.Text
+
+  @@map("lawyer_profile")
+}
+
+/// Extra legal-information required for legal-firm accounts.
+model FirmProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  legalName             String
+  tradeLicenseNumber    String
+  tradeLicenseAuthority String
+  tradeLicenseIssuedOn  DateTime? @db.Date
+  tradeLicenseExpiresOn DateTime? @db.Date
+  /// e.g. LLC, Sole Establishment, Civil Company.
+  legalStructure        String?
+  registeredEmirate     Emirate?
+  registeredAddress     String?
+  website               String?
+  firmSize              Int?
+  /// Authorised signatory named on the licence.
+  authorisedSignatory   String?
+
+  lawyers        LawyerProfile[]  @relation("FirmLawyers")
+  /// Accounts this firm created directly from its roster.
+  createdLawyers LawyerProfile[]  @relation("FirmCreatedLawyers")
+  /// Cases addressed to the firm, which any of its lawyers may accept.
+  cases          LegalCase[]      @relation("CaseFirm")
+  invitations    FirmInvitation[]
+  appointments   Appointment[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  /// Where a client sends a fee. Fee requests are paid by bank transfer, so a
+  /// professional cannot raise one until these are filled in: they are copied
+  /// onto the request itself, so a client is never sent to a page that has since
+  /// changed under them.
+  bankAccountName   String?
+  bankName          String?
+  bankIban          String?
+  bankAccountNumber String?
+  bankSwift         String?
+  bankBranch        String?
+  bankInstructions  String?  @db.Text
+
+  @@map("firm_profile")
+}
+
+// ── Public directory ─────────────────────────────────────────────────────────
+
+/// A published directory entry. Only lawyers and firms have one.
+model Listing {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Mirrors the owner's accountType; LAWYER or FIRM only.
+  kind AccountType
+
+  displayName String
+  headline    String?
+  bio         String? @db.Text
+
+  primaryEmirate    Emirate
+  /// Every emirate the professional or firm covers.
+  emirates          Emirate[]
+  /// Practice areas used by the directory's "legal type" filter.
+  areas             LegalArea[]
+  languages         String[]
+  yearsOfExperience Int?
+
+  acceptsNewClients Boolean @default(true)
+  /// Explicitly taken live by the owner. Draft listings never appear publicly.
+  published         Boolean @default(false)
+
+  contactEmail String?
+  contactPhone String?
+  website      String?
+  /// Public practice address in the UAE, shown so a client can check where the
+  /// professional actually is. Never taken from a private record.
+  addressLine  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inquiries Inquiry[]
+  reviews   Review[]
+  /// Posts that recommend this professional.
+  posts     BlogPost[]
+
+  @@index([published, kind])
+  @@index([primaryEmirate])
+  // Array columns are filtered with `has`/`hasSome`, which needs GIN.
+  @@index([areas], type: Gin)
+  @@index([emirates], type: Gin)
+  @@map("listing")
+}
+
+// ── Evidence and verification ────────────────────────────────────────────────
+
+model Document {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind   DocumentKind
+  status DocumentStatus @default(AWAITING_REVIEW)
+
+  /// Identifier printed on the document (licence number, ID number, …).
+  documentNumber String?
+  expiresOn      DateTime? @db.Date
+
+  /// Stored on disk under UPLOAD_DIR; served only via /api/documents/[id].
+  storageKey String @unique
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  sha256     String
+
+  reviewNotes String?   @db.Text
+  reviewedAt  DateTime?
+  reviewerId  String?
+  reviewer    User?     @relation("DocumentReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  /// Set when the document is included in a submitted verification case.
+  caseId String?
+  case   VerificationCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, kind, status])
+  @@index([caseId])
+  @@map("document")
+}
+
+/// One submission of evidence by an account for human review.
+model VerificationCase {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("CaseSubject", fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Increments each time an account resubmits after a rejection.
+  round  Int        @default(1)
+  status CaseStatus @default(SUBMITTED)
+
+  submittedAt DateTime  @default(now())
+  claimedAt   DateTime?
+  decidedAt   DateTime?
+
+  reviewerId    String?
+  reviewer      User?   @relation("CaseReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  decisionNotes String? @db.Text
+
+  documents Document[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, submittedAt])
+  @@index([userId, status])
+  @@map("verification_case")
+}
+
+// ── Sessions, tokens, outbound email ─────────────────────────────────────────
+
+model Session {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Only the SHA-256 of the session token is stored.
+  tokenHash String @unique
+
+  ipHash    String?
+  userAgent String?
+
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  /// Set once the second factor has been satisfied. A session that has not
+  /// passed it can reach nothing but the two-factor prompt.
+  twoFactorPassedAt DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("session")
+}
+
+model EmailToken {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  purpose    TokenPurpose
+  tokenHash  String       @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, purpose])
+  @@map("email_token")
+}
+
+/// Outbound email. With EMAIL_PROVIDER=outbox no SMTP is configured, so
+/// messages are recorded here and never reported to a user as delivered.
+model EmailMessage {
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  toEmail   String
+  fromEmail String
+  subject   String
+  bodyText  String @db.Text
+  purpose   String
+
+  status   EmailStatus @default(QUEUED)
+  provider String
+  error    String?
+  sentAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@map("email_message")
+}
+
+// ── Contact between a member and a listed professional ───────────────────────
+
+model Inquiry {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  fromUserId String
+  fromUser   User   @relation("InquirySender", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  toUserId String
+  toUser   User   @relation("InquiryRecipient", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  subject String
+  message String @db.Text
+
+  status    InquiryStatus @default(NEW)
+  replyBody String?       @db.Text
+  repliedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([toUserId, status])
+  @@index([fromUserId])
+  @@map("inquiry")
+}
+
+// ── Accountability ───────────────────────────────────────────────────────────
+
+/// Append-only record of consequential actions. Written by src/lib/audit.ts.
+model AuditLog {
+  id          String  @id @default(cuid())
+  actorUserId String?
+  actor       User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipHash     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorUserId, createdAt])
+  @@map("audit_log")
+}
+
+// ── Cases ────────────────────────────────────────────────────────────────────
+//
+// A case submitted by a client to a lawyer or a firm. The lifecycle is
+//   SUBMITTED → UNDER_REVIEW → ASSIGNED → IN_PROGRESS → COMPLETED
+// with DECLINED reachable from the review stages. Every transition is written
+// to CaseStatusEvent, so both sides can see who moved it and when.
+
+enum LegalCaseStatus {
+  /// Sent by the client, nobody has opened it yet.
+  SUBMITTED
+  /// A lawyer has opened it for review but not yet accepted it.
+  UNDER_REVIEW
+  /// A firm has reviewed it and released it to its registered lawyers, who each
+  /// decide whether to take it.
+  DISTRIBUTED
+  /// Accepted. A named lawyer is now responsible.
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  /// Refused by the professional, with a reason the client can read.
+  DECLINED
+}
+
+model LegalCase {
+  id          String          @id @default(cuid())
+  /// Human-readable reference, e.g. DL-2026-0007.
+  reference   String          @unique
+  title       String
+  caseType    LegalArea
+  description String          @db.Text
+  status      LegalCaseStatus @default(SUBMITTED)
+
+  clientId String
+  client   User   @relation("CaseClient", fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// Set when the case was addressed to a firm rather than a named lawyer.
+  firmId String?
+  firm   FirmProfile? @relation("CaseFirm", fields: [firmId], references: [id], onDelete: SetNull)
+
+  /// Set when a lawyer accepts the case. For a firm case this is one of the
+  /// firm's registered lawyers, chosen by whoever accepts it.
+  lawyerId String?
+  lawyer   LawyerProfile? @relation("CaseLawyer", fields: [lawyerId], references: [id], onDelete: SetNull)
+
+  /// The listing the client approached, kept for provenance.
+  listingId String?
+
+  actionedByUserId String?
+  actionedBy       User?   @relation("CaseActionedBy", fields: [actionedByUserId], references: [id], onDelete: SetNull)
+
+  submittedAt   DateTime  @default(now())
+  reviewedAt    DateTime?
+  /// When a firm released the case to its lawyers.
+  distributedAt DateTime?
+  assignedAt    DateTime?
+  completedAt   DateTime?
+  declinedAt    DateTime?
+  declineReason String?   @db.Text
+
+  files             CaseFile[]
+  messages          CaseMessage[]
+  events            CaseStatusEvent[]
+  appointments      Appointment[]
+  /// The client's review of the professional, written once per case.
+  review            Review?
+  paymentRequests   PaymentRequest[]
+  /// Offers made to a firm's lawyers when it released the case.
+  offers            CaseOffer[]
+  /// Emergency requests that opened this case. A list because the foreign key is
+  /// not unique — an emergency produces at most one case, but the schema does not
+  /// need to forbid it.
+  emergencyRequests EmergencyRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId, status])
+  @@index([status, submittedAt])
+  @@index([lawyerId, status])
+  @@index([firmId, status])
+  @@map("legal_case")
+}
+
+/// Per-year counter behind LegalCase.reference, so references never repeat.
+model CaseSequence {
+  year      Int @id
+  lastValue Int @default(0)
+}
+
+model CaseFile {
+  id     String    @id @default(cuid())
+  caseId String
+  case   LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  storageKey String @unique
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  sha256     String
+
+  createdAt DateTime @default(now())
+
+  @@index([caseId])
+  @@map("case_file")
+}
+
+model CaseMessage {
+  id     String    @id @default(cuid())
+  caseId String
+  case   LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  /// The text of the message, encrypted at rest (see src/lib/crypto.ts). The
+  /// database holds an authenticated ciphertext, so a dump of this table is not
+  /// a transcript of what a client and their lawyer said to each other.
+  body String @db.Text
+
+  /// Files sent with the message: documents, images, spreadsheets, archives.
+  attachments CaseMessageAttachment[]
+
+  /// Set when the other party reads the thread; drives unread counts.
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([caseId, createdAt])
+  @@map("case_message")
+}
+
+/// A file sent through a case conversation.
+///
+/// Separate from `CaseFile` on purpose: a case file is evidence submitted with
+/// the case, which a reviewer may see, while an attachment is simply something
+/// the two parties passed each other. Both are encrypted on disk and both are
+/// served only to the parties on the case.
+model CaseMessageAttachment {
+  id        String      @id @default(cuid())
+  messageId String
+  message   CaseMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  storageKey String @unique
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  sha256     String
+
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+  @@map("case_message_attachment")
+}
+
+/// Append-only record of who moved a case between states.
+model CaseStatusEvent {
+  id     String    @id @default(cuid())
+  caseId String
+  case   LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  fromStatus LegalCaseStatus?
+  toStatus   LegalCaseStatus
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  note    String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([caseId, createdAt])
+  @@map("case_status_event")
+}
+
+// ── Appointments ─────────────────────────────────────────────────────────────
+
+enum AppointmentStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+}
+
+/// How the meeting happens.
+enum AppointmentMode {
+  VIDEO_CALL
+  OFFICE_VISIT
+  PHONE_CALL
+}
+
+/// Whether the client still has to agree to the arrangement. Only office visits
+/// need an answer, because the client has to travel.
+enum AppointmentConfirmation {
+  NOT_REQUIRED
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+/// Where a meeting came from.
+enum AppointmentSource {
+  /// The professional put it in their own diary.
+  SCHEDULED
+  /// The client asked for an urgent call from their case and the professional
+  /// accepted. The room exists so the two of them can talk now; it is not a
+  /// diary booking and does not reserve a slot.
+  CASE_REQUEST
+}
+
+/// A meeting between a professional and a client, optionally about a case.
+model Appointment {
+  id String @id @default(cuid())
+
+  lawyerId String
+  lawyer   LawyerProfile @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+
+  firmId String?
+  firm   FirmProfile? @relation(fields: [firmId], references: [id], onDelete: SetNull)
+
+  clientId String
+  client   User   @relation("AppointmentClient", fields: [clientId], references: [id], onDelete: Cascade)
+
+  caseId String?
+  case   LegalCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  startsAt DateTime
+  endsAt   DateTime
+  status   AppointmentStatus @default(BOOKED)
+  note     String?           @db.Text
+
+  mode          AppointmentMode         @default(OFFICE_VISIT)
+  /// Where to come, for an office visit.
+  officeAddress String?
+  /// The conference room, for a video call. Unique, so a code always identifies
+  /// one room.
+  roomCode      String?                 @unique
+  /// An office visit has to be agreed by the client before it is confirmed.
+  confirmation  AppointmentConfirmation @default(NOT_REQUIRED)
+  confirmedAt   DateTime?
+  declinedAt    DateTime?
+
+  createdById String?
+  createdBy   User?   @relation("AppointmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  /// SCHEDULED, or raised by the client as an urgent call from their own case.
+  source        AppointmentSource @default(SCHEDULED)
+  /// Set on a CASE_REQUEST: the client who asked for the call.
+  requestedById String?
+  requestedBy   User?             @relation("AppointmentRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  /// When the professional last moved the meeting. The client is told each time.
+  rescheduledAt DateTime?
+
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  /// Calls in this room were recorded. They are deleted with it.
+  recordings RoomRecording[]
+
+  /// A lawyer cannot be double-booked into the same slot. This is enforced by a
+  /// partial unique index on BOOKED rows (see the migration), so a cancelled
+  /// meeting does not block the slot being offered again.
+  @@index([lawyerId, startsAt])
+  @@index([clientId, startsAt])
+  @@map("appointment")
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+/// In-app alert. Email is not configured on this installation, so this is how
+/// a client is told a case moved or a meeting was booked.
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind  String
+  title String
+  body  String? @db.Text
+  /// In-app path the alert points at.
+  link  String?
+
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@map("notification")
+}
+
+// ── Firm invitations ─────────────────────────────────────────────────────────
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  REVOKED
+}
+
+/// Invites a legal professional to be listed as one of a firm's lawyers.
+///
+/// Two paths land here: an existing lawyer account is invited and accepts from
+/// their dashboard, or an invitation link is shared and the affiliation is
+/// granted when the invited address registers as a lawyer.
+model FirmInvitation {
+  id String @id @default(cuid())
+
+  firmId String
+  firm   FirmProfile @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  email     String
+  /// Single-use token for the shareable registration link.
+  tokenHash String           @unique
+  status    InvitationStatus @default(PENDING)
+
+  invitedByUserId String
+  invitedBy       User   @relation("InvitationCreator", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  /// Set once a lawyer account is linked to the firm through this invitation.
+  lawyerUserId String?
+  lawyerUser   User?   @relation("InvitationLawyer", fields: [lawyerUserId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  @@index([firmId, status])
+  @@index([email, status])
+  @@map("firm_invitation")
+}
+
+// ── Application settings and feature toggles ─────────────────────────────────
+//
+// One row per setting. Kept in the database rather than the environment so an
+// administrator can turn a function off, or put the app into maintenance, while
+// it is running. Every change is written to the audit log.
+
+model AppSetting {
+  key   String @id
+  value String
+
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation("SettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("app_setting")
+}
+
+// ── Traffic register ─────────────────────────────────────────────────────────
+//
+// Every page view and API call the application serves, so activity can be
+// reviewed. IP addresses are stored only as a keyed digest. Rows are pruned on a
+// rolling window (see traffic-service.ts) because this table grows with usage.
+
+model TrafficLog {
+  id String @id @default(cuid())
+
+  method     String
+  path       String
+  status     Int
+  durationMs Int
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Keyed digest — the raw address is never stored.
+  ipHash    String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([path, createdAt])
+  @@map("traffic_log")
+}
+
+// ── Reviews ──────────────────────────────────────────────────────────────────
+
+enum ReviewStatus {
+  PUBLISHED
+  /// Hidden by an administrator after moderation; never deleted silently.
+  HIDDEN
+}
+
+/// A client's review of a lawyer or firm.
+///
+/// A review can only be written against a case that professional actually
+/// accepted, and only once per case. That is what makes the rating mean
+/// something rather than being an open comment box.
+model Review {
+  id String @id @default(cuid())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  targetUserId String
+  target       User   @relation("ReviewTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  /// The engagement that entitles the author to review. Unique, so one case
+  /// yields at most one review.
+  caseId String    @unique
+  case   LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  rating Int
+  title  String?
+  body   String  @db.Text
+
+  status        ReviewStatus @default(PUBLISHED)
+  hiddenReason  String?
+  moderatedById String?
+  moderatedBy   User?        @relation("ReviewModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([targetUserId, status])
+  @@index([listingId, status])
+  @@map("review")
+}
+
+// ── Emergency representation ─────────────────────────────────────────────────
+
+enum EmergencyStatus {
+  OPEN
+  ACCEPTED
+  CANCELLED
+  /// Closed by the professional who answered it: the call is over and the
+  /// matter is dealt with, which is not the same as the caller withdrawing.
+  RESOLVED
+  EXPIRED
+}
+
+/// An urgent request for representation.
+///
+/// It is deliberately not a case: nothing is assigned until a professional
+/// accepts it, at which point a real case is opened and linked. That keeps the
+/// emergency queue clear of abandoned requests while leaving the case history
+/// intact.
+model EmergencyRequest {
+  id String @id @default(cuid())
+
+  /// Null for somebody who raised an emergency without an account, which is the
+  /// point of the public route: nobody should have to remember a password while
+  /// being detained.
+  clientId String?
+  client   User?   @relation("EmergencyClient", fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// Set instead when raised without an account.
+  guestName      String?
+  guestPhone     String?
+  guestEmail     String?
+  /// The public route drops the person straight into a video room. The code
+  /// identifies it and the token is the only thing that admits them.
+  roomCode       String? @unique
+  guestTokenHash String?
+
+  title        String
+  caseType     LegalArea
+  description  String    @db.Text
+  /// A number to call back on. Separate from the profile so an emergency can be
+  /// raised with a different contact number.
+  contactPhone String
+
+  status EmergencyStatus @default(OPEN)
+
+  acceptedById String?
+  acceptedBy   User?     @relation("EmergencyLawyer", fields: [acceptedById], references: [id], onDelete: SetNull)
+  acceptedAt   DateTime?
+
+  /// The case opened when somebody accepted.
+  legalCaseId String?
+  legalCase   LegalCase? @relation(fields: [legalCaseId], references: [id], onDelete: SetNull)
+
+  /// Requests stop being offered after this time.
+  expiresAt  DateTime
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  /// Calls in this room were recorded. They are deleted with it.
+  recordings RoomRecording[]
+
+  @@index([status, createdAt])
+  @@index([clientId, status])
+  @@map("emergency_request")
+}
+
+// ── Payments (simulated) ─────────────────────────────────────────────────────
+
+enum PaymentStatus {
+  REQUESTED
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+}
+
+/// A fee request raised by a professional against a case.
+///
+/// **No money moves.** This build has no payment provider, so the client pays at
+/// a simulated card form, a receipt is produced, and only afterwards is proof of
+/// payment asked for. Nothing here contacts a bank or a card processor, and the
+/// interface says so wherever a payment appears.
+model PaymentRequest {
+  id String @id @default(cuid())
+
+  caseId String
+  case   LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  requestedById String
+  requestedBy   User   @relation("PaymentRequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  /// Whole UAE fils, so no floating point rounding ever touches money.
+  amountFils Int
+  currency   String @default("AED")
+
+  /// CONSULTATION or CASE_ASSISTANCE — what is being charged for.
+  purpose String
+  details String? @db.Text
+
+  status PaymentStatus @default(REQUESTED)
+
+  method            PaymentMethod?
+  /// Where the client was told to send the money, copied from the professional's
+  /// details when the request was raised — the request says what it said then.
+  bankAccountName   String?
+  bankName          String?
+  bankIban          String?
+  bankAccountNumber String?
+  bankSwift         String?
+  bankBranch        String?
+  bankInstructions  String?        @db.Text
+  /// The reference the client quotes when they transfer, and the date they say
+  /// the transfer was sent.
+  /// Reference the client quotes, or the transfer reference.
+  reference         String?
+
+  /// The card the simulated payment was made with. Only the brand and the last
+  /// four digits are ever kept — the full number is never stored, which is what
+  /// a real processor would do too.
+  cardBrand       String?
+  cardLast4       String?
+  cardholderName  String?
+  /// Printed on the receipt, so a receipt can always be matched to a request.
+  receiptNumber   String?   @unique
+  /// When the receipt was produced. Paid and receipted are the same event.
+  receiptIssuedAt DateTime?
+
+  /// Proof of payment, stored as a Document of kind OTHER. Asked for only once
+  /// the payment itself is complete.
+  proofDocumentId  String?
+  /// When the client was asked to send proof, which happens after payment.
+  proofRequestedAt DateTime?
+  proofSubmittedAt DateTime?
+  /// What the client wrote to accompany the proof.
+  proofNote        String?   @db.Text
+
+  paidById String?
+  paidBy   User?   @relation("PaymentPaidBy", fields: [paidById], references: [id], onDelete: SetNull)
+
+  paidAt      DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([caseId, status])
+  @@index([requestedById, status])
+  @@map("payment_request")
+}
+
+// ── Push notifications ───────────────────────────────────────────────────────
+
+/// An offer of a case to one of a firm's lawyers.
+///
+/// A firm reviews a case and releases it; every registered lawyer gets an offer
+/// and decides whether to take it. Offers are recorded per lawyer so a colleague
+/// who passes is not offered the same case again, and so the firm can see who
+/// answered.
+model CaseOffer {
+  id String @id @default(cuid())
+
+  caseId String
+  case   LegalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  lawyerId String
+  lawyer   LawyerProfile @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+
+  status OfferStatus @default(PENDING)
+  /// Why the lawyer passed, if they said.
+  note   String?     @db.Text
+
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([caseId, lawyerId])
+  @@index([lawyerId, status])
+  @@map("case_offer")
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  PASSED
+  /// Withdrawn when somebody else took the case first.
+  WITHDRAWN
+}
+
+// ── Public enquiries ─────────────────────────────────────────────────────────
+
+enum EnquiryStatus {
+  OPEN
+  CLAIMED
+  CLOSED
+}
+
+/// A general enquiry sent from the landing page by somebody without an account.
+///
+/// It goes into a shared pool that every registered lawyer and firm can see, so
+/// it is not addressed to anyone in particular. Contact details are only revealed
+/// to whoever claims it.
+model PublicEnquiry {
+  id String @id @default(cuid())
+
+  name     String
+  email    String
+  phone    String
+  caseType LegalArea?
+  subject  String
+  message  String     @db.Text
+
+  status      EnquiryStatus @default(OPEN)
+  claimedById String?
+  claimedBy   User?         @relation("EnquiryClaimedBy", fields: [claimedById], references: [id], onDelete: SetNull)
+  claimedAt   DateTime?
+  closedAt    DateTime?
+
+  /// Keyed digest of the sender's address, so a flood can be traced without
+  /// storing the address itself.
+  ipHash String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@map("public_enquiry")
+}
+
+// ── Support ──────────────────────────────────────────────────────────────────
+
+/// What a support ticket is about. Used to route and to report on, never to
+/// decide anything automatically.
+enum SupportCategory {
+  ACCOUNT_ACCESS
+  VERIFICATION
+  CASE_OR_MEETING
+  PAYMENT
+  TECHNICAL
+  OTHER
+}
+
+enum SupportStatus {
+  /// Raised, waiting for an administrator to answer.
+  OPEN
+  /// An administrator has answered and the conversation is under way.
+  ANSWERED
+  /// Marked solved. The ticket is closed; nobody may post to it again.
+  SOLVED
+}
+
+/// A problem reported by a user, a lawyer or a firm.
+///
+/// Support goes to platform administrators only. It is deliberately a
+/// conversation rather than a one-shot form, so a report can be worked through
+/// with the person who hit the problem. Nobody but the person who raised it and
+/// an administrator may read it — a support ticket can contain anything about an
+/// account, so it is not visible to the other side of a case.
+model SupportTicket {
+  id String @id @default(cuid())
+
+  /// Shown to the reporter so a ticket can be referred to.
+  reference String @unique
+
+  userId String
+  user   User   @relation("SupportTicketOwner", fields: [userId], references: [id], onDelete: Cascade)
+
+  subject  String
+  category SupportCategory @default(OTHER)
+  status   SupportStatus   @default(OPEN)
+
+  /// The page they were on when they reported it, if their browser sent one.
+  contextPath String?
+
+  messages SupportMessage[]
+
+  /// When the client last read the thread, so unread answers can be counted.
+  ownerReadAt DateTime?
+
+  solvedAt   DateTime?
+  solvedById String?
+  solvedBy   User?     @relation("SupportTicketCloser", fields: [solvedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, updatedAt])
+  @@index([userId, updatedAt])
+  @@map("support_ticket")
+}
+
+/// One line in a support conversation. Written either by the person who raised
+/// the ticket or by an administrator.
+model SupportMessage {
+  id       String        @id @default(cuid())
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  /// True when written by an administrator. Snapshotted rather than derived, so
+  /// a later change to somebody's roles cannot rewrite who said what.
+  fromStaff Boolean @default(false)
+
+  body String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+  @@map("support_message")
+}
+
+// ── Community ────────────────────────────────────────────────────────────────
+
+/// The board a community post belongs to. A member picks one when posting, and
+/// the topic index is the first thing the community shows: pick a subject, then
+/// read the threads in it.
+enum CommunityTopic {
+  LABOUR_EMPLOYMENT
+  TENANCY_PROPERTY
+  FAMILY_PERSONAL_STATUS
+  CRIMINAL_PENAL
+  TRAFFIC_FINES
+  VISAS_RESIDENCY
+  BUSINESS_CONTRACTS
+  MONEY_DEBT
+  COURTS_PROCEDURE
+  COSTS_FEES
+  USING_DUBAI_LEGAL
+  OTHER
+}
+
+/// What a community post is for.
+enum BlogPostKind {
+  /// A member recommending a lawyer or a firm they have dealt with.
+  RECOMMENDATION
+  /// A question about a matter, answered by whoever knows.
+  QUESTION
+  /// Anything else: an experience, a warning, a note about the process.
+  NOTE
+}
+
+enum BlogPostStatus {
+  /// Written, and waiting for a moderator. Nothing is published on this board
+  /// without somebody looking at it first: the point of the review is to catch
+  /// the question that has already been asked and answered.
+  PENDING
+  PUBLISHED
+  /// Closed as a repeat of an earlier post, with a link to it. Kept rather than
+  /// deleted, so the author can see where the answer already is.
+  DUPLICATE
+  /// Hidden by an administrator after a report. Still the author's, still visible
+  /// to them and to the console, gone from the feed.
+  HIDDEN
+  /// Removed from the feed and from the author's own view.
+  REMOVED
+}
+
+enum BlogCommentStatus {
+  PUBLISHED
+  HIDDEN
+  REMOVED
+}
+
+/// How somebody reacted to a post or a comment. Three, the way a social feed
+/// offers three: agree, love it, or it surprised you.
+enum ReactionKind {
+  LIKE
+  HEART
+  WOW
+}
+
+/// Why a moderator closed or rejected a post, in a word the reports can count.
+enum BlogModerationReason {
+  DUPLICATE
+  NOT_A_LEGAL_TOPIC
+  ABUSIVE
+  ADVERTISING
+  CONFIDENTIAL_DETAIL
+  OTHER
+}
+
+/// A post in the community section.
+///
+/// This is the one public thing members write here, so it holds no confidential
+/// detail: it is a recommendation, a question or a note, written to be read by
+/// strangers. Case conversations are the private channel and stay private.
+model BlogPost {
+  id String @id @default(cuid())
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  kind  BlogPostKind   @default(NOTE)
+  /// The board this post is on. Asked for when posting, because it is how
+  /// somebody finds the thread they need.
+  topic CommunityTopic @default(OTHER)
+  title String
+  body  String         @db.Text
+
+  /// The professional this post is attached to: the one being recommended, or —
+  /// when the author owns the profile — the professional posting to their own
+  /// page, which is what a firm does to announce something.
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  /// Everything starts waiting for a moderator.
+  status BlogPostStatus @default(PENDING)
+
+  /// When a moderator closed this as a repeat, the post it repeats. The author is
+  /// sent to that one rather than being left with nothing.
+  duplicateOfId String?
+  duplicateOf   BlogPost?  @relation("PostDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates    BlogPost[] @relation("PostDuplicates")
+
+  /// What the automatic check found when this was reviewed: the closest existing
+  /// post and the words the two had in common. Stored so the decision can be read
+  /// back later rather than recomputed to a different answer.
+  similarityScore  Float?
+  similarityPostId String?
+  similarityTerms  String?
+  moderationReason BlogModerationReason?
+  reviewedAt       DateTime?
+
+  /// Upvotes minus downvotes, kept on the row so the feed can be ordered without
+  /// counting votes on every read.
+  score Int @default(0)
+
+  /// Set when an administrator hides it, with the reason shown to the author.
+  moderatedAt    DateTime?
+  moderatedById  String?
+  moderatedBy    User?     @relation("BlogModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+  moderationNote String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments  BlogComment[]
+  votes     BlogVote[]
+  reactions BlogReaction[]
+
+  @@index([status, createdAt])
+  @@index([status, topic])
+  @@index([status, score])
+  @@index([listingId, status])
+  @@index([authorId, createdAt])
+  @@map("blog_post")
+}
+
+model BlogComment {
+  id     String   @id @default(cuid())
+  postId String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  /// One level of replies, so a thread stays readable on a phone.
+  parentId String?
+  parent   BlogComment?  @relation("BlogCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  BlogComment[] @relation("BlogCommentReplies")
+
+  body   String            @db.Text
+  status BlogCommentStatus @default(PUBLISHED)
+  score  Int               @default(0)
+
+  createdAt DateTime @default(now())
+
+  votes                BlogCommentVote[]
+  reactions            BlogReaction[]
+  blogCommentReactions BlogCommentReaction[]
+
+  @@index([postId, createdAt])
+  @@map("blog_comment")
+}
+
+/// One member's reaction to a post or a comment.
+///
+/// A person may hold one reaction on a post and one on each comment, and
+/// changing it replaces it rather than adding a second — the way the counter on
+/// a social feed behaves. Kept in two tables rather than one with two nullable
+/// keys, so the uniqueness constraint can actually be enforced.
+model BlogReaction {
+  id     String   @id @default(cuid())
+  postId String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind ReactionKind
+
+  createdAt     DateTime     @default(now())
+  blogComment   BlogComment? @relation(fields: [blogCommentId], references: [id])
+  blogCommentId String?
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("blog_reaction")
+}
+
+model BlogCommentReaction {
+  id        String      @id @default(cuid())
+  commentId String
+  comment   BlogComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind ReactionKind
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+  @@map("blog_comment_reaction")
+}
+
+/// One member's vote on a post. Unique, so a person counts once.
+model BlogVote {
+  id     String   @id @default(cuid())
+  postId String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// +1 or -1.
+  value Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("blog_vote")
+}
+
+model BlogCommentVote {
+  id        String      @id @default(cuid())
+  commentId String
+  comment   BlogComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  value Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+  @@map("blog_comment_vote")
+}
+
+// ── Billing receipts ─────────────────────────────────────────────────────────
+
+/// Which letterhead a professional's receipts carry.
+enum ReceiptLayout {
+  /// The Dubai Legal layout, with the platform mark. What every account starts
+  /// with, and what an account without a template of its own uses.
+  STANDARD
+  /// The professional's own letterhead: their name, their mark, their colour.
+  /// The platform mark stays on the receipt, at the foot, because a receipt is
+  /// issued through Dubai Legal.
+  CUSTOM
+}
+
+/// A lawyer's or firm's letterhead for the receipts they raise.
+///
+/// Absent means the standard layout, which is what a new account gets and what
+/// it keeps until it chooses otherwise. Administrators have no template and
+/// cannot have one: the platform mark is fixed for them.
+model ReceiptTemplate {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  layout ReceiptLayout @default(STANDARD)
+
+  /// The trading name printed at the head of the receipt.
+  brandName      String?
+  /// A line under the name, such as "Advocates and legal consultants".
+  headerLine     String?
+  /// Terms, a thank-you, or how to query the receipt.
+  footerNote     String? @db.Text
+  /// A hex colour for the receipt's rules and headings.
+  accentColor    String?
+  /// The professional's own mark, as a Document of kind BRAND_LOGO.
+  logoDocumentId String?
+
+  showLicence Boolean @default(true)
+  showFirm    Boolean @default(true)
+  showContact Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("receipt_template")
+}
+
+/// A browser push subscription. One row per browser a member has enabled
+/// notifications in.
+model PushSubscription {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The push service endpoint. Unique, so re-subscribing updates in place.
+  endpoint String @unique
+  p256dh   String
+  auth     String
+
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+  /// Consecutive delivery failures. A subscription is dropped once a push
+  /// service reports it gone.
+  failureCount Int       @default(0)
+  lastError    String?
+
+  @@index([userId])
+  @@map("push_subscription")
+}
+
+// ── Conference room signalling ───────────────────────────────────────────────
+
+/// WebRTC signalling messages, relayed between the two people in a room.
+///
+/// They are short-lived and carry no user content — only session descriptions
+/// and ICE candidates — so they are cleared as they are delivered and pruned by
+/// age.
+model RoomSignal {
+  id       String @id @default(cuid())
+  roomCode String
+
+  /// Who sent it. A member is `user:<id>`; somebody who reached an emergency
+  /// room without an account is `guest:<emergencyId>`, which is what lets a
+  /// detained person join a call without a password.
+  fromKey    String
+  fromUserId String?
+  fromUser   User?   @relation(fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  payload Json
+
+  createdAt DateTime @default(now())
+
+  @@index([roomCode, createdAt])
+  @@map("room_signal")
+}
+
+/// A recording of a conference room call.
+///
+/// Both people on a call record it, from their own camera and microphone, and
+/// both recordings are kept against the room. Either of them can play either
+/// recording; an administrator cannot play any of them, which is the same rule
+/// the rooms themselves follow.
+///
+/// The file is encrypted on disk like every other upload, and it is deleted with
+/// the room's appointment or emergency request.
+model RoomRecording {
+  id       String @id @default(cuid())
+  roomCode String
+
+  /// Who recorded it — the side of the call this file came from.
+  recordedById String
+  recordedBy   User   @relation(fields: [recordedById], references: [id], onDelete: Cascade)
+
+  /// Ties the recording to whatever the room was for, so it is deleted with it.
+  appointmentId      String?
+  appointment        Appointment?      @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  emergencyRequestId String?
+  emergencyRequest   EmergencyRequest? @relation(fields: [emergencyRequestId], references: [id], onDelete: Cascade)
+
+  storageKey String @unique
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  sha256     String
+  /// How long the call lasted, as the browser reported it.
+  durationMs Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([roomCode, createdAt])
+  @@map("room_recording")
+}
+
+/// Who is currently in a conference room, so each side can tell whether the
+/// other has arrived.
+model RoomPresence {
+  id       String @id @default(cuid())
+  roomCode String
+
+  participantKey String
+  userId         String?
+  user           User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt   DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@unique([roomCode, participantKey])
+  @@index([roomCode])
+  @@map("room_presence")
+}
