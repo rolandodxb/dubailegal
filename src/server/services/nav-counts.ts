@@ -1,5 +1,5 @@
 import { unreadNotificationCount } from './notification-service';
-import { listCasesForFirm, listCasesForLawyer } from './case-service';
+import { countCasesAwaitingFirm, countCasesAwaitingLawyer } from './case-service';
 import { supportBadge } from './support-service';
 import type { AccountType, Role } from '@prisma/client';
 
@@ -20,8 +20,8 @@ export async function navCounts(
     unreadNotificationCount(userId),
     isProfessional && !isAdminOnly
       ? accountType === 'FIRM'
-        ? listCasesForFirm(userId).then((result) => result.submitted.length)
-        : listCasesForLawyer(userId).then((result) => result.pending.length + result.reviewing.length)
+        ? countCasesAwaitingFirm(userId)
+        : countCasesAwaitingLawyer(userId)
       : Promise.resolve(0),
     supportBadge(userId, roles),
   ]);

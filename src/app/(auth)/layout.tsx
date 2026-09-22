@@ -6,9 +6,8 @@ import { MaintenanceScreen } from '@/components/layout/MaintenanceScreen';
 import { Logo } from '@/components/layout/Logo';
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  const sessionUser = await getSessionUser();
-
-  const availability = await getAvailability();
+  // Independent questions, asked together: one round trip instead of two.
+  const [sessionUser, availability] = await Promise.all([getSessionUser(), getAvailability()]);
   if (availability.maintenance && !(await mayBypassMaintenance(sessionUser?.id ?? null))) {
     return <MaintenanceScreen message={availability.message} signedIn={Boolean(sessionUser)} />;
   }

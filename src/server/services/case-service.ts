@@ -403,6 +403,44 @@ export async function listCasesForClient(clientId: string) {
 }
 
 /** Every case a lawyer can act on, whether assigned or addressed to them. */
+/**
+ * How many cases are waiting for this lawyer to look at them — the badge in the
+ * navigation.
+ *
+ * One query, not a list: the navigation asks for a number on every page, and
+ * loading the full case graph (with its client, firm and documents) to measure
+ * it cost several round trips per page view on a remote database. The conditions
+ * are exactly the ones `listCasesForLawyer` filters on, so the badge can never
+ * disagree with the page.
+ */
+export async function countCasesAwaitingLawyer(lawyerUserId: string): Promise<number> {
+  return prisma.legalCase.count({
+    where: {
+      OR: [
+        // Addressed to this lawyer directly and nobody has picked it up.
+        { status: 'SUBMITTED', firmId: null, lawyer: { userId: lawyerUserId } },
+        // Addressed to the firm this lawyer belongs to, and undecided.
+        { status: 'SUBMITTED', firm: { lawyers: { some: { userId: lawyerUserId } } } },
+        // Claimed for review by this lawyer.
+        { status: 'UNDER_REVIEW', actionedByUserId: lawyerUserId },
+      ],
+    },
+  });
+}
+
+/**
+ * How many cases are waiting for this firm to decide on them — the badge in the
+ * navigation, and the same conditions `listCasesForFirm` filters on.
+ */
+export async function countCasesAwaitingFirm(firmUserId: string): Promise<number> {
+  return prisma.legalCase.count({
+    where: {
+      firm: { userId: firmUserId },
+      status: { in: ['SUBMITTED', 'UNDER_REVIEW'] },
+    },
+  });
+}
+
 export async function listCasesForLawyer(lawyerUserId: string) {
   const profile = await prisma.lawyerProfile.findUnique({
     where: { userId: lawyerUserId },

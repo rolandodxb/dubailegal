@@ -15,13 +15,19 @@ export async function logLayoutView(path: string, userId: string | null): Promis
     const forwarded = headerList.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0]!.trim() : headerList.get('x-real-ip');
 
-    await recordPageView({
+    // Written without being waited on. The row still lands, but the page does not
+    // pay a database round trip for it — on a remote database that is 50 ms off
+    // every single page view. The catch keeps a logging failure from surfacing as
+    // an unhandled rejection.
+    void recordPageView({
       path,
       status: 200,
       durationMs: 0,
       userId,
       ip: ip && ip.length > 0 ? ip : null,
       userAgent: headerList.get('user-agent'),
+    }).catch((error) => {
+      console.error('[traffic] could not log page view', path, error);
     });
   } catch (error) {
     // Activity logging must never break a page.

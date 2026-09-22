@@ -9,9 +9,7 @@ import { BottomNav, SideNav, type NavItem } from '@/components/layout/BottomNav'
 import { PrintBrand } from '@/components/layout/Logo';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireActiveUser();
-
-  const availability = await getAvailability();
+  const [user, availability] = await Promise.all([requireActiveUser(), getAvailability()]);
   if (availability.maintenance && !(await mayBypassMaintenance(user.id))) {
     return <MaintenanceScreen message={availability.message} signedIn />;
   }

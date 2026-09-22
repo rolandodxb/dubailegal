@@ -1105,6 +1105,70 @@ browser. There is no `@supabase/supabase-js` dependency, deliberately — a key 
 a second, weaker way into the same tables, and the server is already the only thing that should
 touch them.
 
+### This installation runs on Supabase
+
+The database **is** Supabase: project `qeyfnnwfaptebrhqfnti` in **`sa-east-1` (São Paulo)**,
+PostgreSQL 17.6, reached through the session pooler on port 5432. The local Docker database is kept
+untouched as the rollback — its two URLs are still in `.env`, commented out.
+
+Two things about the connection matter more than anything else in this section.
+
+**The session pooler, not the transaction pooler.** Measured from this machine, on the same project at
+the same moment: **57 ms** per query through the session pooler against **275 ms** through the
+transaction pooler. The transaction pooler is built for serverless functions that cannot hold a
+connection; this is a long-running server, so it holds them open, and the session pooler is both
+faster and correct for migrations.
+
+**The pooler serves only 15 clients, and they are shared.** Pushing past that does not degrade
+gracefully — new connections are refused outright with `EMAXCONNSESSION`, which is worse than an
+occasional slow page. `DATABASE_URL` therefore carries `connection_limit=5`, and the warm-up opens
+four of them.
+
+### Performance: what a network-away database costs, and what was done about it
+
+| | Measured |
+|---|---|
+| Query on an **open** connection | **57 ms** (the round trip to São Paulo) |
+| First query on a **new** connection | **790 ms** (TCP, TLS and pooler authentication) |
+| Coordinates — local Docker database | ~1 ms |
+| Coordinates — `us-west-2` | 210 ms per query |
+
+So a page costs roughly *(round trips × 57 ms)* divided by however much of it can run in parallel.
+Measured on one clean server:
+
+| Page | Time | Round trips |
+|---|---|---|
+| Landing | 240–475 ms | ~8 |
+| Directory | 490–920 ms | ~11 |
+| Community | 500–1000 ms | ~11 |
+| Emergency | 88–150 ms | ~14, almost all parallel |
+| Simple pages | 87–99 ms | ~3 |
+
+Five changes were made to remove round trips and handshakes, none of which alters behaviour:
+
+1. **One Prisma client per process.** `src/lib/db.ts` cached the client on `globalThis` only outside
+   production. Next.js bundles server code per route, so the same module was loaded more than once
+   per process and each copy built its own client — and its own pool. That is what exhausted the
+   fifteen-client pooler. It is now cached in production too.
+2. **The activity register no longer blocks a page.** The traffic row is still written, but the
+   response does not wait for it: one round trip off *every* page view.
+3. **Badge counts are counts.** `navCounts` was loading whole case graphs, with their clients, firms
+   and documents, to render a number in the sidebar. It is now one `count()` with the same
+   conditions — and a test asserts the badge agrees with the list.
+4. **Session and settings are read together.** All three layouts awaited them one after the other;
+   they are independent questions, so they are asked in parallel.
+5. **The pool is opened at boot and kept open.** `src/instrumentation.ts` warms it before the first
+   request, and a ping every 45 seconds stops the pooler closing an idle connection — which would
+   otherwise bring the 790 ms handshake back for whoever arrived next.
+
+**The remaining cost is distance, not code.** A page making eleven round trips to another continent
+cannot be as fast as one making eleven round trips to a socket. The honest fixes are to **run the
+application in the same region as the database** (`sa-east-1`) — which removes the 57 ms almost
+entirely — or to accept 100–500 ms pages. One further code-level lever exists and is not used here:
+Prisma's `relationJoins` preview feature would collapse the five relation queries behind a directory
+listing into the main query, cutting that page's round trips roughly in half. It needs one line in the
+`generator` block of `prisma/schema.prisma`, and the schema was deliberately left untouched.
+
 ### This installation's project
 
 | | |

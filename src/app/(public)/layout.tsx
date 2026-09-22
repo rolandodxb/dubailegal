@@ -8,9 +8,10 @@ import { BottomNav, SideNav } from '@/components/layout/BottomNav';
 import { buildMemberNav } from '@/components/layout/memberNav';
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const user = await getSessionUser();
-
-  const availability = await getAvailability();
+  // Who is signed in and whether the app is in maintenance are independent
+  // questions: asking them one after the other cost a second round trip on
+  // every page before anything else could start.
+  const [user, availability] = await Promise.all([getSessionUser(), getAvailability()]);
   if (availability.maintenance && !(await mayBypassMaintenance(user?.id ?? null))) {
     return <MaintenanceScreen message={availability.message} signedIn={Boolean(user)} />;
   }
