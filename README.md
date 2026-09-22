@@ -85,7 +85,7 @@ called.
 | `npm run e2e:flows` | Meeting changes and deletions, urgent calls from a case, support tickets, sample-data deletion and the two landing-page audiences |
 | `npm run e2e:brand` | The mark, the receipt layouts, the fixed administrator letterhead and an operator's own account |
 | `npm run e2e:round2` | The pool restriction, chat attachments, encryption at rest, the page layout, call control, recordings and bank-transfer fees |
-| `npm run e2e:community` | Boards, the review queue, the automatic duplicate check, the moderator's decisions and threads |
+| `npm run e2e:community` | Boards, the review queue, the automatic duplicate check, the moderator's decisions, threads and reactions |
 | `npm run shots` | Screenshots of every page at three widths, into `var/shots/` (development only) |
 
 ---
@@ -720,9 +720,26 @@ residency; business and contracts; money and debt; courts and procedure; fees an
 Legal; and everything else. A board with nothing on it is still shown, with a zero — an empty board is
 a true thing to say, and hiding it would make the place look fuller than it is.
 
-Pick a board and you get its threads, sorted by *Most useful* (score against age) or *Newest*. Open
-one and you get the post, its comments in order, a **Reply** button on each comment, and one box at
-the end for a general comment. Votes are a pair of arrows; a second press takes the vote back.
+Pick a board and you get its threads, sorted by *Most useful* (score against age) or *Newest*.
+
+**A post is one card, with everything said about it inside it.** Not a card for the post and a stack of
+separate cards for the comments: the author and their badge, what they wrote, then the reaction bar,
+the comments, and the box to add one — the way a social feed reads. On the feed the first three
+comments ride along with the post and the rest are one click away; on the post page the whole thread is
+there, with a **Reply** button under each comment. A guest gets the same card without any of the
+controls, and the invitation to sign in sits **outside** it, because a card full of disabled buttons
+says nothing.
+
+**Three reactions — 👍 like, ❤️ love, 😮 surprised — on posts and on comments**, with the counts on
+the same line as the comment count. A person holds one reaction per thing: pressing a different one
+replaces it, pressing the one already held takes it back, so nobody counts twice. Emoji are used here
+and deliberately nowhere else in the interface: the rest of the product uses monochrome line icons so
+navigation never looks like a different product from one screen to the next, but a reaction is content
+rather than chrome — people recognise these three before they read a word — and each one carries a
+written label for anybody using a screen reader.
+
+The up and down arrows stay, quieter, because they do a different job: they decide the order of the
+feed. A feed orders by score and reacts with a heart, and those are not the same gesture.
 
 ### Every post is read before it goes up
 
@@ -992,8 +1009,8 @@ scripts/e2e-features.ts       Push, emergencies, rooms, office requests, the fee
 scripts/e2e-collab.ts         Case distribution, enquiry pool, two-factor, guest emergency (90)
 scripts/e2e-flows.ts          Meeting changes, urgent calls, support, sample data, audiences (124)
 scripts/e2e-brand.ts          The mark, receipt layouts, the fixed admin letterhead (91)
-scripts/e2e-round2.ts         Pool, attachments, encryption, page, calls, transfers (131)
-scripts/e2e-community.ts      Boards, review queue, duplicate check, moderation, threads (78)
+scripts/e2e-round2.ts         Pool, attachments, encryption, page, calls, transfers (134)
+scripts/e2e-community.ts      Boards, review queue, duplicate check, moderation, threads, reactions (94)
 scripts/shots.ts              Screenshots of every page, for looking at rather than imagining
 tools/brand/make_logo.py      Generates logo.svg and the icons from the supplied artwork
 scripts/verify-db.ts          Eight data-integrity invariants
@@ -1069,7 +1086,7 @@ The suites drive the real service layer and the real HTTP routes. Covered:
   and their own account; and the review form appearing on a profile for an eligible client,
   explaining itself when not, and disappearing once the case has been reviewed.
 
-Latest run: **941 passed, 0 failed**, across ten suites, with zero rows and zero files left behind,
+Latest run: **960 passed, 0 failed**, across ten suites, with zero rows and zero files left behind,
 and every setting and flag the suites changed restored.
 
 The suites also clean up after themselves where they reach beyond their own fixtures. Some
@@ -1088,27 +1105,49 @@ browser. There is no `@supabase/supabase-js` dependency, deliberately — a key 
 a second, weaker way into the same tables, and the server is already the only thing that should
 touch them.
 
-### Connect it
+### This installation's project
 
-1. Create the project in the region you want the data to live in, and copy the two connection
-   strings from *Project settings → Database*:
+| | |
+|---|---|
+| Project URL | `https://zfjhudomfgypcghgylea.supabase.co` |
+| Region | `eu-central-1` |
+| Publishable key | in `.env` as `SUPABASE_PUBLISHABLE_KEY` |
+| Direct host | `db.zfjhudomfgypcghgylea.supabase.co` — **IPv6 only**, confirmed unreachable from this machine |
+
+The publishable key is a **browser key**: it is safe to ship, and it grants nothing on its own because
+row level security is what decides what a browser may read. This application does not use it — every
+table is reached through Prisma on the server — so it is in `.env` for a future Storage or Realtime
+feature rather than for the data layer. There is deliberately **no `@supabase/supabase-js`
+dependency**: a key in a browser bundle is a second, weaker way into the same tables, and the server is
+already the only thing that should touch them.
+
+Because the direct host is IPv6-only, **migrations go through the session pooler**, which is IPv4 and
+speaks the same protocol on the same port:
 
 ```bash
-# The pooled connection: what the application uses. Transaction pooler, port 6543.
-DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
-
-# The direct connection: what migrations use. Port 5432.
-# New Supabase projects serve this over IPv6 only; if your host has no IPv6, use the
-# *session pooler* on port 5432 of the same pooler host instead — it is IPv4.
-DIRECT_URL="postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres"
+# What the application uses: the transaction pooler. Fill in the database password
+# from Project settings → Database.
+DATABASE_URL="postgresql://postgres.zfjhudomfgypcghgylea:<PASSWORD>@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+# What migrations use: the session pooler, not the IPv6-only direct host.
+DIRECT_URL="postgresql://postgres.zfjhudomfgypcghgylea:<PASSWORD>@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
 ```
 
+Both lines are already written into `.env` as comments, with the project reference and the region
+filled in: replace `<PASSWORD>` and uncomment them.
+
+### Connecting a fresh project
+
+1. Create the project, and copy the two connection strings from *Project settings → Database*.
 2. Apply the schema and check it landed:
 
 ```bash
 npx prisma migrate deploy     # uses DIRECT_URL: migrations need a session
 npm run db:check              # says which host answered, and how many tables it can see
 ```
+
+`npm run db:check` is the two-second answer to "is it actually connected, and to what?" — it prints
+the host, the role, the table and migration counts, whether the URL is pooled, and whether
+`ENCRYPTION_KEY` is set.
 
 `npm run db:check` is the two-second answer to "is it actually connected, and to what?" — it prints
 the host, the role, the table and migration counts, whether the URL is pooled, and whether
@@ -1121,6 +1160,32 @@ The transaction pooler (6543) multiplexes connections and does not offer one, so
 it fail in confusing ways. The application, meanwhile, wants the pooler: it is what keeps a
 serverless or many-instance deployment inside the connection limit. `?pgbouncer=true` and
 `connection_limit=1` are what make Prisma work correctly behind it.
+
+### Moving the data across
+
+The schema goes over with `prisma migrate deploy`. The rows go over with the database's own tools,
+through the container that is already running the local PostgreSQL — it can see both sides, so nothing
+has to be installed:
+
+```bash
+# 1. The schema, from the committed migrations.
+npx prisma migrate deploy
+
+# 2. The rows: everything except Prisma's own bookkeeping table.
+docker exec dubailegal-postgres pg_dump -U dubailegal -d dubailegal \
+  --data-only --disable-triggers --exclude-table=_prisma_migrations \
+  | docker exec -i dubailegal-postgres psql "<DIRECT_URL>"
+
+# 3. Which is what: Prisma's client and its bookkeeping row.
+npx prisma migrate resolve --applied <the migration you just ran>   # only if the diff was empty
+
+# 4. The check.
+npm run db:check && npm run db:verify
+```
+
+Uploaded files stay on this machine: Supabase is the **database**, and `UPLOAD_DIR` is still a local
+directory of encrypted files. Back that directory up separately — a database restore without it
+restores rows whose files are gone.
 
 ### Things worth knowing before you point it at real data
 
@@ -1137,6 +1202,24 @@ serverless or many-instance deployment inside the connection limit. `?pgbouncer=
   cannot be read.
 - **The connection string holds the password.** It goes in the environment, never in the repository,
   and rotating it means rotating `DATABASE_URL` and `DIRECT_URL` together.
+
+## The repository
+
+The source is a git repository with one remote:
+
+```bash
+git remote -v            # origin  https://github.com/rolandodxb/dubailegal.git
+git log --oneline        # the history
+git push -u origin main  # needs your GitHub credentials the first time
+```
+
+Pushing needs a credential that is not in this repository: either `gh auth login` once, or a personal
+access token when git prompts for a password (GitHub stopped accepting account passwords for git). The
+first commit is already made and the branch is `main`, so the push is the only step left.
+
+`.env` is ignored and never committed — it holds the database password, `APP_SECRET` and
+`ENCRYPTION_KEY` — and so is `var/`, which holds uploaded identity documents. `.env.example` carries
+the shape of every setting without any of the values.
 
 ## Going live
 

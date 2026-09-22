@@ -247,6 +247,23 @@ async function main(): Promise<void> {
     const lawyerNav = markup(await html('/dashboard', lawyer.sessionToken));
     check('but it is in a professional’s', lawyerNav.includes('/enquiries'));
 
+    // The community belongs in every dashboard, exactly once.
+    // Counted as navigation entries rather than as links: a dashboard that
+    // offers the community among its tasks is not a duplicate button.
+    check(
+      'a member has the community in their dashboard navigation',
+      (clientNav.match(/>Community<\/span>/g) ?? []).length >= 1,
+    );
+    check(
+      'and a professional has it exactly once, not twice',
+      (lawyerNav.match(/>Community<\/span>/g) ?? []).length === 1,
+      `found ${(lawyerNav.match(/>Community<\/span>/g) ?? []).length}`,
+    );
+    check(
+      'and it is offered among the common tasks on a member’s dashboard',
+      clientNav.includes('Community — ask, answer, recommend'),
+    );
+
     // ════════════════════════════════════════════════════════════════════════
     section('Files and archives travel through the conversation');
 
