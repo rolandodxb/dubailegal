@@ -16,7 +16,7 @@ import { Icon } from '@/components/icons';
 import { DirectoryFilters } from '@/components/directory/DirectoryFilters';
 import { ListingCard } from '@/components/directory/ListingCard';
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
-import { listingPlaceText } from '@/lib/i18n/place';
+import { listingOtherPlacesText, listingPlaceText } from '@/lib/i18n/place';
 import { detectedCountryOrLanguage } from '@/lib/geo-detect';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -216,6 +216,9 @@ export default async function DirectoryPage({
                       accountType: (code) => accountTypeLabel(t, code),
                       emirate: (code) => emirateLabel(t, code),
                       place: (placeListing) => listingPlaceText(t, placeListing),
+                      alsoWorksIn: t.publicPages.listingCard.alsoWorksIn,
+                      otherPlaces: (placeListing) =>
+                        listingOtherPlacesText(t, effectiveLocale, placeListing),
                       legalArea: (code) => legalAreaLabel(t, code),
                     }}
                     key={listing.id}

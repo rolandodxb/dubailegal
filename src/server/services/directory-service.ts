@@ -97,6 +97,9 @@ const LISTING_INCLUDE = {
       },
     },
   },
+  // Where the professional offers to work, so a card can say so when it is more
+  // than one place. Primary first, then the rest alphabetically.
+  coverage: { orderBy: [{ isPrimary: 'desc' }, { countryCode: 'asc' }] },
 } satisfies Prisma.ListingInclude;
 
 export type DirectoryListing = Prisma.ListingGetPayload<{ include: typeof LISTING_INCLUDE }>;

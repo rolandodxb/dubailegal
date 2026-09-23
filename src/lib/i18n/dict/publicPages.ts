@@ -163,6 +163,7 @@ export const publicPagesEn = {
 
   // ── One directory result ──────────────────────────────────────────────
   listingCard: {
+    alsoWorksIn: 'Also works in',
     address: 'Address',
     published: 'published',
     notPublished: 'not published',
@@ -610,6 +611,7 @@ export const publicPagesEs: PublicPagesDict = {
 
   // ── One directory result ──────────────────────────────────────────────
   listingCard: {
+    alsoWorksIn: 'También trabaja en',
     address: 'Dirección',
     published: 'publicado',
     notPublished: 'no publicado',
