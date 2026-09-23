@@ -184,6 +184,75 @@ async function main(): Promise<void> {
 
   try {
     // ════════════════════════════════════════════════════════════════════════
+    section('A listing can offer to work in more than one country');
+
+    /**
+     * Through the *form* path, not the service directly.
+     *
+     * The multi-country rows travelled in a hidden field and the browser was the
+     * only place that assembled them, so a bug in that assembly was invisible to
+     * every test here — the service was always handed a ready-made array. This
+     * builds the FormData a browser would send and runs it through the same three
+     * steps the action does, so the gap cannot open again.
+     */
+    {
+      const { formDataToObject } = await import('../src/lib/form-state');
+      const { listingSchema } = await import('../src/lib/validation');
+
+      // A lawyer with no listing yet, so the saved row is this test's alone.
+      const multiCountry = await register(`multi.${runId}@example.ae`, 'LAWYER');
+      await makeProfile(multiCountry.userId, 'Multi Country', 9300);
+      await prisma.user.update({
+        where: { id: multiCountry.userId },
+        data: { verificationStatus: 'APPROVED' },
+      });
+
+      const form = new FormData();
+      const set = (key: string, value: string) => form.append(key, value);
+      set('displayName', 'Feature Multi Country');
+      set('headline', 'Civil');
+      set('bio', 'Fixture listing with several countries.');
+      set('primaryCountryCode', 'AR');
+      set('primaryDivisionCode', 'AR.14');
+      set('primaryLocality', 'Posadas');
+      form.append('areas', 'CIVIL');
+      set('languages', 'Spanish');
+      set('acceptsNewClients', 'on');
+      set('published', 'on');
+      set('coverage', JSON.stringify([
+        { countryCode: 'CL', divisionCode: 'CL.12', districtCode: null, locality: 'Santiago' },
+        // A row the reader added and has not filled in yet.
+        { countryCode: '', divisionCode: '', districtCode: '', locality: '' },
+      ]));
+
+      const parsed = listingSchema.safeParse(formDataToObject(form, ['emirates', 'areas']));
+      check('the form a browser sends is accepted', parsed.success === true);
+      if (parsed.success) {
+        check('the filled country survives', parsed.data.coverage.length === 1);
+        check('and the untouched row is dropped', parsed.data.coverage[0]?.countryCode === 'CL');
+      }
+
+      const multi = await saveListing(
+        multiCountry.userId,
+        listingSchema.safeParse(formDataToObject(form, ['emirates', 'areas'])).success
+          ? (listingSchema.parse(formDataToObject(form, ['emirates', 'areas'])) as never)
+          : {},
+        meta,
+      );
+      check('and the listing saves', multi.ok === true, multi.ok === false ? multi.message : '');
+
+      const stored = await prisma.listing.findUnique({
+        where: { userId: multiCountry.userId },
+        select: { primaryCountryCode: true, primaryEmirate: true, coverage: { select: { countryCode: true } } },
+      });
+      check('with no emirate, because it is not in the Emirates', stored?.primaryEmirate === null);
+      check(
+        'and both countries stored',
+        (stored?.coverage ?? []).map((row) => row.countryCode).sort().join(',') === 'AR,CL',
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
     section('Directory filters are a dropdown, not a permanent panel');
 
     const directoryHtml = await (await fetch(`${BASE_URL}/directory`)).text();
