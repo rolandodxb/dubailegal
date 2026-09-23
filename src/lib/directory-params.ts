@@ -32,6 +32,10 @@ export function parseDirectoryParams(params: RawSearchParams): DirectoryQuery {
     .map((value) => value.trim().toUpperCase())
     .filter((value) => /^[A-Z]{2}$/.test(value));
 
+  const divisionValues = toArray(params.divisions)
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => /^[A-Z]{2}\.[A-Z0-9]+$/.test(value));
+
   const kindRaw = toSingle(params.kind);
   const kind: AccountType | 'ALL' | undefined =
     kindRaw && Object.prototype.hasOwnProperty.call(AccountType, kindRaw)
@@ -51,6 +55,7 @@ export function parseDirectoryParams(params: RawSearchParams): DirectoryQuery {
     areas: areaValues,
     emirates: emirateValues,
     countries: countryValues,
+    divisions: divisionValues,
     verifiedOnly: toSingle(params.verifiedOnly) === 'on' || toSingle(params.verifiedOnly) === 'true',
     acceptsNewClients:
       toSingle(params.acceptsNewClients) === 'on' || toSingle(params.acceptsNewClients) === 'true',
@@ -66,6 +71,7 @@ export function buildDirectoryUrl(query: DirectoryQuery, page: number): string {
   for (const area of query.areas ?? []) params.append('areas', area);
   for (const emirate of query.emirates ?? []) params.append('emirates', emirate);
   for (const country of query.countries ?? []) params.append('countries', country);
+  for (const division of query.divisions ?? []) params.append('divisions', division);
   if (query.verifiedOnly) params.set('verifiedOnly', 'on');
   if (query.acceptsNewClients) params.set('acceptsNewClients', 'on');
   if (page > 1) params.set('page', String(page));

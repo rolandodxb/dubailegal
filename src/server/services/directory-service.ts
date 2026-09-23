@@ -10,6 +10,8 @@ export type DirectoryQuery = {
   emirates?: Emirate[];
   /** ISO alpha-2 codes. A listing matches if it offers to work in any of them. */
   countries?: string[];
+  /** Admin1 codes such as AR.14 — the province or state within a country. */
+  divisions?: string[];
   verifiedOnly?: boolean;
   acceptsNewClients?: boolean;
   page?: number;
@@ -165,11 +167,25 @@ async function runSearchDirectory(query: DirectoryQuery) {
   if (query.emirates && query.emirates.length > 0) {
     where.emirates = { hasSome: query.emirates };
   }
+  if (query.divisions && query.divisions.length > 0) {
+    // A region is narrower than a country and asked the same way: a listing matches
+    // if it works there, wherever that region happens to sit within the coverage.
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      {
+        OR: [
+          { primaryDivisionCode: { in: query.divisions } },
+          { coverage: { some: { divisionCode: { in: query.divisions } } } },
+        ],
+      },
+    ];
+  }
   if (query.countries && query.countries.length > 0) {
     // Kept in AND rather than OR so it composes with the text search below, which
     // owns OR. A listing matches a country if it offers to work there — not merely
     // if that is where its head office is, because a professional may cover several.
     where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
       {
         OR: [
           { primaryCountryCode: { in: query.countries } },
@@ -247,7 +263,13 @@ export async function directoryFacetCounts() {
 async function loadFacetCounts() {
   const rows = await prisma.listing.findMany({
     where: publicDirectoryWhere(),
-    select: { areas: true, emirates: true, kind: true, primaryCountryCode: true },
+    select: {
+      areas: true,
+      emirates: true,
+      kind: true,
+      primaryCountryCode: true,
+      primaryDivisionCode: true,
+    },
   });
 
   const areaCounts = new Map<LegalArea, number>();
@@ -258,6 +280,8 @@ async function loadFacetCounts() {
    * separate categories with the same name in them.
    */
   const countryCounts = new Map<string, number>();
+  /** Published listings by admin1 code, so the region filter offers real ones. */
+  const divisionCounts = new Map<string, number>();
   const emirateCounts = new Map<Emirate, number>();
   const kindCounts = new Map<AccountType, number>();
 
@@ -267,9 +291,18 @@ async function loadFacetCounts() {
     for (const emirate of row.emirates) emirateCounts.set(emirate, (emirateCounts.get(emirate) ?? 0) + 1);
     const country = row.primaryCountryCode;
     if (country) countryCounts.set(country, (countryCounts.get(country) ?? 0) + 1);
+    const region = row.primaryDivisionCode;
+    if (region) divisionCounts.set(region, (divisionCounts.get(region) ?? 0) + 1);
   }
 
-  return { areaCounts, countryCounts, emirateCounts, kindCounts, totalPublished: rows.length };
+  return {
+    areaCounts,
+    countryCounts,
+    divisionCounts,
+    emirateCounts,
+    kindCounts,
+    totalPublished: rows.length,
+  };
 }
 
 /**

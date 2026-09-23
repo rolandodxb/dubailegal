@@ -13,12 +13,15 @@ import {
   cx,
 } from '@/components/ui/primitives';
 import { countryName } from '@/lib/i18n/country-names';
+import { divisionName } from '@/lib/geo';
 
 type Facets = {
   areaCounts: Map<LegalArea, number>;
   emirateCounts: Map<Emirate, number>;
   /** Published listings by ISO alpha-2 country code. */
   countryCounts: Map<string, number>;
+  /** Published listings by admin1 code. */
+  divisionCounts: Map<string, number>;
   kindCounts: Map<AccountType, number>;
   totalPublished: number;
 };
@@ -44,6 +47,17 @@ export async function DirectoryFilters({
   const selectedAreas = new Set(query.areas ?? []);
   const selectedEmirates = new Set(query.emirates ?? []);
   const selectedCountries = new Set(query.countries ?? []);
+  const selectedDivisions = new Set(query.divisions ?? []);
+  /**
+   * The regions on offer.
+   *
+   * Narrowed to the countries being looked at when the reader has chosen any: a
+   * list of every province on earth beside a country filter would be a worse
+   * question than the one it answers.
+   */
+  const regionCodes = [...facets.divisionCounts.keys()]
+    .filter((code) => selectedCountries.size === 0 || selectedCountries.has(code.split('.')[0] ?? ''))
+    .sort((a, b) => (divisionName(a) ?? a).localeCompare(divisionName(b) ?? b));
   // The emirate list is a question about the United Arab Emirates only, so it is
   // asked only when that is the country being looked at — or when no country has
   // been chosen and the emirates are still a fair way to narrow the results.
@@ -146,6 +160,26 @@ export async function DirectoryFilters({
           ) : null}
         </div>
       </fieldset>
+
+      {regionCodes.length > 0 ? (
+        <fieldset>
+          <legend className="text-sm font-medium text-slate-800">{labels.region}</legend>
+          <p className="mt-0.5 text-xs text-slate-500">{labels.regionHint}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {regionCodes.map((code) => (
+              <ChipCheckbox
+                key={code}
+                id={`division-${code}`}
+                name="divisions"
+                value={code}
+                label={divisionName(code) ?? code}
+                count={facets.divisionCounts.get(code)}
+                defaultChecked={selectedDivisions.has(code)}
+              />
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
 
       {emiratesRelevant ? (
       <fieldset>
