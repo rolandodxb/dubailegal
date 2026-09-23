@@ -99,6 +99,12 @@ export default async function ProfilePage() {
             placeOfBirth: profile.placeOfBirth,
             countryOfResidence: profile.countryOfResidence,
             nationality: profile.nationality,
+            // The country *codes* are what the pickers bind to. Without them the
+            // form reopens on "Not specified" and the stored answer looks lost.
+            countryOfBirthCode: profile.countryOfBirthCode,
+            nationalityCode: profile.nationalityCode,
+            countryOfResidenceCode: profile.countryOfResidenceCode,
+            declaresNoResidencePermit: profile.declaresNoResidencePermit,
             phone: profile.phone,
             emiratesIdNumber: profile.emiratesIdNumber,
             emiratesIdExpiry: profile.emiratesIdExpiry,

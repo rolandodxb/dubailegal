@@ -4,7 +4,11 @@ import { ALL_COUNTRIES } from './countries';
 const ALL_COUNTRY_CODES = new Set(ALL_COUNTRIES.map((country) => country.code));
 import { AccountType, Emirate, LegalArea } from '@prisma/client';
 import { MIN_PASSWORD_LENGTH } from './constants';
-import { hasValidEmiratesIdFormat, normaliseEmiratesId } from './emirates-id';
+import {
+  hasValidEmiratesIdFormat,
+  normaliseEmiratesId,
+  normaliseIdentityNumber,
+} from './emirates-id';
 import { parseDateInput } from './format';
 
 // ── Primitives ───────────────────────────────────────────────────────────────
@@ -61,14 +65,27 @@ function optionalDate(label: string) {
     });
 }
 
+/**
+ * The member's identity document number.
+ *
+ * Required, because a reviewer has to be able to check identity, but not
+ * necessarily an Emirates ID: the platform is used worldwide, so a passport or
+ * national card number is accepted. A number that begins 784 *is* an Emirates ID,
+ * and that one is held to the exact 15-digit form — the requirement follows the
+ * document rather than the other way round.
+ */
 export const emiratesIdSchema = z
   .string()
   .trim()
-  .min(1, 'Your Emirates ID is required.')
-  .transform((value) => normaliseEmiratesId(value) ?? value)
+  .min(1, 'Your identity document number is required.')
+  .transform((value) => normaliseEmiratesId(value) ?? normaliseIdentityNumber(value) ?? value)
   .refine(
-    (value) => hasValidEmiratesIdFormat(value),
-    'Enter the 15-digit Emirates ID exactly as printed, e.g. 784-1990-1234567-1.',
+    (value) => !value.startsWith('784') || hasValidEmiratesIdFormat(value),
+    'A number beginning 784 is an Emirates ID. Enter all 15 digits, e.g. 784-1990-1234567-1.',
+  )
+  .refine(
+    (value) => normaliseIdentityNumber(value) !== null,
+    'Enter the number exactly as printed on the document.',
   );
 
 function optionalWebsite() {
@@ -256,6 +273,23 @@ export const profileSchema = z
       const earliest = new Date(2000, 0, 1);
       if (data.emiratesIdExpiry < earliest) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['emiratesIdExpiry'], message: 'Please check the expiry date.' });
+      }
+    }
+
+    // The identity document is the one the member's own country issues, so the
+    // rule follows the country of nationality (or birth, where nationality is not
+    // given). A country that has not been recorded yet is treated as the United
+    // Arab Emirates, which is the same forgiving-but-strict default the document
+    // rules use — so an account that has said nothing is never waved through.
+    const issuingCountry = data.nationalityCode ?? data.countryOfBirthCode ?? null;
+    if (issuingCountry === null || issuingCountry === 'AE') {
+      if (!hasValidEmiratesIdFormat(data.emiratesIdNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['emiratesIdNumber'],
+          message:
+            'Enter the 15-digit Emirates ID exactly as printed, e.g. 784-1990-1234567-1. Choose your nationality above if your identity document is from another country.',
+        });
       }
     }
   });

@@ -1,7 +1,11 @@
 import { prisma } from '@/lib/db';
 import { recordAudit } from '@/lib/audit';
 import { keyedDigest } from '@/lib/tokens';
-import { emiratesIdCheckDigitMatches, normaliseEmiratesId } from '@/lib/emirates-id';
+import {
+  emiratesIdCheckDigitMatches,
+  isEmiratesIdNumber,
+  normaliseIdentityNumber,
+} from '@/lib/emirates-id';
 import { profileSchema } from '@/lib/validation';
 import { countryName } from '@/lib/countries';
 import { fromZodError, failure, success, type ServiceResult } from './result';
@@ -29,10 +33,12 @@ export async function updateProfile(
   if (!parsed.success) return fromZodError(parsed.error);
 
   const data = parsed.data;
-  const digits = normaliseEmiratesId(data.emiratesIdNumber);
+  const digits = normaliseIdentityNumber(data.emiratesIdNumber);
   if (!digits) {
-    return failure('Enter your Emirates ID as printed on the card.', {
-      fieldErrors: { emiratesIdNumber: 'Enter your 15-digit Emirates ID.' },
+    return failure('Enter your identity document number as printed on the document.', {
+      fieldErrors: {
+        emiratesIdNumber: 'Enter the number exactly as printed on the document.',
+      },
     });
   }
   const fingerprint = keyedDigest(`emirates-id:${digits}`);
@@ -63,7 +69,10 @@ export async function updateProfile(
   const previousFingerprint = user.profile?.emiratesIdFingerprint ?? null;
   const identityChanged = previousFingerprint !== null && previousFingerprint !== fingerprint;
 
-  const checkDigitOk = emiratesIdCheckDigitMatches(digits);
+  // The check digit is a property of Emirates IDs, so it is only meaningful — and
+  // only advisory — for a number that is actually one. Any other country's
+  // document is confirmed by the reviewer against the upload, as it always was.
+  const checkDigitOk = isEmiratesIdNumber(digits) ? emiratesIdCheckDigitMatches(digits) : true;
 
   await prisma.profile.upsert({
     where: { userId },

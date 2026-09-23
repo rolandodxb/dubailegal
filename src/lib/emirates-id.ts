@@ -91,3 +91,24 @@ export function emiratesIdInputHint(input: string): string | null {
   if (!digits.startsWith('784')) return 'A UAE Emirates ID always starts with 784.';
   return null;
 }
+
+/**
+ * The number of whichever identity document the member's country issues.
+ *
+ * The platform is used worldwide, so the identity document cannot always be an
+ * Emirates ID — a passport number contains letters, and no country but the United
+ * Arab Emirates issues a 784-prefixed card. This accepts any plausible document
+ * number and upper-cases it; the UAE-specific rules below are applied only when
+ * the number is actually a UAE one.
+ */
+export function normaliseIdentityNumber(input: string): string | null {
+  const cleaned = input.replace(/[\s-]/g, '').toUpperCase();
+  if (!/^[A-Z0-9]{5,40}$/.test(cleaned)) return null;
+  return cleaned;
+}
+
+/** True when the value is a well-formed Emirates ID, rather than another country's document. */
+export function isEmiratesIdNumber(input: string): boolean {
+  const digits = normaliseEmiratesId(input);
+  return digits !== null && EMIRATES_ID_PATTERN.test(digits);
+}
