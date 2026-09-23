@@ -16,6 +16,7 @@ import {
 import { countryName } from '@/lib/i18n/country-names';
 import { divisionName } from '@/lib/geo';
 import { ALL_COUNTRIES } from '@/lib/countries';
+import { CountrySelect } from '@/components/forms/CountrySelect';
 
 type Facets = {
   areaCounts: Map<LegalArea, number>;
@@ -52,11 +53,14 @@ export async function DirectoryFilters({
   const selectedDivision = (query.divisions ?? [])[0] ?? null;
   const selectedCountry = (query.countries ?? [])[0] ?? null;
   /** Every country, with the number of profiles in each, most populated first. */
-  const countryOptions = ALL_COUNTRIES.map((country) => ({
-    code: country.code,
-    name: countryName(effectiveLocale, country.code, country.name),
-    count: facets.countryCounts.get(country.code) ?? 0,
-  })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  const countryNames = Object.fromEntries(
+    ALL_COUNTRIES.map((country) => [
+      country.code,
+      facets.countryCounts.get(country.code)
+        ? `${countryName(effectiveLocale, country.code, country.name)} (${facets.countryCounts.get(country.code)})`
+        : countryName(effectiveLocale, country.code, country.name),
+    ]),
+  );
   /**
    * The regions on offer.
    *
@@ -159,20 +163,30 @@ export async function DirectoryFilters({
           Countries with profiles are counted, so the reader can see where the
           directory is populated before choosing.
         */}
-        <div className="mt-2">
-          <Select
+        <div className="mt-2 space-y-2">
+          {/*
+            The searchable picker the profile form already uses, rather than a
+            native select: a list of 154 countries in a native dropdown covers the
+            screen on a phone, and this filters as the reader types.
+          */}
+          <CountrySelect
             id="countries"
             name="countries"
+            label={labels.country}
             defaultValue={selectedCountry ?? ''}
-            aria-label={labels.country}
+            emptyOption={labels.myCountry}
+            placeholder={labels.searchCountry}
+            names={countryNames}
+          />
+          {/* One press for "everywhere", which an empty picker cannot express. */}
+          <button
+            type="submit"
+            name="countries"
+            value="ALL"
+            className={buttonClasses('ghost', 'sm')}
           >
-            <option value="">{labels.anywhere}</option>
-            {countryOptions.map((option) => (
-              <option key={option.code} value={option.code}>
-                {option.count > 0 ? `${option.name} (${option.count})` : option.name}
-              </option>
-            ))}
-          </Select>
+            {labels.anywhere}
+          </button>
         </div>
       </fieldset>
 

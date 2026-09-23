@@ -46,8 +46,11 @@ export default async function DirectoryPage({
    * replaced.
    */
   const countriesParam = params.countries;
-  const countriesFirst = Array.isArray(countriesParam) ? countriesParam[0] : countriesParam;
-  const anywhere = countriesFirst === 'ALL';
+  const countryParams = Array.isArray(countriesParam) ? countriesParam : countriesParam ? [countriesParam] : [];
+  // `ALL` may arrive on its own or beside the picker's value, so it is looked for
+  // anywhere in the list. An empty value is not "everywhere" — it means the reader
+  // has not chosen, and the detected country applies.
+  const anywhere = countryParams.includes('ALL');
   const detected = parsed.countries && parsed.countries.length > 0
     ? null
     : anywhere
