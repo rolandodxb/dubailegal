@@ -244,10 +244,17 @@ export async function directoryFacetCounts() {
 async function loadFacetCounts() {
   const rows = await prisma.listing.findMany({
     where: publicDirectoryWhere(),
-    select: { areas: true, emirates: true, kind: true },
+    select: { areas: true, emirates: true, kind: true, primaryCountryCode: true },
   });
 
   const areaCounts = new Map<LegalArea, number>();
+  /**
+   * How many published listings are in each country. Built from the listing's own
+   * country rather than its coverage rows, because this drives the checkbox list:
+   * a professional who covers three countries should not make all three appear as
+   * separate categories with the same name in them.
+   */
+  const countryCounts = new Map<string, number>();
   const emirateCounts = new Map<Emirate, number>();
   const kindCounts = new Map<AccountType, number>();
 
@@ -255,9 +262,11 @@ async function loadFacetCounts() {
     kindCounts.set(row.kind, (kindCounts.get(row.kind) ?? 0) + 1);
     for (const area of row.areas) areaCounts.set(area, (areaCounts.get(area) ?? 0) + 1);
     for (const emirate of row.emirates) emirateCounts.set(emirate, (emirateCounts.get(emirate) ?? 0) + 1);
+    const country = row.primaryCountryCode;
+    if (country) countryCounts.set(country, (countryCounts.get(country) ?? 0) + 1);
   }
 
-  return { areaCounts, emirateCounts, kindCounts, totalPublished: rows.length };
+  return { areaCounts, countryCounts, emirateCounts, kindCounts, totalPublished: rows.length };
 }
 
 /**

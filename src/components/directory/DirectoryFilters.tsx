@@ -12,10 +12,13 @@ import {
   Input,
   cx,
 } from '@/components/ui/primitives';
+import { countryName } from '@/lib/i18n/country-names';
 
 type Facets = {
   areaCounts: Map<LegalArea, number>;
   emirateCounts: Map<Emirate, number>;
+  /** Published listings by ISO alpha-2 country code. */
+  countryCounts: Map<string, number>;
   kindCounts: Map<AccountType, number>;
   totalPublished: number;
 };
@@ -37,8 +40,17 @@ export async function DirectoryFilters({
 }) {
   const { t } = await getI18n();
   const labels = t.publicPages.directoryFilters;
+  const { effectiveLocale } = await getI18n();
   const selectedAreas = new Set(query.areas ?? []);
   const selectedEmirates = new Set(query.emirates ?? []);
+  const selectedCountries = new Set(query.countries ?? []);
+  // The emirate list is a question about the United Arab Emirates only, so it is
+  // asked only when that is the country being looked at — or when no country has
+  // been chosen and the emirates are still a fair way to narrow the results.
+  const emiratesRelevant = selectedCountries.size === 0 || selectedCountries.has('AE');
+  const countryCodes = [...facets.countryCounts.keys()].sort((a, b) =>
+    countryName(effectiveLocale, a, a).localeCompare(countryName(effectiveLocale, b, b)),
+  );
   const kindCount = (kind: AccountType) => facets.kindCounts.get(kind) ?? 0;
 
   return (
@@ -115,6 +127,28 @@ export async function DirectoryFilters({
       </fieldset>
 
       <fieldset>
+        <legend className="text-sm font-medium text-slate-800">{labels.country}</legend>
+        <p className="mt-0.5 text-xs text-slate-500">{labels.countryHint}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {countryCodes.map((code) => (
+            <ChipCheckbox
+              key={code}
+              id={`country-${code}`}
+              name="countries"
+              value={code}
+              label={countryName(effectiveLocale, code, code)}
+              count={facets.countryCounts.get(code)}
+              defaultChecked={selectedCountries.has(code)}
+            />
+          ))}
+          {countryCodes.length === 0 ? (
+            <p className="text-xs text-slate-500">{labels.noCountries}</p>
+          ) : null}
+        </div>
+      </fieldset>
+
+      {emiratesRelevant ? (
+      <fieldset>
         <legend className="text-sm font-medium text-slate-800">{labels.emirate}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {EMIRATES.filter((emirate) => (facets.emirateCounts.get(emirate.value) ?? 0) > 0).map(
@@ -135,6 +169,7 @@ export async function DirectoryFilters({
           ) : null}
         </div>
       </fieldset>
+      ) : null}
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-slate-800">{labels.refine}</legend>
