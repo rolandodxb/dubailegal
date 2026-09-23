@@ -51,3 +51,37 @@ export async function detectedCountry(): Promise<string | null> {
   }
   return null;
 }
+
+/**
+ * A fallback when the network will not say, from the language the browser asks for.
+ *
+ * `Accept-Language` is not a location: it is the language the reader wants, and
+ * somebody in Argentina running an English browser asks for `en-US`. So this is
+ * used *only* when no platform header supplied a country, and only when the tag
+ * names a region — `es-AR` gives Argentina, `en` alone gives nothing, because a
+ * language without a region is a language and not a place.
+ *
+ * It is a hint rather than a fact, and it is treated as one: it decides which
+ * country's directory opens *by default*, and the filter overrides it in a click.
+ * The alternative — showing the whole world because a proxy did not pass a header —
+ * is what makes the feature look broken on an installation like this one.
+ */
+function countryFromLanguage(header: string | null): string | null {
+  if (!header) return null;
+  for (const part of header.split(',')) {
+    const tag = part.trim().split(';')[0]?.trim();
+    if (!tag) continue;
+    const match = /^[A-Za-z]{2,3}-([A-Za-z]{2})$/.exec(tag);
+    const region = normalise(match?.[1]);
+    if (region) return region;
+  }
+  return null;
+}
+
+/** The country the reader's browser asks for, as a last resort. */
+export async function detectedCountryOrLanguage(): Promise<string | null> {
+  const fromNetwork = await detectedCountry();
+  if (fromNetwork) return fromNetwork;
+  const store = await headers();
+  return countryFromLanguage(store.get('accept-language'));
+}

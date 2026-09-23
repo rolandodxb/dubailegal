@@ -12,7 +12,7 @@ import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/prim
 import { Icon, type IconName } from '@/components/icons';
 import { relativeTime } from '@/lib/i18n/format';
 import { composerLabels } from '@/lib/i18n/dict/feed';
-import { detectedCountry } from '@/lib/geo-detect';
+import { detectedCountryOrLanguage } from '@/lib/geo-detect';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -44,7 +44,7 @@ export default async function CommunityPage({
         })
       )?.profile?.countryOfResidenceCode ?? null
     : null;
-  const detected = userCountry ? null : await detectedCountry();
+  const detected = userCountry ? null : await detectedCountryOrLanguage();
   const blog = t.publicPages.blog;
   const sort = params.sort === 'new' ? 'new' : 'hot';
   const topic = COMMUNITY_TOPICS.some((entry) => entry.value === params.topic) ? params.topic! : null;

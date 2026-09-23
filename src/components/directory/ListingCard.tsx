@@ -179,9 +179,15 @@ export function ListingCard({
             <span className="tabular-nums">{labels.years.replace('{count}', String(listing.yearsOfExperience))}</span>
           </Fact>
         ) : null}
-        <Fact label={labels.emirates}>
-          {listWithOverflow(listing.emirates.map((e) => labels.emirate(e)))}
-        </Fact>
+        {/* The emirates are a United Arab Emirates answer to "where". A listing
+            anywhere else has none, and showing an empty "Emirates —" row on an
+            Argentine profile says the wrong thing twice: that the question applies,
+            and that the answer is nothing. Its place is already under its name. */}
+        {listing.emirates.length > 0 ? (
+          <Fact label={labels.emirates}>
+            {listWithOverflow(listing.emirates.map((e) => labels.emirate(e)))}
+          </Fact>
+        ) : null}
         <Fact label={labels.languages}>{listWithOverflow(listing.languages)}</Fact>
         <Fact label={labels.contact}>
           <span className="inline-flex items-center gap-3">

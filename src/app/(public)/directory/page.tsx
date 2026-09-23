@@ -17,7 +17,7 @@ import { DirectoryFilters } from '@/components/directory/DirectoryFilters';
 import { ListingCard } from '@/components/directory/ListingCard';
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { listingPlaceText } from '@/lib/i18n/place';
-import { detectedCountry } from '@/lib/geo-detect';
+import { detectedCountryOrLanguage } from '@/lib/geo-detect';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -52,7 +52,7 @@ export default async function DirectoryPage({
     ? null
     : anywhere
       ? null
-      : await detectedCountry();
+      : await detectedCountryOrLanguage();
 
   const query =
     detected && (!parsed.countries || parsed.countries.length === 0)
