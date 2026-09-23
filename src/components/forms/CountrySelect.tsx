@@ -15,6 +15,10 @@ import { Icon } from '@/components/icons';
  *
  * The value posted is the two-letter ISO code, which is what the verification
  * rules are written against.
+ *
+ * `names` is an optional map from code to a localised label. Where it has an
+ * entry it is both shown and searched, so a reader can type the country in their
+ * own language; where it does not, the English name is used exactly as before.
  */
 export function CountrySelect({
   id,
@@ -26,6 +30,7 @@ export function CountrySelect({
   error,
   placeholder = 'Search for a country…',
   emptyOption = 'Not specified',
+  names,
 }: {
   id: string;
   name: string;
@@ -36,18 +41,26 @@ export function CountrySelect({
   error?: string;
   placeholder?: string;
   emptyOption?: string;
+  names?: Record<string, string>;
 }) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(defaultValue);
   const [open, setOpen] = useState(false);
 
+  const labelFor = (country: (typeof ALL_COUNTRIES)[number]) =>
+    names?.[country.code] ?? country.name;
+
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return ALL_COUNTRIES;
-    return ALL_COUNTRIES.filter((country) => country.name.toLowerCase().includes(needle));
-  }, [query]);
+    return ALL_COUNTRIES.filter((country) => {
+      const label = names?.[country.code] ?? country.name;
+      return label.toLowerCase().includes(needle) || country.name.toLowerCase().includes(needle);
+    });
+  }, [query, names]);
 
-  const selectedName = ALL_COUNTRIES.find((country) => country.code === selected)?.name ?? '';
+  const selectedCountry = ALL_COUNTRIES.find((country) => country.code === selected);
+  const selectedName = selectedCountry ? labelFor(selectedCountry) : '';
 
   return (
     <div>
@@ -112,7 +125,9 @@ export function CountrySelect({
                         : 'text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <span className="min-w-0 flex-1 truncate">{country.name}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {names?.[country.code] ?? country.name}
+                    </span>
                     {country.nationalId ? (
                       <span className="shrink-0 text-[11px] text-slate-400">{country.nationalId}</span>
                     ) : null}

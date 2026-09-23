@@ -5,11 +5,13 @@ import { memberCasesEs } from './dict/memberCases';
 import { memberProEs } from './dict/memberPro';
 import { adminEs } from './dict/admin';
 import { feedEs } from './dict/feed';
+import { labelsEs } from './dict/labels';
+import { requirementsEs } from './dict/requirements';
 
 /** Spanish. Typed against English, so nothing can be forgotten. */
 const baseEs: Omit<
   Dictionary,
-  'publicPages' | 'memberCore' | 'memberCases' | 'memberPro' | 'admin' | 'feed'
+  'publicPages' | 'memberCore' | 'memberCases' | 'memberPro' | 'admin' | 'feed' | 'labels' | 'requirements'
 > = {
   language: { label: 'Idioma', change: 'Cambiar de idioma' },
 
@@ -352,4 +354,6 @@ export const es: Dictionary = {
   memberPro: memberProEs,
   admin: adminEs,
   feed: feedEs,
+  labels: labelsEs,
+  requirements: requirementsEs,
 };

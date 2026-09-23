@@ -25,12 +25,41 @@ import { countryByCode, sameCountry, type Country } from './countries';
  *      them. It is the ordinary situation of somebody who has just moved.
  */
 
+/**
+ * Which sentence describes a requirement.
+ *
+ * The words themselves live in the dictionary, because they have to be readable
+ * in more than one language; the rule only says which sentence applies and what
+ * it has to be told. Keeping the two apart is what stops a country's name and a
+ * document's name being frozen into English the moment a rule is built.
+ */
+export type RequirementCode =
+  | 'emiratesId'
+  | 'unknownOrigin'
+  | 'originIdentity'
+  | 'residence'
+  | 'residenceDeclaredMissing'
+  | 'licence'
+  | 'practiceAuthorisation'
+  | 'firmRegistration'
+  | 'firmAuthority'
+  | 'photograph';
+
 /** One thing the member is asked for, with the words shown to them. */
 export type DocumentRequest = {
+  /** Which dictionary sentence describes this. */
+  code: RequirementCode;
   /** Any one of these satisfies the requirement. */
   kinds: DocumentKind[];
+  /** The English wording, kept for tests and for anything that needs no locale. */
   label: string;
   why: string;
+  /**
+   * What the sentence interpolates: country codes for the countries being named,
+   * and the plain names of the identity card and residence permit involved, which
+   * are data rather than prose.
+   */
+  vars?: { origin?: string; residence?: string; card?: string; permit?: string };
   /** Shown when the document must come from outside the country of residence. */
   legalisationNote?: string;
   /** True when the member may declare they do not hold it yet. */
@@ -101,18 +130,25 @@ export function documentRulesFor(member: MemberCountries): DocumentRules {
 
   if (isEmirates) {
     requests.push({
+      code: 'emiratesId',
       kinds: ['EMIRATES_ID'],
       label: 'Emirates ID',
       why: 'The Emirates ID is both the identity document and the residence permit in the United Arab Emirates.',
     });
   } else if (!originCountry) {
     requests.push({
+      code: 'unknownOrigin',
       kinds: ['EMIRATES_ID', 'PASSPORT', 'NATIONAL_ID'],
       label: 'Passport, or the identity card you hold',
       why: 'Tell us where you were born and which nationality you hold, and this becomes the exact document for your country. Until then, a passport or a national identity card is accepted.',
     });
   } else {
     requests.push({
+      code: 'originIdentity',
+      vars: {
+        origin: originCountry.code,
+        ...(originCountry.nationalId ? { card: originCountry.nationalId } : {}),
+      },
       kinds: originCountry.nationalId ? ['NATIONAL_ID', 'PASSPORT'] : ['PASSPORT'],
       label: originCountry.nationalId
         ? `${originCountry.name}: ${originCountry.nationalId} or passport`
@@ -129,6 +165,12 @@ export function documentRulesFor(member: MemberCountries): DocumentRules {
   if (crossBorder && residenceCountry) {
     const declared = member.declaresNoResidencePermit === true;
     requests.push({
+      code: 'residence',
+      vars: {
+        origin: originCountry?.code,
+        residence: residenceCountry.code,
+        ...(residenceCountry.residencePermit ? { permit: residenceCountry.residencePermit } : {}),
+      },
       kinds: ['RESIDENCE_PERMIT'],
       label: residenceCountry.residencePermit
         ? `${residenceCountry.name}: ${residenceCountry.residencePermit}`
@@ -142,6 +184,8 @@ export function documentRulesFor(member: MemberCountries): DocumentRules {
     });
     if (declared && member.accountType === 'USER') {
       requests.push({
+        code: 'residenceDeclaredMissing',
+        vars: { residence: residenceCountry.code },
         kinds: [],
         label: `Noted: no ${residenceCountry.name} residence permit yet`,
         why: 'You have said you do not hold one yet. That is recorded, it does not stop your account being verified, and you can add it later — you will simply be able to do less until you do.',
@@ -152,6 +196,8 @@ export function documentRulesFor(member: MemberCountries): DocumentRules {
   // ── Practising law ────────────────────────────────────────────────────────
   if (member.accountType === 'LAWYER' || member.accountType === 'FIRM') {
     requests.push({
+      code: 'licence',
+      vars: { origin: originCountry?.code },
       kinds: ['LAWYER_LICENSE'],
       label: originCountry
         ? `Licence to practise law issued in ${originCountry.name}`
@@ -164,6 +210,8 @@ export function documentRulesFor(member: MemberCountries): DocumentRules {
 
     if (crossBorder && residenceCountry) {
       requests.push({
+        code: 'practiceAuthorisation',
+        vars: { origin: originCountry?.code, residence: residenceCountry.code },
         kinds: ['PRACTICE_AUTHORISATION'],
         label: `Permission to practise in ${residenceCountry.name}`,
         why: `You were admitted in ${originCountry?.name ?? 'another country'} and practise in ${residenceCountry.name}. Practising there normally requires admission or authorisation from its own authorities as well.`,
@@ -174,6 +222,8 @@ export function documentRulesFor(member: MemberCountries): DocumentRules {
 
   if (member.accountType === 'FIRM') {
     requests.push({
+      code: 'firmRegistration',
+      vars: { residence: residenceCountry?.code },
       kinds: ['FIRM_TRADE_LICENSE'],
       label: residenceCountry
         ? `Registration of the firm in ${residenceCountry.name}`
@@ -182,6 +232,7 @@ export function documentRulesFor(member: MemberCountries): DocumentRules {
       legalisationNote: legalisationNoteFor(residenceCountry, residenceCountry),
     });
     requests.push({
+      code: 'firmAuthority',
       kinds: ['POWER_OF_ATTORNEY'],
       label: 'Authorisation of the person registering the firm',
       why: 'The account is being opened on behalf of a firm, so the authority of the person doing it has to be shown.',
@@ -190,6 +241,7 @@ export function documentRulesFor(member: MemberCountries): DocumentRules {
 
   // Photographs are never evidence and always optional.
   requests.push({
+    code: 'photograph',
     kinds: ['PROFILE_PHOTO'],
     label: 'Profile photograph',
     why: 'Shown beside your name. It is not evidence of anything, and it is never required.',

@@ -5,6 +5,8 @@ import { memberCasesEn, type MemberCasesDict } from './dict/memberCases';
 import { memberProEn, type MemberProDict } from './dict/memberPro';
 import { adminEn, type AdminDict } from './dict/admin';
 import { feedEn, type FeedDict } from './dict/feed';
+import { labelsEn, type LabelsDict } from './dict/labels';
+import { requirementsEn, type RequirementsDict } from './dict/requirements';
 
 const baseEn = {
   language: { label: 'Language', change: 'Change language' },
@@ -355,6 +357,8 @@ export const dictionary: Translated<typeof baseEn> & {
   memberPro: MemberProDict;
   admin: AdminDict;
   feed: FeedDict;
+  labels: LabelsDict;
+  requirements: RequirementsDict;
 } = {
   ...baseEn,
   publicPages: publicPagesEn,
@@ -363,6 +367,8 @@ export const dictionary: Translated<typeof baseEn> & {
   memberPro: memberProEn,
   admin: adminEn,
   feed: feedEn,
+  labels: labelsEn,
+  requirements: requirementsEn,
 };
 
 export type Dictionary = Translated<typeof dictionary>;
