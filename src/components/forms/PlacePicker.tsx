@@ -25,6 +25,7 @@ import { emirateOfDivision } from '@/lib/geo-emirates';
  */
 
 type Division = { code: string; name: string };
+type Place = { countryCode: string; divisionCode: string; districtCode: string; locality: string };
 type Country = { code: string; name: string };
 
 export function PlacePicker({
@@ -63,12 +64,7 @@ export function PlacePicker({
   /** True when the caller reads these values itself — a repeatable row, say. */
   unnamed?: boolean;
   /** Told the whole place whenever any part of it changes. */
-  onPlaceChange?: (place: {
-    countryCode: string;
-    divisionCode: string;
-    districtCode: string;
-    locality: string;
-  }) => void;
+  onPlaceChange?: (place: Place) => void;
 }) {
   const [country, setCountry] = useState(defaultCountry);
   const [division, setDivision] = useState(defaultDivision);
@@ -110,9 +106,23 @@ export function PlacePicker({
     onCountryChange?.(country);
   }, [country, onCountryChange]);
 
-  useEffect(() => {
-    onPlaceChange?.({ countryCode: country, divisionCode: division, districtCode: district, locality });
-  }, [country, division, district, locality, onPlaceChange]);
+  /**
+   * Tells the caller what the place now is.
+   *
+   * Called from the handlers rather than from an effect. An effect that depends on
+   * a callback the parent recreates on every render is a loop: the callback changes,
+   * the effect runs, the parent stores a new array, the parent re-renders, the
+   * callback changes again — and the page never finishes a frame. A choice is an
+   * event, so it is reported as one.
+   */
+  const report = (next: Partial<Place>) => {
+    onPlaceChange?.({
+      countryCode: next.countryCode ?? country,
+      divisionCode: next.divisionCode ?? division,
+      districtCode: next.districtCode ?? district,
+      locality: next.locality ?? locality,
+    });
+  };
 
   // The list beneath the chosen division. Its name comes from the country too — a
   // department in Argentina, a municipality in Brazil, a district in Turkey.
@@ -168,7 +178,10 @@ export function PlacePicker({
           name={unnamed ? undefined : "primaryCountryCode"}
           required
           value={country}
-          onChange={(event) => setCountry(event.target.value)}
+          onChange={(event) => {
+            setCountry(event.target.value);
+            report({ countryCode: event.target.value });
+          }}
           error={errors?.country}
         >
           <option value="">{labels.chooseCountry}</option>
@@ -191,7 +204,10 @@ export function PlacePicker({
           name={unnamed ? undefined : "primaryDivisionCode"}
           value={division}
           disabled={divisions.length === 0 || loading}
-          onChange={(event) => setDivision(event.target.value)}
+          onChange={(event) => {
+            setDivision(event.target.value);
+            report({ divisionCode: event.target.value });
+          }}
           error={errors?.division}
         >
           <option value="">
@@ -218,7 +234,10 @@ export function PlacePicker({
           name={unnamed ? undefined : "primaryDistrictCode"}
           value={district}
           disabled={districts.length === 0 || loadingDistricts}
-          onChange={(event) => setDistrict(event.target.value)}
+          onChange={(event) => {
+            setDistrict(event.target.value);
+            report({ districtCode: event.target.value });
+          }}
         >
           <option value="">
             {districts.length === 0 ? labels.optional : labels.chooseDivision}
@@ -241,7 +260,10 @@ export function PlacePicker({
           name={unnamed ? undefined : 'primaryLocality'}
           maxLength={160}
           value={locality}
-          onChange={(event) => setLocality(event.target.value)}
+          onChange={(event) => {
+            setLocality(event.target.value);
+            report({ locality: event.target.value });
+          }}
         />
       </Field>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { PlacePicker } from './PlacePicker';
 import { buttonClasses } from '@/components/ui/primitives';
 
@@ -50,8 +50,30 @@ export function CoverageList({
 }) {
   const [rows, setRows] = useState<Place[]>([]);
 
-  const update = (index: number, patch: Partial<Place>) =>
-    setRows((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  /**
+   * Stable, and a no-op when nothing changed.
+   *
+   * The identity matters: a row's picker reports its place back here, and an
+   * updater recreated on every render would make those reports chase each other.
+   * Returning the same array when the values are equal also lets React skip the
+   * re-render entirely.
+   */
+  const update = useCallback((index: number, patch: Partial<Place>) => {
+    setRows((current) => {
+      const existing = current[index];
+      if (!existing) return current;
+      const next = { ...existing, ...patch };
+      if (
+        next.countryCode === existing.countryCode &&
+        next.divisionCode === existing.divisionCode &&
+        next.districtCode === existing.districtCode &&
+        next.locality === existing.locality
+      ) {
+        return current;
+      }
+      return current.map((row, i) => (i === index ? next : row));
+    });
+  }, []);
 
   return (
     <div className="rounded-lg border border-slate-200 p-4">

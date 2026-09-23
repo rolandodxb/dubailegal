@@ -395,7 +395,21 @@ export const listingSchema = z
         if (typeof value !== 'string' || value.trim().length === 0) return [];
         try {
           const parsed = JSON.parse(value);
-          return Array.isArray(parsed) ? parsed : [];
+          if (!Array.isArray(parsed)) return [];
+          /**
+           * A row the professional added and did not fill in is not a place, it is
+           * an untouched control — so it is dropped rather than rejected. Otherwise
+           * clicking "add another country" and leaving it empty makes the whole save
+           * fail, and because the field is hidden the reader is shown nothing but
+           * "please check the highlighted fields" with nothing highlighted.
+           */
+          return parsed.filter(
+            (row) =>
+              row &&
+              typeof row === 'object' &&
+              typeof (row as { countryCode?: unknown }).countryCode === 'string' &&
+              /^[A-Za-z]{2}$/.test(((row as { countryCode: string }).countryCode ?? '').trim()),
+          );
         } catch {
           return [];
         }
