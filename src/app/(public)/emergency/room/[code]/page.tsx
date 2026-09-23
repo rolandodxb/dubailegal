@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { resolveRoomForGuest, resolveRoomForUser } from '@/server/services/room-service';
+import {
+  endedRoomForGuest,
+  resolveRoomForGuest,
+  resolveRoomForUser,
+} from '@/server/services/room-service';
 import { getSessionUser } from '@/lib/auth';
 import { guestEmergencyByRoom } from '@/server/services/emergency-service';
 import { legalAreaLabel } from '@/lib/i18n/labels';
@@ -59,7 +63,40 @@ export default async function GuestEmergencyRoomPage({
   const access =
     (await resolveRoomForGuest(code, t ?? '')) ??
     (viewer ? await resolveRoomForUser(code, viewer.id) : null);
-  if (!access) notFound();
+  if (!access) {
+    /**
+     * A closed room is not a missing one.
+     *
+     * Ending the call canceled the request, and a canceled request no longer
+     * resolves — so the guest who had just hung up was shown a 404, which reads as
+     * a broken link rather than a call that finished. A closed room says so, and
+     * offers the one thing still useful: raising a new urgent request.
+     */
+    const ended = await endedRoomForGuest(code, t ?? '');
+    if (!ended) notFound();
+
+    const endedCopy = dict.publicPages.emergencyRoom;
+    const reason =
+      ended.status === 'CANCELLED'
+        ? endedCopy.endedCancelled
+        : ended.status === 'RESOLVED'
+          ? endedCopy.endedResolved
+          : endedCopy.endedExpired;
+
+    return (
+      <div className="mx-auto w-full max-w-lg">
+        <BrandLockup markSize={40} />
+        <Card className="mt-6">
+          <h1 className="text-xl font-semibold text-slate-900">{endedCopy.endedTitle}</h1>
+          <p className="mt-2 text-sm font-medium text-slate-700">{reason}</p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">{endedCopy.endedBody}</p>
+          <Link href="/emergency" className={buttonClasses('primary', 'md', 'mt-5')}>
+            {endedCopy.endedRaiseAgain}
+          </Link>
+        </Card>
+      </div>
+    );
+  }
 
   const isGuest = access.role === 'CLIENT' && !viewer;
 

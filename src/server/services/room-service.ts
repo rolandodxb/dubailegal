@@ -556,3 +556,30 @@ export async function listRoomsForProfessional(userId: string) {
     },
   });
 }
+
+/**
+ * A room that has ended, for the person still holding the link.
+ *
+ * `resolveRoomForGuest` deliberately refuses a room once it is cancelled or
+ * resolved — nobody should be admitted to a finished call. But refusing it made
+ * the page answer 404, so ending a call looked like a broken link rather than a
+ * call that had ended, and the guest who had just hung up was the one who saw it.
+ * This answers the narrower question: does this link belong to a room that has
+ * closed? It proves the token the same way, so it reveals nothing to anybody else.
+ */
+export async function endedRoomForGuest(
+  roomCode: string,
+  token: string,
+): Promise<{ title: string; status: string } | null> {
+  if (token.trim().length === 0) return null;
+
+  const emergency = await prisma.emergencyRequest.findUnique({
+    where: { roomCode },
+    select: { title: true, status: true, guestTokenHash: true },
+  });
+  if (!emergency?.guestTokenHash) return null;
+  if (emergency.guestTokenHash !== hashToken(token.trim())) return null;
+  if (!['CANCELLED', 'RESOLVED', 'EXPIRED'].includes(emergency.status)) return null;
+
+  return { title: emergency.title, status: emergency.status };
+}

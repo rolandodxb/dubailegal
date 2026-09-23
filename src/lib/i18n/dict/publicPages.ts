@@ -376,6 +376,12 @@ export const publicPagesEn = {
   },
 
   emergencyRoom: {
+    endedTitle: 'This call has ended',
+    endedBody: 'The room is closed, so nobody is in the call. If you still need a lawyer, you can raise a new urgent request — it goes to every professional on duty.',
+    endedRaiseAgain: 'Raise a new urgent request',
+    endedCancelled: 'You ended this call.',
+    endedResolved: 'This call was closed by the lawyer.',
+    endedExpired: 'This request expired without being answered.',
     metaTitle: 'Urgent call',
     pill: 'Urgent call',
     lawyerJoined: 'A lawyer has joined',
@@ -953,6 +959,12 @@ export const publicPagesEs: PublicPagesDict = {
   },
 
   emergencyRoom: {
+    endedTitle: 'Esta llamada ha finalizado',
+    endedBody: 'La sala está cerrada, así que no hay nadie en la llamada. Si aún necesita un abogado, puede plantear una nueva solicitud urgente: llegará a todos los profesionales de guardia.',
+    endedRaiseAgain: 'Plantear una nueva solicitud urgente',
+    endedCancelled: 'Usted finalizó esta llamada.',
+    endedResolved: 'El abogado cerró esta llamada.',
+    endedExpired: 'Esta solicitud caducó sin ser atendida.',
     metaTitle: 'Llamada urgente',
     pill: 'Llamada urgente',
     lawyerJoined: 'Se ha unido un abogado',
