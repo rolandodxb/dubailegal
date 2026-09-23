@@ -48,6 +48,7 @@ export function ConferenceRoom({
   guestToken,
   context,
   iceServers,
+  labels,
 }: {
   roomCode: string;
   role: Role;
@@ -68,6 +69,8 @@ export function ConferenceRoom({
    * setting a variable rather than by rebuilding the client.
    */
   iceServers?: RTCIceServer[];
+  /** The words this room shows, in the reader's language. */
+  labels: { you: string; recording: string; recordingNow: string };
 }) {
   const [joined, setJoined] = useState(false);
   /** Set once the camera is live, so the recorder can attach to it. */
@@ -485,7 +488,14 @@ export function ConferenceRoom({
 
       {/* The recording runs with the call: both sides record, both recordings are
           kept, and neither an administrator nor a stranger can play them. */}
-      <CallRecorder roomCode={roomCode} stream={liveStream} active={joined} />
+      <CallRecorder
+        roomCode={roomCode}
+        stream={liveStream}
+        remoteStream={remoteStream}
+        active={joined}
+        localLabel={labels.you}
+        remoteLabel={otherPartyName}
+      />
 
       <Card>
         <h2 className="font-semibold text-slate-900">Meeting details</h2>

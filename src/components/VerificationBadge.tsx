@@ -42,14 +42,18 @@ export function VerificationBadge({
   size = 'md',
   className,
   title,
+  label,
 }: {
   accountType: AccountType;
   size?: keyof typeof SIZES;
   className?: string;
   title?: string;
+  /** The account-type label in the reader's language; English by default. */
+  label?: string;
 }) {
   const config = BADGE[accountType];
   const pixelSize = SIZES[size];
+  const spoken = label ?? config.label;
   return (
     <svg
       viewBox="0 0 24 24"
@@ -57,9 +61,9 @@ export function VerificationBadge({
       height={pixelSize}
       className={cx('inline-block shrink-0 align-[-0.15em]', className)}
       role="img"
-      aria-label={config.label}
+      aria-label={spoken}
     >
-      <title>{title ?? config.label}</title>
+      <title>{title ?? spoken}</title>
       <path d={BURST} fill={config.color} />
       <path
         d="M7.4 12.5 L10.6 15.6 L16.8 8.9"
@@ -91,11 +95,17 @@ export function VerificationStatusPill({
   status,
   size = 'sm',
   className,
+  label,
+  statusLabel,
 }: {
   accountType: AccountType;
   status: VerificationStatus;
   size?: keyof typeof SIZES;
   className?: string;
+  /** The account-type label in the reader's language; English by default. */
+  label?: string;
+  /** The status label in the reader's language; English by default. */
+  statusLabel?: string;
 }) {
   if (status === 'APPROVED') {
     return (
@@ -105,8 +115,8 @@ export function VerificationStatusPill({
           className,
         )}
       >
-        <VerificationBadge accountType={accountType} size={size} />
-        {BADGE[accountType].label}
+        <VerificationBadge accountType={accountType} size={size} label={label} />
+        {label ?? BADGE[accountType].label}
       </span>
     );
   }
@@ -119,7 +129,7 @@ export function VerificationStatusPill({
         className,
       )}
     >
-      {VERIFICATION_STATUS_LABEL[status]}
+      {statusLabel ?? VERIFICATION_STATUS_LABEL[status]}
     </span>
   );
 }

@@ -238,6 +238,126 @@ export async function getRecordingForViewer(
 }
 
 /** How many recordings exist, for the console. The console never plays them. */
+/**
+ * Every recording, for the console.
+ *
+ * Metadata only. An administrator can see that a recording exists, how long it is
+ * and when it was made — which is what is needed to decide whether it should
+ * still exist — and **cannot play it**. Deleting is not watching.
+ */
+export async function listRecordingsForAdmin() {
+  const rows = await prisma.roomRecording.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      roomCode: true,
+      durationMs: true,
+      sizeBytes: true,
+      createdAt: true,
+      recordedBy: {
+        select: { id: true, email: true, accountType: true, profile: { select: { fullName: true } } },
+      },
+    },
+  });
+
+  return rows.map((row) => ({
+    ...row,
+    ownerName: row.recordedBy.profile?.fullName?.trim() || row.recordedBy.email,
+  }));
+}
+
+/**
+ * Destroys one recording: the file first, then the row.
+ *
+ * The bytes are the sensitive part, so they go first. A row without a file is
+ * recoverable; a file without a row is not, and it is the file that holds a
+ * client's face and voice.
+ */
+export async function deleteRecording(
+  recordingId: string,
+  actorUserId: string,
+  meta: { ip?: string | null } = {},
+): Promise<ServiceResult<{ roomCode: string }>> {
+  const recording = await prisma.roomRecording.findUnique({
+    where: { id: recordingId },
+    select: { id: true, roomCode: true, storageKey: true, sizeBytes: true },
+  });
+  if (!recording) return failure('That recording no longer exists.', { status: 404 });
+
+  try {
+    await deleteUpload(recording.storageKey);
+  } catch {
+    return failure('The recording file could not be removed, so nothing was deleted.');
+  }
+
+  await prisma.roomRecording.delete({ where: { id: recording.id } });
+
+  await recordAudit({
+    actorUserId,
+    action: 'recording.deleted',
+    entityType: 'room_recording',
+    entityId: recording.id,
+    metadata: { roomCode: recording.roomCode, sizeBytes: recording.sizeBytes },
+    ip: meta.ip ?? null,
+  });
+
+  return success({ roomCode: recording.roomCode });
+}
+
+/**
+ * Destroys every recording on the platform.
+ *
+ * What this exists for: evidence is kept while it might be needed and not a day
+ * longer. When a matter is closed, or a dispute is settled, or the retention
+ * period somebody promised their client has passed, the recordings have to be
+ * able to go — all of them, in one deliberate act, rather than one at a time by
+ * somebody scrolling a list.
+ *
+ * A file that cannot be removed stops the run rather than being skipped
+ * silently: a partial deletion reported as complete is worse than a failure,
+ * because it would be believed.
+ */
+export async function deleteAllRecordings(
+  actorUserId: string,
+  meta: { ip?: string | null } = {},
+): Promise<ServiceResult<{ deleted: number; failed: number }>> {
+  const recordings = await prisma.roomRecording.findMany({
+    select: { id: true, roomCode: true, storageKey: true, sizeBytes: true },
+  });
+
+  let deleted = 0;
+  let failed = 0;
+
+  for (const recording of recordings) {
+    try {
+      await deleteUpload(recording.storageKey);
+      await prisma.roomRecording.delete({ where: { id: recording.id } });
+      deleted += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+
+  await recordAudit({
+    actorUserId,
+    action: 'recording.deleted_all',
+    entityType: 'room_recording',
+    entityId: 'all',
+    metadata: { deleted, failed, total: recordings.length },
+    ip: meta.ip ?? null,
+  });
+
+  if (failed > 0) {
+    return failure(
+      `${deleted} recording${deleted === 1 ? '' : 's'} deleted, but ${failed} file${
+        failed === 1 ? '' : 's'
+      } could not be removed and ${failed === 1 ? 'is' : 'are'} still on disk.`,
+    );
+  }
+
+  return success({ deleted, failed });
+}
+
 export async function recordingOverview() {
   const [count, rooms, latest] = await Promise.all([
     prisma.roomRecording.count(),

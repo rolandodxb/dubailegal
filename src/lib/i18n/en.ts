@@ -1,11 +1,12 @@
-/**
- * English — the source of truth.
- *
- * Every other language is typed against this object, so a missing translation is
- * a build error rather than an English sentence appearing in the middle of a
- * French page.
- */
-export const en = {
+import type { Translated } from './translated';
+import { publicPagesEn, type PublicPagesDict } from './dict/publicPages';
+import { memberCoreEn, type MemberCoreDict } from './dict/memberCore';
+import { memberCasesEn, type MemberCasesDict } from './dict/memberCases';
+import { memberProEn, type MemberProDict } from './dict/memberPro';
+import { adminEn, type AdminDict } from './dict/admin';
+import { feedEn, type FeedDict } from './dict/feed';
+
+const baseEn = {
   language: { label: 'Language', change: 'Change language' },
 
   nav: {
@@ -105,6 +106,59 @@ export const en = {
     clientsHeading: 'For clients',
     professionalsHeading: 'For lawyers and firms',
     communityEyebrow: 'Community',
+    professionalsSectionTitle: 'Are you a legal firm or a legal representative?',
+    professionalsSectionBody: 'Publish a verified practice, take the cases you want, and run the diary, the clients and the rooms from one place.',
+    emergencyEyebrow: 'Emergency representation',
+    emergencyTitle: 'When you cannot wait until Monday',
+    emergencyBody: 'Raise an urgent request and it is pushed straight to every lawyer and firm who takes emergencies. The first to answer opens a case and steps into a video room with you.',
+    emergencyNote: 'Dubai Legal connects you to a lawyer. It does not dispatch emergency services — if somebody is in danger, call 999.',
+    emergencyCta: 'Get urgent help',
+    emergencyForProfessionals: 'Take emergency cases',
+    emergencyStep1: 'You describe what has happened and give a number.',
+    emergencyStep2: 'It is pushed to every professional who has opted into emergencies.',
+    emergencyStep3: 'The first to take it gets a case opened and assigned, and you are told who.',
+    enquiryTitle: 'Not sure who to ask?',
+    enquiryBody: 'Send a general enquiry and it goes into a shared pool that every registered lawyer and firm can read. The first to pick it up gets your details.',
+    privacyTitle: 'Privacy is not a feature here. It is the product.',
+    privacyBody1: 'Your identity documents are readable by you and by the reviewer checking them — nobody else, and never by an administrator.',
+    privacyBody2: 'Conversations between a lawyer and a client may be privileged, so they are not opened by the platform. Not read, not searched, not watchable.',
+    closingTitle: 'Stop guessing. Start checking.',
+    closingBody: 'Search the directory for free, or create an account to send your first case.',
+    howItWorks: 'How getting a lawyer works',
+    howStep1Title: 'Find someone',
+    howStep1Body: 'Filter by area of law and emirate. Compare what each professional publishes, including their licence and whether a reviewer has approved it.',
+    howStep2Title: 'Send your case',
+    howStep2Body: 'Name it, describe it, attach the papers. It arrives as a request the professional can accept or decline.',
+    howStep3Title: 'Agree and talk',
+    howStep3Body: 'Once accepted, message them inside the case. Meet by video or at their office.',
+    verificationSectionTitle: 'What verification involves',
+    lawyerCardTitle: 'I am a lawyer',
+    lawyerCardBody: 'Publish your practice, take the cases you want, and run your diary, your clients and your rooms here.',
+    lawyerCardCta: 'Create a lawyer account',
+    firmCardTitle: 'I run a legal firm',
+    firmCardBody: 'List your firm and its lawyers, oversee every case on one calendar, and designate an emergency contact.',
+    firmCardCta: 'Create a firm account',
+    documentsNeeded: '{count} documents needed to verify, including the permit to provide legal representation.',
+    documentsNeededOne: 'One document needed to verify, including the permit to provide legal representation.',
+    step1Title: 'Search',
+    step1Body: 'Filter by area of law and emirate. Compare what each professional publishes, including their licence and practice address.',
+    step2Title: 'Send your case',
+    step2Body: 'Name it, describe it, attach the papers. It arrives as a request the professional can accept or decline.',
+    step3Title: 'Agree and talk',
+    step3Body: 'Once accepted, message them inside the case. Meet by video or at their office.',
+    step4Title: 'Keep the record',
+    step4Body: 'Every message, document, meeting and fee stays in the case, for both of you, for as long as you need it.',
+    enquiryAlertTitle: 'An account gets you a faster, better answer',
+    enquiryAlertBody: 'A general enquiry is worked by whoever picks it up, so it can take longer to be reviewed. With a free account you choose the professional yourself, attach your documents, follow the case and keep every message and fee in one place.',
+    enquirySend: 'Send an enquiry',
+    enquirySubmit: 'Send my enquiry',
+    enquiryPoolNote: 'Your enquiry goes into a shared pool that every registered lawyer and firm can see, and the first to pick it up contacts you directly.',
+    enquiryEmergencyLead: 'In an emergency, do not send an enquiry —',
+    enquiryEmergencyLink: 'get a lawyer on video now',
+    enquiryEmergencyTail: ', with no account at all.',
+    metaTitle: 'Dubai Legal — verified lawyers and legal firms in the UAE',
+    metaDescription: 'Search verified lawyers and legal firms across the seven Emirates, send a case, follow it, and keep every document, message and fee in one place.',
+    emergencyPageTitle: 'Get a lawyer on video now',
     verifiedByHand: 'Reviewed by a person, never by a machine',
     clientsIntro: 'Most people find a lawyer through a friend and hope for the best. Dubai Legal gives you the details to judge for yourself, and a record of everything afterwards. Everything below is what you get as a client — searching is free, and it stays free.',
     needLawyer: 'I need a lawyer',
@@ -258,6 +312,27 @@ export const en = {
     activeCases: 'Active cases',
   },
 
+  badges: {
+    USER: 'Verified account',
+    LAWYER: 'Verified lawyer',
+    FIRM: 'Verified legal firm',
+  },
+
+  /** The five states a verification request or a profile can be in. */
+  verificationStatus: {
+    UNVERIFIED: 'Not verified',
+    PENDING: 'Submitted, awaiting review',
+    UNDER_REVIEW: 'Under review',
+    APPROVED: 'Verified',
+    REJECTED: 'Not approved',
+  },
+
+  room: {
+    you: 'You',
+    recording: 'Recording',
+    recordingNow: 'Recording this room',
+  },
+
   footer: {
     disclaimer:
       'Dubai Legal is not a law firm and does not give legal advice. Information in the directory is supplied by its members. Always confirm that a professional is licensed before instructing them.',
@@ -265,13 +340,29 @@ export const en = {
 } as const;
 
 /**
- * The shape every language must fill.
+ * The per-area dictionaries, folded into the one object the app reads.
  *
- * The English object is `as const` so its keys are known exactly; this widens the
- * *values* to `string` while keeping the structure, which is what lets another
- * language satisfy it. A missing key or a wrong nesting is a build error, so a
- * French page can never quietly contain an English sentence.
+ * They live in separate files so that a large area — the member area, the admin
+ * console, the public pages — can be extended or translated without several
+ * people editing one 350-line object at once. Each file enforces its own
+ * completeness against its own English; spreading them here means the
+ * whole-dictionary check covers them too, so nothing can be half-translated.
  */
-type Translated<T> = { [K in keyof T]: T[K] extends string ? string : Translated<T[K]> };
+export const dictionary: Translated<typeof baseEn> & {
+  publicPages: PublicPagesDict;
+  memberCore: MemberCoreDict;
+  memberCases: MemberCasesDict;
+  memberPro: MemberProDict;
+  admin: AdminDict;
+  feed: FeedDict;
+} = {
+  ...baseEn,
+  publicPages: publicPagesEn,
+  memberCore: memberCoreEn,
+  memberCases: memberCasesEn,
+  memberPro: memberProEn,
+  admin: adminEn,
+  feed: feedEn,
+};
 
-export type Dictionary = Translated<typeof en>;
+export type Dictionary = Translated<typeof dictionary>;

@@ -6,6 +6,7 @@ import { getSessionUser } from '@/lib/auth';
 import { listPosts } from '@/server/services/blog-service';
 import { CommunityPanel } from '@/components/community/CommunityPanel';
 import { getI18n } from '@/lib/i18n';
+import { landingContent } from '@/lib/i18n/content';
 import { BADGE, DOCUMENT_REQUIREMENTS } from '@/lib/constants';
 import { VerificationBadge } from '@/components/VerificationBadge';
 import { Icon, type IconName } from '@/components/icons';
@@ -56,116 +57,49 @@ async function loadFacts() {
   return row ?? { published: 0, verified: 0, reviews: 0, lawyers: 0, firms: 0 };
 }
 
-const CLIENT_FEATURES: { icon: IconName; domain: Domain; title: string; body: string }[] = [
-  {
-    icon: 'search',
-    domain: 'directory',
-    title: 'Search by what matters',
-    body: 'Filter by area of law and emirate — criminal, civil, commercial, family, labour, property and more — across all seven Emirates.',
-  },
-  {
-    icon: 'shieldCheck',
-    domain: 'verification',
-    title: 'See who has been checked',
-    body: 'A coloured badge means a reviewer examined that professional\u2019s Emirates ID and legal documents. Profiles without one say so plainly.',
-  },
-  {
-    icon: 'folder',
-    domain: 'case',
-    title: 'Send a case, not an email',
-    body: 'Name the matter, describe it, attach your papers. Follow it from Submitted to Under review to Assigned without chasing anyone.',
-  },
-  {
-    icon: 'message',
-    domain: 'case',
-    title: 'Talk inside the case',
-    body: 'A proper conversation with your lawyer, with your documents and your fees in the same place. Nobody has to repeat themselves.',
-  },
-  {
-    icon: 'phoneCall',
-    domain: 'meeting',
-    title: 'Ask for a call when it matters',
-    body: 'Your own conference room, with the professional handling your case in it. Ask for an urgent call and you go straight in while they are alerted.',
-  },
-  {
-    icon: 'creditCard',
-    domain: 'payment',
-    title: 'Pay a fee and keep the receipt',
-    body: 'Fees arrive in the conversation, not by surprise. Pay by card, get a receipt you can print, and send the proof of payment into the case file.',
-  },
-  {
-    icon: 'star',
-    domain: 'review',
-    title: 'Reviews you can trust',
-    body: 'Only a client whose case was actually accepted can review, and each case carries one review. No anonymous score-settling.',
-  },
+const CLIENT_FEATURES: { icon: IconName; domain: Domain }[] = [
+  { icon: 'search', domain: 'directory' },
+  { icon: 'shieldCheck', domain: 'verification' },
+  { icon: 'folder', domain: 'case' },
+  { icon: 'message', domain: 'case' },
+  { icon: 'video', domain: 'meeting' },
+  { icon: 'creditCard', domain: 'payment' },
+  { icon: 'star', domain: 'review' },
 ];
 
-const PROFESSIONAL_FEATURES: { icon: IconName; domain: Domain; title: string; body: string }[] = [
-  {
-    icon: 'inbox',
-    domain: 'case',
-    title: 'A queue, not an inbox',
-    body: 'Cases arrive ready to review. Accept the ones you want, decline the rest with a reason the client can act on.',
-  },
-  {
-    icon: 'briefcase',
-    domain: 'oversight',
-    title: 'Your practice in one place',
-    body: 'Portfolio, pending cases, clients and their details, all kept in step with what the client sees.',
-  },
-  {
-    icon: 'calendar',
-    domain: 'meeting',
-    title: 'A diary you can actually run',
-    body: 'Month, week and day views. Move, cancel or delete any meeting — the client is told about everything except a deletion.',
-  },
-  {
-    icon: 'chart',
-    domain: 'oversight',
-    title: 'Run the firm, not just your cases',
-    body: 'See every case, which lawyer holds it, how far each has got, and the whole firm\u2019s diary and rooms on one calendar.',
-  },
-  {
-    icon: 'alert',
-    domain: 'emergency',
-    title: 'Take emergencies when you choose',
-    body: 'Turn emergency availability on and urgent requests reach you directly. Firms can name one lawyer as their always-on contact.',
-  },
-  {
-    icon: 'creditCard',
-    domain: 'payment',
-    title: 'Ask for your fee in the case',
-    body: 'Raise a consultation or case fee where the conversation already is. The client pays by card, a receipt is issued, and the proof of payment lands in the case.',
-  },
+const PROFESSIONAL_FEATURES: { icon: IconName; domain: Domain }[] = [
+  { icon: 'inbox', domain: 'case' },
+  { icon: 'briefcase', domain: 'case' },
+  { icon: 'calendar', domain: 'meeting' },
+  { icon: 'chart', domain: 'oversight' },
+  { icon: 'alert', domain: 'emergency' },
+  { icon: 'creditCard', domain: 'payment' },
 ];
 
-const BADGE_EXPLANATIONS: { type: AccountType; who: string }[] = [
-  { type: 'USER', who: 'An individual whose Emirates ID and profile have been reviewed.' },
-  {
-    type: 'LAWYER',
-    who: 'A lawyer whose Emirates ID and permit to provide legal representation have been reviewed.',
-  },
-  {
-    type: 'FIRM',
-    who: 'A firm whose Emirates ID, legal permit and trade licence have been reviewed.',
-  },
-];
+const BADGE_TYPES: AccountType[] = ['USER', 'LAWYER', 'FIRM'];
 
 /** How many community posts the panel on this page shows. */
 const COMMUNITY_PREVIEW = 4;
+
+/** The browser tab, in the language being read. */
+export async function generateMetadata() {
+  const { t } = await getI18n();
+  return { title: t.landing.metaTitle, description: t.landing.metaDescription };
+}
 
 export default async function LandingPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const [{ t, locale }, params, user] = await Promise.all([
+  const [{ t, locale, effectiveLocale }, params, user] = await Promise.all([
     getI18n(),
     searchParams,
     getSessionUser(),
   ]);
   const activeTab = params.tab === 'community' ? 'community' : 'home';
+  // The passages, in the language that is actually being shown.
+  const content = landingContent(effectiveLocale);
 
   // The community feed is identical for every visitor, so a signed-out reader
   // gets the cached copy; a member gets a live one, because their own votes and
@@ -281,12 +215,14 @@ export default async function LandingPage({
                 {t.landing.badgeHeading}
               </h2>
               <ul className="mt-4 space-y-4">
-                {BADGE_EXPLANATIONS.map(({ type, who }) => (
+                {BADGE_TYPES.map((type, index) => (
                   <li key={type} className="flex items-start gap-3">
                     <VerificationBadge accountType={type} size="lg" />
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{BADGE[type].label}</p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{who}</p>
+                      <p className="text-sm font-medium text-slate-900">{t.badges[type]}</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
+                        {content.badges[index]}
+                      </p>
                     </div>
                   </li>
                 ))}
@@ -329,14 +265,13 @@ export default async function LandingPage({
               <Icon name="scale" size={22} />
             </span>
             <h2 className="mt-4 text-lg font-semibold text-slate-900">
-              Are you a legal firm or a legal representative?
+              {t.landing.professionalsSectionTitle}
             </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-              Publish a verified practice, take the cases you want, and run the diary, the clients and
-              the fees in one place.
+              {t.landing.professionalsSectionBody}
             </p>
             <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-domain-oversight">
-              What you get
+              {t.landing.clientsCta}
               <Icon name="arrowRight" size={16} />
             </span>
           </a>
@@ -355,13 +290,15 @@ export default async function LandingPage({
           <p className="mt-3 max-w-2xl text-slate-600">{t.landing.clientsIntro}</p>
 
           <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {CLIENT_FEATURES.map((feature) => (
-              <li key={feature.title} className="rounded-xl border border-slate-200 bg-white p-5">
+            {CLIENT_FEATURES.map((feature, index) => (
+              <li key={feature.icon} className="rounded-xl border border-slate-200 bg-white p-5">
                 <span className={domainChip(feature.domain)}>
                   <Icon name={feature.icon} size={20} />
                 </span>
-                <h3 className="mt-4 font-semibold text-slate-900">{feature.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{feature.body}</p>
+                <h3 className="mt-4 font-semibold text-slate-900">{content.clients[index]?.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                  {content.clients[index]?.body}
+                </p>
               </li>
             ))}
           </ul>
@@ -397,26 +334,23 @@ export default async function LandingPage({
             <div className="max-w-2xl">
               <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wider text-domain-emergency ring-1 ring-domain-emergency/25">
                 <Icon name="alert" size={14} />
-                Emergency representation
+                {t.landing.emergencyEyebrow}
               </span>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-                When you cannot wait until Monday
+                {t.landing.emergencyTitle}
               </h2>
               <p className="mt-3 leading-relaxed text-slate-700">
-                Raise an urgent request and it is pushed straight to every lawyer and firm who takes
-                emergencies. The first to take it has a case opened and assigned to them, and your
-                call-back number goes with it.
+                {t.landing.emergencyBody}
               </p>
               <p className="mt-3 text-sm text-slate-600">
-                Dubai Legal connects you to a lawyer. It does not dispatch emergency services — if
-                somebody is in danger, call 999.
+                {t.landing.emergencyNote}
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/emergency" className={buttonClasses('primary', 'lg')}>
-                  Get urgent help
+                  {t.landing.emergencyCta}
                 </Link>
                 <Link href="/register?type=LAWYER" className={buttonClasses('secondary', 'lg')}>
-                  Take emergency cases
+                  {t.landing.emergencyForProfessionals}
                 </Link>
               </div>
             </div>
@@ -426,15 +360,15 @@ export default async function LandingPage({
               <ol className="mt-3 space-y-3 text-sm text-slate-600">
                 <li className="flex gap-3">
                   <span className="font-semibold text-slate-400">1</span>
-                  You describe what has happened and give a number.
+                  {t.landing.emergencyStep1}
                 </li>
                 <li className="flex gap-3">
                   <span className="font-semibold text-slate-400">2</span>
-                  It is pushed to every professional who has opted into emergencies.
+                  {t.landing.emergencyStep2}
                 </li>
                 <li className="flex gap-3">
                   <span className="font-semibold text-slate-400">3</span>
-                  The first to take it gets a case opened and assigned, and you are told who.
+                  {t.landing.emergencyStep3}
                 </li>
               </ol>
             </Card>
@@ -449,22 +383,22 @@ export default async function LandingPage({
             <Icon name="scale" size={22} />
           </span>
           <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-            Are you a legal firm or a legal representative?
+            {t.landing.professionalsSectionTitle}
           </h2>
-          <p className="mt-3 max-w-2xl text-slate-600">
-            Listing yourself is the beginning. Dubai Legal gives lawyers and firms somewhere to run the
-            work that follows — the queue, the diary, the clients, the firm and the fees. Everything
-            below is what you get as a professional.
-          </p>
+          <p className="mt-3 max-w-2xl text-slate-600">{t.landing.professionalsSectionBody}</p>
 
           <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {PROFESSIONAL_FEATURES.map((feature) => (
-              <li key={feature.title} className="rounded-xl border border-slate-200 bg-white p-5">
+            {PROFESSIONAL_FEATURES.map((feature, index) => (
+              <li key={feature.icon} className="rounded-xl border border-slate-200 bg-white p-5">
                 <span className={domainChip(feature.domain)}>
                   <Icon name={feature.icon} size={20} />
                 </span>
-                <h3 className="mt-4 font-semibold text-slate-900">{feature.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{feature.body}</p>
+                <h3 className="mt-4 font-semibold text-slate-900">
+                  {content.professionals[index]?.title}
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                  {content.professionals[index]?.body}
+                </p>
               </li>
             ))}
           </ul>
@@ -474,15 +408,15 @@ export default async function LandingPage({
               [
                 {
                   type: 'LAWYER' as const,
-                  title: 'I am a lawyer',
-                  body: 'Publish your practice, take the cases you want, and run your diary, your clients and your rooms here.',
-                  cta: 'Create a lawyer account',
+                  title: t.landing.lawyerCardTitle,
+                  body: t.landing.lawyerCardBody,
+                  cta: t.landing.lawyerCardCta,
                 },
                 {
                   type: 'FIRM' as const,
-                  title: 'I run a legal firm',
-                  body: 'List your firm and its lawyers, oversee every case on one calendar, and designate an emergency contact.',
-                  cta: 'Create a firm account',
+                  title: t.landing.firmCardTitle,
+                  body: t.landing.firmCardBody,
+                  cta: t.landing.firmCardCta,
                 },
               ]
             ).map((option) => (
@@ -493,9 +427,12 @@ export default async function LandingPage({
                 </div>
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{option.body}</p>
                 <p className="mt-4 text-xs text-slate-500">
-                  {DOCUMENT_REQUIREMENTS[option.type].required.length} document
-                  {DOCUMENT_REQUIREMENTS[option.type].required.length === 1 ? '' : 's'} needed to
-                  verify, including the permit to provide legal representation.
+                  {(DOCUMENT_REQUIREMENTS[option.type].required.length === 1
+                    ? t.landing.documentsNeededOne
+                    : t.landing.documentsNeeded.replace(
+                        '{count}',
+                        String(DOCUMENT_REQUIREMENTS[option.type].required.length),
+                      ))}
                 </p>
                 <Link
                   href={`/register?type=${option.type}`}
@@ -509,7 +446,7 @@ export default async function LandingPage({
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/how-verification-works" className={buttonClasses('ghost', 'lg')}>
-              What verification involves
+              {t.landing.verificationSectionTitle}
             </Link>
           </div>
         </div>
@@ -527,34 +464,31 @@ export default async function LandingPage({
                 <Icon name="inbox" size={22} />
               </span>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-                Not sure who to ask?
+                {t.landing.enquiryTitle}
               </h2>
               <p className="mt-3 leading-relaxed text-slate-600">
-                Send a general enquiry and it goes into a shared pool that every registered lawyer and
-                firm can see. The first to pick it up contacts you directly.
+                {t.landing.enquiryBody}
               </p>
 
-              <Alert tone="info" className="mt-5" title="An account gets you a faster, better answer">
-                A general enquiry is worked by whoever picks it up, so it can take longer to be
-                reviewed. With a free account you choose the professional yourself, attach your
-                documents, follow the case and keep every message and fee in one place.{' '}
+              <Alert tone="info" className="mt-5" title={t.landing.enquiryAlertTitle}>
+                {t.landing.enquiryAlertBody}{' '}
                 <Link href="/register" className="font-medium underline">
-                  Create an account
+                  {t.nav.createAccount}
                 </Link>{' '}
                 instead.
               </Alert>
 
               <p className="mt-5 text-sm text-slate-600">
-                In an emergency, do not send an enquiry —{' '}
+                {t.landing.enquiryEmergencyLead}{' '}
                 <Link href="/emergency" className="font-medium text-domain-emergency hover:underline">
-                  get a lawyer on video now
+                  {t.landing.enquiryEmergencyLink}
                 </Link>
-                , with no account at all.
+                {t.landing.enquiryEmergencyTail}
               </p>
             </div>
 
             <Card>
-              <h3 className="mb-4 font-semibold text-slate-900">Send an enquiry</h3>
+              <h3 className="mb-4 font-semibold text-slate-900">{t.landing.enquirySend}</h3>
               <PublicEnquiryForm compact />
             </Card>
           </div>
@@ -565,25 +499,25 @@ export default async function LandingPage({
       <section className="border-y border-slate-200 bg-slate-50">
         <div className="dl-container py-16">
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-            How getting a lawyer works
+            {t.landing.howItWorks}
           </h2>
           <ol className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                title: 'Search',
-                body: 'Filter by area of law and emirate. Compare what each professional publishes, including their licence and practice address.',
+                title: t.landing.step1Title,
+                body: t.landing.step1Body,
               },
               {
-                title: 'Send your case',
-                body: 'Name it, describe it, attach the papers. It arrives as a request the professional can accept or decline.',
+                title: t.landing.step2Title,
+                body: t.landing.step2Body,
               },
               {
-                title: 'Agree and talk',
-                body: 'Once accepted, message them inside the case. Meet by video or at their office.',
+                title: t.landing.step3Title,
+                body: t.landing.step3Body,
               },
               {
-                title: 'Settle the fee',
-                body: 'Fees are requested inside the case, where you can see exactly what is being charged for.',
+                title: t.landing.step4Title,
+                body: t.landing.step4Body,
               },
             ].map((step, index) => (
               <li key={step.title}>
@@ -603,35 +537,16 @@ export default async function LandingPage({
         <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-              Privacy is not a feature here. It is the product.
+              {t.landing.privacyTitle}
             </h2>
             <p className="mt-3 leading-relaxed text-slate-600">
-              Your identity documents are readable by you and by the reviewer checking them — nobody
-              else. Case papers are visible only to you and the professional working your case.
-              Conversations between a lawyer and a client may be privileged, so they are not opened
-              even by platform administrators.
+              {t.landing.privacyBody1}
+              {t.landing.privacyBody2}
             </p>
           </div>
 
           <ul className="grid gap-5 sm:grid-cols-2">
-            {[
-              {
-                title: 'Emirates ID never public',
-                body: 'Your profile shows that your Emirates ID was verified. The number is never published.',
-              },
-              {
-                title: 'Documents stay private',
-                body: 'Evidence is stored away from anything public and served only to you and your reviewer.',
-              },
-              {
-                title: 'One identity, one account',
-                body: 'An Emirates ID can verify a single account, which is what makes a badge worth something.',
-              },
-              {
-                title: 'You are told what happens',
-                body: 'Every status change, message and meeting request raises an alert you can act on.',
-              },
-            ].map((item) => (
+            {content.trust.map((item) => (
               <li key={item.title}>
                 <div className="flex items-center gap-2">
                   <Icon name="checkCircle" size={18} className="text-green-700" />
@@ -648,23 +563,23 @@ export default async function LandingPage({
       <section className="dl-container py-16">
         <div className="rounded-2xl bg-brand-700 px-8 py-12 text-center">
           <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Stop guessing. Start checking.
+            {t.landing.closingTitle}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-brand-50">
-            Search the directory for free, or create an account to send your first case.
+            {t.landing.closingBody}
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/directory"
               className={buttonClasses('secondary', 'lg', 'bg-white ring-0 hover:bg-brand-50')}
             >
-              Browse the directory
+              {t.nav.directory}
             </Link>
             <Link
               href="/register"
               className={buttonClasses('ghost', 'lg', 'text-white hover:bg-brand-800')}
             >
-              Create an account
+              {t.nav.createAccount}
             </Link>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { guestEmergencyByRoom } from '@/server/services/emergency-service';
 import { LEGAL_AREA_LABEL } from '@/lib/constants';
 import { env } from '@/lib/env';
 import { ConferenceRoom } from '@/components/rooms/ConferenceRoom';
+import { getI18n } from '@/lib/i18n';
 import { iceServersForClient } from '@/lib/webrtc';
 import { CancelEmergencyForm, CancelGuestEmergencyForm } from '@/components/forms/EmergencyForms';
 import { listRecordingsForRoom } from '@/server/services/room-recording-service';
@@ -39,7 +40,14 @@ export default async function GuestEmergencyRoomPage({
   params: Promise<{ code: string }>;
   searchParams: Promise<{ t?: string }>;
 }) {
-  const [{ code }, { t }, viewer] = await Promise.all([params, searchParams, getSessionUser()]);
+  // `t` on this page is the guest's token, which is not to be confused with the
+  // dictionary, so the dictionary keeps its own name.
+  const [{ code }, { t }, viewer, { t: dict }] = await Promise.all([
+    params,
+    searchParams,
+    getSessionUser(),
+    getI18n(),
+  ]);
 
   // Either credential admits: the token from the link, or the session of somebody
   // who belongs in this room.
@@ -93,7 +101,12 @@ export default async function GuestEmergencyRoomPage({
 
       <div className="mt-6">
         <ConferenceRoom
-        iceServers={iceServersForClient()}
+          labels={{
+            you: dict.room.you,
+            recording: dict.room.recording,
+            recordingNow: dict.room.recordingNow,
+          }}
+          iceServers={iceServersForClient()}
           roomCode={code}
           role={access.role}
           otherPartyName={access.otherPartyName}

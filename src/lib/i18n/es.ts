@@ -1,7 +1,16 @@
 import type { Dictionary } from './en';
+import { publicPagesEs } from './dict/publicPages';
+import { memberCoreEs } from './dict/memberCore';
+import { memberCasesEs } from './dict/memberCases';
+import { memberProEs } from './dict/memberPro';
+import { adminEs } from './dict/admin';
+import { feedEs } from './dict/feed';
 
 /** Spanish. Typed against English, so nothing can be forgotten. */
-export const es: Dictionary = {
+const baseEs: Omit<
+  Dictionary,
+  'publicPages' | 'memberCore' | 'memberCases' | 'memberPro' | 'admin' | 'feed'
+> = {
   language: { label: 'Idioma', change: 'Cambiar de idioma' },
 
   nav: {
@@ -101,6 +110,59 @@ export const es: Dictionary = {
     clientsHeading: 'Para clientes',
     professionalsHeading: 'Para abogados y despachos',
     communityEyebrow: 'Comunidad',
+    professionalsSectionTitle: '¿Es usted un despacho o un representante legal?',
+    professionalsSectionBody: 'Publique un despacho verificado, acepte los casos que quiera y gestione desde un mismo lugar la agenda, los clientes y las salas.',
+    emergencyEyebrow: 'Representación urgente',
+    emergencyTitle: 'Cuando no puede esperar al lunes',
+    emergencyBody: 'Envíe una solicitud urgente y llega directamente a todos los abogados y despachos que atienden urgencias. El primero que responda abre un caso y entra en una sala de vídeo con usted.',
+    emergencyNote: 'Dubai Legal le conecta con un abogado. No envía servicios de emergencia: si alguien está en peligro, llame al 999.',
+    emergencyCta: 'Pedir ayuda urgente',
+    emergencyForProfessionals: 'Atender urgencias',
+    emergencyStep1: 'Usted describe lo que ha ocurrido y da un número de teléfono.',
+    emergencyStep2: 'La solicitud llega a todos los profesionales que han activado las urgencias.',
+    emergencyStep3: 'El primero que la acepta abre un caso y se le asigna, y a usted se le dice quién es.',
+    enquiryTitle: '¿No sabe a quién preguntar?',
+    enquiryBody: 'Envíe una consulta general y entra en un fondo común que pueden leer todos los abogados y despachos registrados. El primero que la tome recibe sus datos.',
+    privacyTitle: 'La privacidad no es una función más. Es el producto.',
+    privacyBody1: 'Sus documentos de identidad los puede leer usted y el revisor que los comprueba: nadie más, y nunca un administrador.',
+    privacyBody2: 'Las conversaciones entre un abogado y su cliente pueden estar protegidas, así que la plataforma no las abre. No se leen, no se buscan, no se pueden ver.',
+    closingTitle: 'Deje de adivinar. Empiece a comprobar.',
+    closingBody: 'Busque en el directorio gratis, o cree una cuenta para enviar su primer caso.',
+    howItWorks: 'Cómo conseguir un abogado',
+    howStep1Title: 'Encuentre a alguien',
+    howStep1Body: 'Filtre por área del derecho y emirato. Compare lo que publica cada profesional, incluida su licencia y si un revisor la ha aprobado.',
+    howStep2Title: 'Envíe su caso',
+    howStep2Body: 'Póngale nombre, descríbalo y adjunte los documentos. Llega como una solicitud que el profesional puede aceptar o rechazar.',
+    howStep3Title: 'Acuerden y conversen',
+    howStep3Body: 'Una vez aceptado, escriba dentro del caso. Reúnanse por vídeo o en su despacho.',
+    verificationSectionTitle: 'En qué consiste la verificación',
+    lawyerCardTitle: 'Soy abogado',
+    lawyerCardBody: 'Publique su actividad, acepte los casos que quiera y gestione aquí su agenda, sus clientes y sus salas.',
+    lawyerCardCta: 'Crear una cuenta de abogado',
+    firmCardTitle: 'Dirijo un despacho',
+    firmCardBody: 'Publique su despacho y sus abogados, supervise todos los casos en un solo calendario y designe a un contacto de urgencia.',
+    firmCardCta: 'Crear una cuenta de despacho',
+    documentsNeeded: '{count} documentos necesarios para verificar, incluido el permiso para ejercer la representación legal.',
+    documentsNeededOne: 'Un documento necesario para verificar, incluido el permiso para ejercer la representación legal.',
+    step1Title: 'Busque',
+    step1Body: 'Filtre por área del derecho y emirato. Compare lo que publica cada profesional, incluida su licencia y la dirección de su despacho.',
+    step2Title: 'Envíe su caso',
+    step2Body: 'Póngale nombre, descríbalo y adjunte los documentos. Llega como una solicitud que el profesional puede aceptar o rechazar.',
+    step3Title: 'Acuerden y conversen',
+    step3Body: 'Una vez aceptado, escriba dentro del caso. Reúnanse por vídeo o en su despacho.',
+    step4Title: 'Conserve el expediente',
+    step4Body: 'Cada mensaje, documento, reunión y honorario queda en el caso, para los dos, durante el tiempo que lo necesite.',
+    enquiryAlertTitle: 'Con una cuenta obtiene una respuesta más rápida y mejor',
+    enquiryAlertBody: 'Una consulta general la atiende quien la recoja, así que puede tardar más en revisarse. Con una cuenta gratuita usted elige al profesional, adjunta sus documentos, sigue el caso y guarda cada mensaje y cada honorario en un mismo lugar.',
+    enquirySend: 'Enviar una consulta',
+    enquirySubmit: 'Enviar mi consulta',
+    enquiryPoolNote: 'Su consulta entra en un fondo común que pueden ver todos los abogados y despachos registrados, y el primero que la recoja se pone en contacto con usted.',
+    enquiryEmergencyLead: 'Si es una urgencia, no envíe una consulta —',
+    enquiryEmergencyLink: 'consiga un abogado por vídeo ahora',
+    enquiryEmergencyTail: ', sin necesidad de cuenta.',
+    metaTitle: 'Dubai Legal — abogados y despachos legales verificados en los EAU',
+    metaDescription: 'Busque abogados y despachos verificados en los siete Emiratos, envíe un caso, sígalo y guarde cada documento, mensaje y honorario en un mismo lugar.',
+    emergencyPageTitle: 'Consiga un abogado por vídeo ahora',
     verifiedByHand: 'Revisado por una persona, nunca por una máquina',
     clientsIntro: 'La mayoría encuentra un abogado por medio de un conocido y confía en la suerte. Dubai Legal le da los detalles para juzgar por sí mismo y un registro de todo lo que ocurre después. Todo lo de abajo es lo que obtiene como cliente: buscar es gratis y seguirá siéndolo.',
     needLawyer: 'Necesito un abogado',
@@ -254,8 +316,40 @@ export const es: Dictionary = {
     activeCases: 'Casos activos',
   },
 
+  badges: {
+    USER: 'Cuenta verificada',
+    LAWYER: 'Abogado verificado',
+    FIRM: 'Despacho verificado',
+  },
+
+  /** The five states a verification request or a profile can be in. */
+  verificationStatus: {
+    UNVERIFIED: 'Sin verificar',
+    PENDING: 'Enviado, pendiente de revisión',
+    UNDER_REVIEW: 'En revisión',
+    APPROVED: 'Verificado',
+    REJECTED: 'No aprobado',
+  },
+
+  room: {
+    you: 'Usted',
+    recording: 'Grabación',
+    recordingNow: 'Grabando esta sala',
+  },
+
   footer: {
     disclaimer:
       'Dubai Legal no es un despacho de abogados y no ofrece asesoramiento jurídico. La información del directorio la facilitan sus miembros. Confirme siempre que un profesional esté colegiado antes de contratarlo.',
   },
+};
+
+/** The whole dictionary: the shared words plus every per-area file. */
+export const es: Dictionary = {
+  ...baseEs,
+  publicPages: publicPagesEs,
+  memberCore: memberCoreEs,
+  memberCases: memberCasesEs,
+  memberPro: memberProEs,
+  admin: adminEs,
+  feed: feedEs,
 };

@@ -369,6 +369,39 @@ async function main(): Promise<void> {
       `readyState ${lawyerVideo.remoteFrames}`,
     );
 
+    // ── The recording is of the room, not of one camera ─────────────────────
+    const recordingPanel = await clientPage.evaluate<string>(`document.body.textContent || ''`);
+    check(
+      'the recorder says it is recording the room',
+      /Recording this room/i.test(recordingPanel),
+    );
+
+    const stopped = await clickButton(clientPage, 'Stop recording');
+    check('the recording can be stopped, which is what uploads it', stopped);
+
+    let saved: { sizeBytes: number; durationMs: number | null } | null = null;
+    const recordDeadline = Date.now() + 25_000;
+    while (Date.now() < recordDeadline && !saved) {
+      saved = await prisma.roomRecording.findFirst({
+        where: { roomCode },
+        select: { sizeBytes: true, durationMs: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (!saved) await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    check('a recording of the call was stored', saved !== null, 'no room_recording row appeared');
+    check(
+      'and it holds real content rather than an empty file',
+      (saved?.sizeBytes ?? 0) > 10_000,
+      `${saved?.sizeBytes ?? 0} bytes`,
+    );
+    check(
+      'with a duration, so the length of the interaction is on the record',
+      (saved?.durationMs ?? 0) > 0,
+      `${saved?.durationMs ?? 0} ms`,
+    );
+
     for (const [name, page] of [
       ['call-client', clientPage],
       ['call-professional', lawyerPage],

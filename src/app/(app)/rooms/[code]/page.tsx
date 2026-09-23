@@ -6,6 +6,7 @@ import { env } from '@/lib/env';
 import { resolveRoomForUser } from '@/server/services/room-service';
 import { formatUaeDateTime } from '@/lib/time';
 import { ConferenceRoom } from '@/components/rooms/ConferenceRoom';
+import { getI18n } from '@/lib/i18n';
 import { iceServersForClient } from '@/lib/webrtc';
 import { BrandLockup } from '@/components/layout/Logo';
 import { CancelCallButton } from '@/components/forms/AppointmentButtons';
@@ -27,7 +28,7 @@ export default async function ConferenceRoomPage({
 }: {
   params: Promise<{ code: string }>;
 }) {
-  const user = await requireActiveUser();
+  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
   const { code } = await params;
 
   const access = await resolveRoomForUser(code, user.id);
@@ -77,6 +78,7 @@ export default async function ConferenceRoomPage({
       ) : null}
 
       <ConferenceRoom
+        labels={{ you: t.room.you, recording: t.room.recording, recordingNow: t.room.recordingNow }}
         iceServers={iceServersForClient()}
         roomCode={code}
         role={access.role}

@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { DEFAULT_LOCALE, LOCALE_COOKIE, directionOf, isLocale, type Direction, type Locale } from './locales';
 import type { Dictionary } from './en';
-import { en } from './en';
+import { dictionary as en } from './en';
 import { es } from './es';
 
 export { LOCALES, LOCALE_COOKIE, DEFAULT_LOCALE, isLocale, directionOf } from './locales';
