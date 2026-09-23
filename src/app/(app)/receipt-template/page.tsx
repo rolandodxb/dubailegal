@@ -5,10 +5,14 @@ import { getI18n } from '@/lib/i18n';
 import { getReceiptTemplate } from '@/server/services/receipt-template-service';
 import { prisma } from '@/lib/db';
 import { ReceiptLayoutForm } from '@/components/forms/ReceiptLayoutForm';
-import { BrandLockup, LogoMark } from '@/components/layout/Logo';
+import { LogoMark } from '@/components/layout/Logo';
+import { BrandLockup } from '@/components/layout/BrandLockup';
 import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Receipt layout' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.memberCases.receiptTemplate.title };
+}
 
 /**
  * The billing letterhead, for a lawyer or a firm.

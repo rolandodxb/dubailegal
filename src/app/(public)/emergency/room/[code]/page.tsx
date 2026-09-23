@@ -12,7 +12,7 @@ import { iceServersForClient } from '@/lib/webrtc';
 import { CancelEmergencyForm, CancelGuestEmergencyForm } from '@/components/forms/EmergencyForms';
 import { listRecordingsForRoom } from '@/server/services/room-recording-service';
 import { formatFileSize } from '@/lib/format';
-import { BrandLockup } from '@/components/layout/Logo';
+import { BrandLockup } from '@/components/layout/BrandLockup';
 import { formatUaeDateTime } from '@/lib/time';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
@@ -46,7 +46,7 @@ export default async function GuestEmergencyRoomPage({
 }) {
   // `t` on this page is the guest's token, which is not to be confused with the
   // dictionary, so the dictionary keeps its own name.
-  const [{ code }, { t }, viewer, { t: dict }] = await Promise.all([
+  const [{ code }, { t }, viewer, { t: dict, effectiveLocale }] = await Promise.all([
     params,
     searchParams,
     getSessionUser(),
@@ -156,7 +156,7 @@ export default async function GuestEmergencyRoomPage({
             {recordings.map((recording) => (
               <li key={recording.id}>
                 <p className="text-xs text-slate-500">
-                  {formatUaeDateTime(recording.createdAt)} · {formatFileSize(recording.sizeBytes)}
+                  {formatUaeDateTime(recording.createdAt, effectiveLocale)} · {formatFileSize(recording.sizeBytes)}
                 </p>
                 <video
                   controls

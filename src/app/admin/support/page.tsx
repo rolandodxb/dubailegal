@@ -8,7 +8,10 @@ import { formatUaeDateTime } from '@/lib/time';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
-export const metadata: Metadata = { title: 'Support' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.support };
+}
 
 const STATUS_STYLE: Record<string, string> = {
   OPEN: 'bg-domain-enquiry/5 text-domain-enquiry ring-domain-enquiry/25',
@@ -28,7 +31,7 @@ export default async function AdminSupportPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
+  const [{ t, effectiveLocale }] = await Promise.all([getI18n(), requireReviewer()]);
   const { status } = await searchParams;
   const filter = status === 'OPEN' || status === 'ANSWERED' || status === 'SOLVED' ? status : undefined;
 
@@ -112,7 +115,7 @@ export default async function AdminSupportPage({
                     <p className="mt-0.5 text-xs text-slate-500">
                       {reporter} · {ticket.user.email} ·{' '}
                       {supportCategoryLabel(t, ticket.category)} · {t.admin.support.raised}{' '}
-                      {formatUaeDateTime(ticket.createdAt)} ·{' '}
+                      {formatUaeDateTime(ticket.createdAt, effectiveLocale)} ·{' '}
                       {(ticket._count.messages === 1
                         ? t.admin.support.messagesOne
                         : t.admin.support.messagesMany

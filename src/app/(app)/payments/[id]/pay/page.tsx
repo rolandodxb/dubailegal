@@ -10,7 +10,10 @@ import { bankTransferLines } from '@/server/services/payment-service';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 import { localiseBankLines } from '@/lib/i18n/format';
 
-export const metadata: Metadata = { title: 'Pay a fee' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.memberCases.pay.title };
+}
 
 /**
  * The page a client reaches from the pay button on a fee card.

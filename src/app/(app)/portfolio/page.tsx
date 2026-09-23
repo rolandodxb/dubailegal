@@ -6,7 +6,10 @@ import { listCasesForFirm, listCasesForLawyer, unreadMessageCountsByCase } from 
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { CaseCard } from '@/components/cases/CaseCard';
 
-export const metadata: Metadata = { title: 'My portfolio' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.portfolio };
+}
 
 /**
  * Every case this professional has accepted and is responsible for, plus the

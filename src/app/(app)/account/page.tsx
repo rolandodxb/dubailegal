@@ -18,7 +18,10 @@ import { ChangePasswordForm } from '@/components/forms/PasswordForms';
 import { EncryptionNotice } from '@/components/SecurityNotice';
 import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Account and security' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.memberCore.account.metaTitle };
+}
 
 export default async function AccountPage({
   searchParams,

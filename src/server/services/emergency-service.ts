@@ -195,7 +195,14 @@ export async function listOpenEmergencies() {
           email: true,
           accountType: true,
           verificationStatus: true,
-          profile: { select: { fullName: true, avatarDocumentId: true, countryOfResidence: true } },
+          profile: {
+            select: {
+              fullName: true,
+              avatarDocumentId: true,
+              countryOfResidence: true,
+              countryOfResidenceCode: true,
+            },
+          },
         },
       },
     },

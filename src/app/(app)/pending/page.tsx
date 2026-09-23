@@ -6,7 +6,10 @@ import { listCasesForFirm, listCasesForLawyer, unreadMessageCountsByCase } from 
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { CaseCard } from '@/components/cases/CaseCard';
 
-export const metadata: Metadata = { title: 'Cases pending review' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.pending };
+}
 
 /**
  * New cases nobody has picked up yet, plus the ones this lawyer has opened for

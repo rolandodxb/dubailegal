@@ -7,7 +7,10 @@ import { legalAreaLabel } from '@/lib/i18n/labels';
 import { formatDateTime } from '@/lib/format';
 import { Alert, Card } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Emergencies' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.emergencies };
+}
 
 const STATUS_STYLE: Record<string, string> = {
   OPEN: 'bg-red-50 text-red-800 ring-red-200',

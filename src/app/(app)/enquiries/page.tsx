@@ -17,7 +17,10 @@ import {
 } from '@/components/forms/EnquiryPoolForms';
 import { relativeTime } from '@/lib/i18n/format';
 
-export const metadata: Metadata = { title: 'Enquiry pool' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.enquiryPool };
+}
 
 /**
  * The shared enquiry pool.

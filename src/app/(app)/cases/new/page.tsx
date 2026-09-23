@@ -11,7 +11,10 @@ import { CaseSubmissionForm } from '@/components/forms/CaseSubmissionForm';
 import { VerificationStatusPill } from '@/components/VerificationBadge';
 import { Alert, Card, Chip } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Send a case' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.publicPages.listing.sendCase };
+}
 
 export default async function NewCasePage({
   searchParams,

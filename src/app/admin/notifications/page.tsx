@@ -6,7 +6,10 @@ import { formatDateTime } from '@/lib/format';
 import { getI18n } from '@/lib/i18n';
 import { Alert, Card } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Notifications' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.admin.notifications.title };
+}
 
 /**
  * Push notification health.

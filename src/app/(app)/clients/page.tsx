@@ -9,7 +9,10 @@ import { Avatar } from '@/components/Avatar';
 import { CaseStatusChip } from '@/components/cases/CaseStatusChip';
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Clients' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.clients };
+}
 
 /**
  * One card per client, with every case they have with this practice. This is

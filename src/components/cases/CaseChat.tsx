@@ -20,6 +20,7 @@ import { formatFileSize } from '@/lib/format';
 import { Icon } from '@/components/icons';
 import { PaymentBubble, type ChatPayment } from './PaymentBubble';
 import { LogoMark } from '@/components/layout/Logo';
+import { useLocale } from '@/components/layout/ClientLocale';
 
 export type ChatAttachment = {
   id: string;
@@ -83,6 +84,7 @@ export function CaseChat({
     payment: MemberCasesDict['feeBubble'];
   };
 }) {
+  const locale = useLocale();
   const [state, formAction] = useActionState(postCaseMessageAction, initialFormState);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [pending, setPending] = useState<File[]>([]);
@@ -298,7 +300,7 @@ export function CaseChat({
                     {!grouped ? (
                       <p className="mb-1 px-1 text-[11px] text-slate-500">
                         {mine ? labels.you : name} ·{' '}
-                        {formatUaeDateTime(new Date(message.createdAt))}
+                        {formatUaeDateTime(new Date(message.createdAt), locale)}
                       </p>
                     ) : null}
                     {message.body ? (

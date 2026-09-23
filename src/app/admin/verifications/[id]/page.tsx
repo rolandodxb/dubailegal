@@ -16,8 +16,12 @@ import { calculateAge, formatDate, formatDateTime, formatFileSize, safeExternalU
 import { emiratesIdCheckDigitMatches } from '@/lib/emirates-id';
 import { Alert, buttonClasses, Card, Chip, DescriptionList } from '@/components/ui/primitives';
 import { ClaimCaseForm, DecisionForm, ReviewDocumentForm } from '@/components/forms/AdminForms';
+import { isPurgedDocument } from '@/lib/purged-document';
 
-export const metadata: Metadata = { title: 'Review request' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.admin.verifications.metaTitle };
+}
 
 const DOC_STATUS_STYLES: Record<string, string> = {
   AWAITING_REVIEW: 'bg-brand-50 text-brand-800 ring-brand-200',
@@ -394,7 +398,8 @@ export default async function ReviewCasePage({
                     )}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {document.fileName} · {formatFileSize(document.sizeBytes)} ·{' '}
+                    {isPurgedDocument(document.fileName) ? t.memberPro.documents.purgedNote : document.fileName} ·{' '}
+                    {formatFileSize(document.sizeBytes)} ·{' '}
                     {t.admin.verifications.uploaded.replace(
                       '{date}',
                       formatDateTime(document.createdAt),

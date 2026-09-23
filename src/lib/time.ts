@@ -9,8 +9,24 @@
 
 export const UAE_UTC_OFFSET_HOURS = 4;
 
+/**
+ * The BCP-47 tag a language is formatted with. Display-only: the calendar
+ * arithmetic above is the same everywhere, and only the words change.
+ */
+const LOCALE_TAG: Record<string, string> = { en: 'en-GB', es: 'es-ES' };
+
+function tag(locale: string = 'en'): string {
+  return LOCALE_TAG[locale] ?? 'en-GB';
+}
+
 const MS_PER_HOUR = 60 * 60 * 1000;
 const MS_PER_DAY = 24 * MS_PER_HOUR;
+
+/**
+ * How a date and a time are joined. English writes "1 Mar 2026 at 09:00"; Spanish
+ * writes "1 mar 2026, 09:00".
+ */
+const JOINER: Record<string, string> = { en: ' at ', es: ', ' };
 
 function pad(value: number): string {
   return String(value).padStart(2, '0');
@@ -55,9 +71,9 @@ export function formatUaeTime(instant: Date): string {
   return `${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}`;
 }
 
-export function formatUaeDate(instant: Date): string {
+export function formatUaeDate(instant: Date, locale: string = 'en'): string {
   const shifted = new Date(instant.getTime() + UAE_UTC_OFFSET_HOURS * MS_PER_HOUR);
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(tag(locale), {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
@@ -66,14 +82,14 @@ export function formatUaeDate(instant: Date): string {
   }).format(shifted);
 }
 
-export function formatUaeDateTime(instant: Date): string {
-  return `${formatUaeDate(instant)} at ${formatUaeTime(instant)}`;
+export function formatUaeDateTime(instant: Date, locale: string = 'en'): string {
+  return `${formatUaeDate(instant, locale)}${JOINER[locale] ?? ' at '}${formatUaeTime(instant)}`;
 }
 
 /** Formats a date key such as 2026-03-01 for display. */
-export function formatDateKey(key: string): string {
+export function formatDateKey(key: string, locale: string = 'en'): string {
   const { year, month, day } = parseDateKey(key);
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(tag(locale), {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
@@ -82,9 +98,9 @@ export function formatDateKey(key: string): string {
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-export function formatDateKeyShort(key: string): string {
+export function formatDateKeyShort(key: string, locale: string = 'en'): string {
   const { year, month, day } = parseDateKey(key);
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(tag(locale), {
     day: '2-digit',
     month: 'short',
     timeZone: 'UTC',
@@ -116,9 +132,9 @@ export function weekKeysFrom(startKey: string): string[] {
   return Array.from({ length: 7 }, (_, index) => addDaysToKey(startKey, index));
 }
 
-export function monthLabel(key: string): string {
+export function monthLabel(key: string, locale: string = 'en'): string {
   const { year, month } = parseDateKey(key);
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(tag(locale), {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',

@@ -289,7 +289,10 @@ const baseEn = {
     yes: 'Yes',
     no: 'No',
     optional: 'Optional',
+    notSpecified: 'Not specified',
     /** How long ago something happened, for a feed or an alert list. */
+    /** The line a printed page carries in its letterhead. */
+    printedFrom: 'Printed from Legal Dash',
     justNow: 'just now',
     minuteAgo: '{count} minute ago',
     minutesAgo: '{count} minutes ago',

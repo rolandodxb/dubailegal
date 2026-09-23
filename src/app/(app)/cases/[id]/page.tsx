@@ -27,7 +27,10 @@ import { EncryptionNotice } from '@/components/SecurityNotice';
 import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/primitives';
 import { localiseBankLines } from '@/lib/i18n/format';
 
-export const metadata: Metadata = { title: 'Case' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.memberCases.caseDetail.metaTitle };
+}
 
 /** Nothing banked, for a viewer who cannot raise a fee at all. */
 const EMPTY_BANK = {
@@ -47,7 +50,7 @@ export default async function CaseDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ notice?: string }>;
 }) {
-  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireMember()]);
   const labels = t.memberCases.caseDetail;
   const purposeLower = labels.purposeLower as Record<string, string>;
   const [{ id }, { notice }] = await Promise.all([params, searchParams]);
@@ -319,7 +322,7 @@ export default async function CaseDetailPage({
                   {casePayments.map((payment) => (
                     <li key={payment.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="text-sm text-slate-800">
-                        {formatMoney(payment.amountFils, payment.currency)} ·{' '}
+                        {formatMoney(payment.amountFils, payment.currency, effectiveLocale)} ·{' '}
                         {purposeLower[payment.purpose] ?? payment.purpose}
                       </span>
                       <span className="text-xs text-slate-500">{feeStatusText(payment)}</span>
@@ -470,11 +473,11 @@ export default async function CaseDetailPage({
                   },
                   {
                     term: labels.reviewed,
-                    detail: legalCase.reviewedAt ? formatUaeDateTime(legalCase.reviewedAt) : labels.notYet,
+                    detail: legalCase.reviewedAt ? formatUaeDateTime(legalCase.reviewedAt, effectiveLocale) : labels.notYet,
                   },
                   {
                     term: labels.assigned,
-                    detail: legalCase.assignedAt ? formatUaeDateTime(legalCase.assignedAt) : labels.notYet,
+                    detail: legalCase.assignedAt ? formatUaeDateTime(legalCase.assignedAt, effectiveLocale) : labels.notYet,
                   },
                 ]}
               />

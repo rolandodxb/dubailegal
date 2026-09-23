@@ -13,7 +13,10 @@ import { ReviewDecisionForm } from '@/components/forms/BlogForms';
 import { Alert, Card, cx } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
-export const metadata: Metadata = { title: 'Review a post' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.admin.blog.metaTitle };
+}
 
 /**
  * The review tool.
@@ -33,7 +36,7 @@ export default async function AdminReviewPostPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
+  const [{ t, effectiveLocale }] = await Promise.all([getI18n(), requireReviewer()]);
   const { id } = await params;
 
   const post = await getPostForReview(id);
@@ -87,7 +90,7 @@ export default async function AdminReviewPostPage({
           <h1 className="mt-2 text-2xl font-semibold text-slate-900">{post.title}</h1>
           <p className="mt-1 text-sm text-slate-600">
             {blogKindLabel(t, post.kind)} · {t.admin.blog.written}{' '}
-            {formatUaeDateTime(post.createdAt)}
+            {formatUaeDateTime(post.createdAt, effectiveLocale)}
             {post.listing
               ? ` · ${t.admin.blog.names.replace('{name}', post.listing.displayName)}`
               : ''}
@@ -116,7 +119,7 @@ export default async function AdminReviewPostPage({
               </p>
               <p className="text-xs text-slate-500">
                 {accountTypeLabel(t, post.author.accountType)} ·{' '}
-                {t.admin.blog.joined.replace('{date}', formatUaeDateTime(post.author.createdAt))}
+                {t.admin.blog.joined.replace('{date}', formatUaeDateTime(post.author.createdAt, effectiveLocale))}
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 {post.author._count.blogPosts}{' '}
@@ -220,7 +223,7 @@ export default async function AdminReviewPostPage({
 
                   <p className="mt-1 text-xs text-slate-500">
                     {match.sameTopic ? t.admin.blog.sameBoard : t.admin.blog.differentBoard} ·{' '}
-                    {match.authorName} · {formatUaeDateTime(match.createdAt)} · {match.comments}{' '}
+                    {match.authorName} · {formatUaeDateTime(match.createdAt, effectiveLocale)} · {match.comments}{' '}
                     {match.comments === 1 ? t.admin.blog.comment : t.admin.blog.comments}
                   </p>
 

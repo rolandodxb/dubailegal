@@ -288,6 +288,8 @@ const baseEs: Omit<
     yes: 'Sí',
     no: 'No',
     optional: 'Opcional',
+    notSpecified: 'Sin especificar',
+    printedFrom: 'Impreso desde Legal Dash',
     justNow: 'ahora mismo',
     minuteAgo: 'hace {count} minuto',
     minutesAgo: 'hace {count} minutos',

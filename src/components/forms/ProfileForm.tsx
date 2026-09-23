@@ -38,9 +38,12 @@ export type ProfileFormValues = {
 export function ProfileForm({
   profile,
   labels,
+  countryNames,
 }: {
   profile: ProfileFormValues | null;
+  countryNames?: Record<string, string>;
   labels: {
+    notSpecified: string;
     errorTitle: string;
     fullName: string;
     dateOfBirth: string;
@@ -140,6 +143,8 @@ export function ProfileForm({
 
         <CountrySelect
           id="countryOfBirthCode"
+          emptyOption={labels.notSpecified}
+          names={countryNames}
           name="countryOfBirthCode"
           label={labels.countryOfBirth}
           required

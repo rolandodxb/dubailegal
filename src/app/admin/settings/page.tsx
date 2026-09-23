@@ -14,7 +14,10 @@ import {
   ShutdownForm,
 } from '@/components/forms/AdminOpsForms';
 
-export const metadata: Metadata = { title: 'Settings' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.settings };
+}
 
 /**
  * Installation settings.

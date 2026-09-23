@@ -9,7 +9,10 @@ import { domainChip } from '@/lib/domains';
 import { Icon } from '@/components/icons';
 import { relativeTime } from '@/lib/i18n/format';
 
-export const metadata: Metadata = { title: 'Enquiries' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.labels.domain.enquiry };
+}
 
 const STATUS_STYLE: Record<string, string> = {
   OPEN: 'bg-domain-enquiry/10 text-domain-enquiry ring-domain-enquiry/25',

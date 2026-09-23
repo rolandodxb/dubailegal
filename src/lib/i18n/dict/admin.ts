@@ -203,6 +203,7 @@ export const adminEn = {
     system: 'system',
   },
   verifications: {
+    metaTitle: 'Review request',
     title: 'Verification requests',
     intro: 'Oldest requests first, so nobody is starved by newer ones. Take a request to record yourself as its reviewer, then accept or reject each document before recording a decision. These are document checks on an account — they are not cases between a client and a lawyer.',
     waiting: 'Waiting ({count})',
@@ -343,6 +344,7 @@ export const adminEn = {
     removeReviewer: 'Remove reviewer',
   },
   cases: {
+    metaTitle: 'Case oversight',
     intro: 'Every case on the platform, for oversight. This view is read-only: accepting, declining or progressing a case is the work of the lawyer it was sent to, never of an administrator.',
     alertTitle: 'What this view does and does not show',
     alertBody: 'You can see that a case exists, who is on it, its state and its timeline. The client’s description of their matter and the messages exchanged about it may be legally privileged and are not shown here — not to you, and not to any administrator.',
@@ -512,6 +514,7 @@ export const adminEn = {
     },
   },
   recordings: {
+    metaTitle: 'Recordings',
     title: 'Call recordings',
     subtitle: 'Every call in a conference room or an emergency room is recorded from both sides. Each recording is a composed picture of the room — both cameras and both microphones — so the interaction itself is on the record. They are encrypted, and available to the two people on the call and to nobody else.',
     stats: {
@@ -565,6 +568,7 @@ export const adminEn = {
     },
   },
   support: {
+    metaTitle: 'Support ticket',
     intro: 'Problems reported by users, lawyers and firms. Support is read by administrators only: it is never shown to the other side of a case. Open a ticket, answer it, and press the solved button when it is finished — that closes it for both sides.',
     statWaiting: 'Waiting for a reply',
     statAnswered: 'Answered, awaiting them',
@@ -732,6 +736,7 @@ export const adminEn = {
     },
   },
   blog: {
+    metaTitle: 'Review a post',
     intro: 'Every post a member writes waits for a moderator before it appears on the board. The useful part of that job is noticing that the question has been asked already — so the review screen runs an automatic check against the posts already published and shows you the closest matches before you decide.',
     waitingForReview: 'Waiting for review',
     onTheBoard: 'On the board',
@@ -1031,6 +1036,7 @@ export const adminEs: AdminDict = {
     system: 'sistema',
   },
   verifications: {
+    metaTitle: 'Solicitud de revisión',
     title: 'Solicitudes de verificación',
     intro: 'Primero las solicitudes más antiguas, para que ninguna quede postergada por otras más recientes. Asigne una solicitud para quedar registrado como su revisor; después acepte o rechace cada documento antes de registrar una decisión. Se trata de comprobaciones de documentos de una cuenta: no son casos entre un cliente y un abogado.',
     waiting: 'En espera ({count})',
@@ -1171,6 +1177,7 @@ export const adminEs: AdminDict = {
     removeReviewer: 'Retirar revisor',
   },
   cases: {
+    metaTitle: 'Supervisión del caso',
     intro: 'Todos los casos de la plataforma, para supervisión. Esta vista es de solo lectura: aceptar, rechazar o hacer avanzar un caso es trabajo del abogado al que se envió, nunca de un administrador.',
     alertTitle: 'Qué muestra y qué no muestra esta vista',
     alertBody: 'Puede ver que un caso existe, quién interviene en él, su estado y su cronología. La descripción que hace el cliente de su asunto y los mensajes intercambiados al respecto pueden estar protegidos legalmente y no se muestran aquí, ni a usted ni a ningún administrador.',
@@ -1340,6 +1347,7 @@ export const adminEs: AdminDict = {
     },
   },
   recordings: {
+    metaTitle: 'Grabaciones',
     title: 'Grabaciones de llamadas',
     subtitle: 'Todas las llamadas de una sala de conferencia o de una sala de urgencia se graban desde ambos lados. Cada grabación es una imagen compuesta de la sala —ambas cámaras y ambos micrófonos—, de modo que la propia interacción queda registrada. Están cifradas y solo están disponibles para las dos personas de la llamada, para nadie más.',
     stats: {
@@ -1393,6 +1401,7 @@ export const adminEs: AdminDict = {
     },
   },
   support: {
+    metaTitle: 'Tique de soporte',
     intro: 'Problemas notificados por usuarios, abogados y despachos. El soporte solo lo leen los administradores: nunca se muestra a la otra parte de un caso. Abra un tique, respóndalo y pulse el botón de resuelto cuando termine: eso lo cierra para ambas partes.',
     statWaiting: 'Esperando respuesta',
     statAnswered: 'Respondidos, en espera del usuario',
@@ -1560,6 +1569,7 @@ export const adminEs: AdminDict = {
     },
   },
   blog: {
+    metaTitle: 'Revisar una publicación',
     intro: 'Cada publicación que escribe un miembro espera a un moderador antes de aparecer en el tablón. La parte útil de esa tarea es detectar que la pregunta ya se ha formulado, así que la pantalla de revisión ejecuta una comprobación automática contra las publicaciones ya publicadas y le muestra las coincidencias más cercanas antes de decidir.',
     waitingForReview: 'Pendientes de revisión',
     onTheBoard: 'En el tablón',

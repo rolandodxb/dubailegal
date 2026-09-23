@@ -12,7 +12,10 @@ import {
 } from '@/components/forms/CredentialForms';
 import { Alert, Card } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Legal details' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.legalDetails };
+}
 
 export default async function CredentialsPage() {
   const user = await requireMember();

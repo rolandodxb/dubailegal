@@ -17,7 +17,10 @@ import {
 } from '@/components/forms/FirmForms';
 import { FirmEmergencyForm } from '@/components/forms/EmergencyForms';
 
-export const metadata: Metadata = { title: 'Lawyers registered' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.firmLawyers };
+}
 
 /**
  * The firm's roster.

@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ServiceWorkerRegistrar } from '@/components/layout/ServiceWorkerRegistrar';
-import { OptionalLabelProvider } from '@/components/ui/Field';
+import { ClientLocaleProvider } from '@/components/layout/ClientLocale';
 import { getI18n } from '@/lib/i18n';
 
-export const metadata: Metadata = {
+const BASE_METADATA: Metadata = {
   // Installable as an app: the manifest, the iOS equivalents of what it carries,
   // and the icons a home screen picks up.
   manifest: '/manifest.webmanifest',
@@ -37,6 +37,7 @@ export const metadata: Metadata = {
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
   return {
+    ...BASE_METADATA,
     title: { default: t.meta.title, template: '%s · Legal Dash' },
     description: t.meta.description,
   };
@@ -63,7 +64,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     // second, so Arabic reads and flows right to left without a second stylesheet.
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body className="min-h-screen bg-white antialiased">
-        <OptionalLabelProvider value={t.common.optionalSuffix}>{children}</OptionalLabelProvider>
+        <ClientLocaleProvider locale={locale} optionalSuffix={t.common.optionalSuffix}>
+          {children}
+        </ClientLocaleProvider>
         <ServiceWorkerRegistrar />
       </body>
     </html>

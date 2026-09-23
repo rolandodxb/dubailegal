@@ -224,6 +224,7 @@ export const memberCasesEn = {
 
   /** One case in full. */
   caseDetail: {
+    metaTitle: 'Case',
     backToMyCases: '← Back to my cases',
     backToMyDashboard: '← Back to my dashboard',
     submittedOn: 'submitted {date}',
@@ -1071,6 +1072,7 @@ export const memberCasesEs: MemberCasesDict = {
   },
 
   caseDetail: {
+    metaTitle: 'Caso',
     backToMyCases: '← Volver a mis casos',
     backToMyDashboard: '← Volver a mi panel',
     submittedOn: 'enviado {date}',

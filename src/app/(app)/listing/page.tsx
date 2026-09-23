@@ -11,7 +11,10 @@ import { ListingForm } from '@/components/forms/ListingForm';
 import { unpublishListingAction } from '@/app/actions/profile-actions';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Directory listing' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.listing };
+}
 
 export default async function ListingPage({
   searchParams,

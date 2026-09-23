@@ -7,7 +7,10 @@ import { getI18n } from '@/lib/i18n';
 import { accountTypeLabel } from '@/lib/i18n/labels';
 import { buttonClasses, Card, Input } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Activity register' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.activityRegister };
+}
 
 /**
  * The traffic register: every page view and API call this installation served.

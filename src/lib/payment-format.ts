@@ -10,13 +10,16 @@
  * Madrid sees euros. Every currency here has two decimal places except the few
  * that do not, which `Intl` knows and this does not need to.
  */
-export function formatMoney(minorUnits: number, currency = 'AED'): string {
+/** Display-only: the number is the same, the punctuation and placement are not. */
+const LOCALE_TAG: Record<string, string> = { en: 'en', es: 'es-ES' };
+
+export function formatMoney(minorUnits: number, currency = 'AED', locale = 'en'): string {
   const code = currency.toUpperCase();
   const zeroDecimal = ['JPY', 'KRW', 'VND', 'CLP', 'ISK', 'HUF', 'TWD', 'UGX', 'RWF', 'KMF', 'DJF', 'GNF', 'PYG', 'XOF', 'XAF', 'BIF'].includes(code);
   const divisor = zeroDecimal ? 1 : 100;
 
   try {
-    return new Intl.NumberFormat('en', {
+    return new Intl.NumberFormat(LOCALE_TAG[locale] ?? 'en', {
       style: 'currency',
       currency: code,
       minimumFractionDigits: zeroDecimal ? 0 : 2,
@@ -29,8 +32,8 @@ export function formatMoney(minorUnits: number, currency = 'AED'): string {
 }
 
 /** The dirham form, kept for the places that are explicitly about the UAE. */
-export function formatAed(fils: number): string {
-  return formatMoney(fils, 'AED');
+export function formatAed(fils: number, locale = 'en'): string {
+  return formatMoney(fils, 'AED', locale);
 }
 
 /**

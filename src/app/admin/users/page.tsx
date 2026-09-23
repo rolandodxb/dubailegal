@@ -13,7 +13,10 @@ import {
   SuspendUserForm,
 } from '@/components/forms/AdminForms';
 
-export const metadata: Metadata = { title: 'Accounts' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.accounts };
+}
 
 export default async function AdminUsersPage({
   searchParams,

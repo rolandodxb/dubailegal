@@ -34,7 +34,10 @@ import {
   RescheduleAppointmentForm,
 } from '@/components/forms/AppointmentButtons';
 
-export const metadata: Metadata = { title: 'Calendar' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.calendar };
+}
 
 type View = 'month' | 'week' | 'day';
 
@@ -60,7 +63,7 @@ export default async function CalendarPage({
 }: {
   searchParams: Promise<{ view?: string; date?: string }>;
 }) {
-  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireProfessional()]);
   const labels = t.memberCases.calendar;
   const modeLabel = t.memberCases.appointmentMode as Record<string, string>;
   const modeLabels = {
@@ -162,10 +165,10 @@ export default async function CalendarPage({
 
   const heading =
     view === 'month'
-      ? monthLabel(anchorKey)
+      ? monthLabel(anchorKey, effectiveLocale)
       : view === 'week'
-        ? `Week of ${formatDateKey(startOfWeekKey(anchorKey))}`
-        : formatDateKey(anchorKey);
+        ? `Week of ${formatDateKey(startOfWeekKey(anchorKey), effectiveLocale)}`
+        : formatDateKey(anchorKey, effectiveLocale);
 
   const step = view === 'month' ? 1 : view === 'week' ? 7 : 1;
   const previousAnchor = view === 'month' ? addMonthsToKey(anchorKey, -1) : addDaysToKey(anchorKey, -step);
@@ -286,7 +289,7 @@ export default async function CalendarPage({
                         key === today ? 'text-brand-700' : 'text-slate-900',
                       )}
                     >
-                      {formatDateKeyShort(key)}
+                      {formatDateKeyShort(key, effectiveLocale)}
                     </p>
                   </Link>
                   <ul className="mt-2 space-y-1">
@@ -452,7 +455,7 @@ export default async function CalendarPage({
             <>
               <p className="mt-1 mb-4 text-sm text-slate-600">
                 {labels.slotsAvailable
-                  .replace('{date}', formatDateKey(anchorKey))
+                  .replace('{date}', formatDateKey(anchorKey, effectiveLocale))
                   .replace('{free}', String(freeHours.length))
                   .replace('{total}', String(ownSlots.length))}
                 {takenSlots.length > 0

@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 import { recordAudit } from '@/lib/audit';
 import { SLOT_MINUTES, WORKING_HOURS } from '@/lib/constants';
 import { BOOKABLE_HOURS } from '@/lib/appointment-slots';
-import { fromUaeDateTime, formatUaeDateTime, toUaeHour } from '@/lib/time';
+import { fromUaeDateTime, toUaeHour } from '@/lib/time';
 import { notify } from './notification-service';
 import { newRoomCode } from './room-service';
 import { fromZodError, failure, success, type ServiceResult } from './result';
@@ -338,7 +338,7 @@ export async function bookAppointment(
       await notify({
         userId: parsed.data.clientId,
         kind: 'appointment.office_requested',
-        title: `You are asked to attend the office on ${formatUaeDateTime(startsAt)}`,
+        title: `You are asked to attend the office on {{${startsAt.toISOString()}}}`,
         body: `${lawyerName} has asked you to come to ${parsed.data.officeAddress}${caseLabel}. Accept or decline this from My cases.`,
         link: '/cases',
       });
@@ -346,7 +346,7 @@ export async function bookAppointment(
       await notify({
         userId: parsed.data.clientId,
         kind: 'appointment.booked',
-        title: `Meeting booked for ${formatUaeDateTime(startsAt)}`,
+        title: `Meeting booked for {{${startsAt.toISOString()}}}`,
         body:
           parsed.data.mode === 'VIDEO_CALL'
             ? `${lawyerName} has scheduled a video call with you${caseLabel}. Open My cases to join the conference room.`
@@ -443,11 +443,11 @@ export async function respondToOfficeRequest(
         userId,
         kind: accept ? 'appointment.office_accepted' : 'appointment.office_declined',
         title: accept
-          ? `${clientName} will attend on ${formatUaeDateTime(appointment.startsAt)}`
+          ? `${clientName} will attend on {{${appointment.startsAt.toISOString()}}}`
           : `${clientName} declined the office visit`,
         body: accept
           ? `They accepted the meeting at ${appointment.officeAddress}.`
-          : `They cannot come to the office for the meeting on ${formatUaeDateTime(appointment.startsAt)}. You may want to offer a video call instead.`,
+          : `They cannot come to the office for the meeting on {{${appointment.startsAt.toISOString()}}}. You may want to offer a video call instead.`,
         link: '/calendar',
       }),
     ),
@@ -485,8 +485,8 @@ export async function cancelAppointment(
     kind: 'appointment.cancelled',
     title: 'A meeting was cancelled',
     body: isClient
-      ? `The client cancelled the meeting on ${formatUaeDateTime(appointment.startsAt)}.`
-      : `The meeting on ${formatUaeDateTime(appointment.startsAt)} has been cancelled.`,
+      ? `The client cancelled the meeting on {{${appointment.startsAt.toISOString()}}}.`
+      : `The meeting on {{${appointment.startsAt.toISOString()}}} has been cancelled.`,
     link: '/cases',
   });
 
@@ -714,11 +714,11 @@ export async function rescheduleAppointment(
   await notify({
     userId: appointment.clientId,
     kind: 'appointment.rescheduled',
-    title: `Your meeting moved to ${formatUaeDateTime(startsAt)}`,
+    title: `Your meeting moved to {{${startsAt.toISOString()}}}`,
     body:
       parsed.data.mode === 'OFFICE_VISIT'
-        ? `${professionalName} moved the meeting from ${formatUaeDateTime(appointment.startsAt)} to ${formatUaeDateTime(startsAt)} at ${parsed.data.officeAddress}. Accept or decline the new time from My cases.`
-        : `${professionalName} moved the meeting from ${formatUaeDateTime(appointment.startsAt)} to ${formatUaeDateTime(startsAt)}${
+        ? `${professionalName} moved the meeting from {{${appointment.startsAt.toISOString()}}} to {{${startsAt.toISOString()}}} at ${parsed.data.officeAddress}. Accept or decline the new time from My cases.`
+        : `${professionalName} moved the meeting from {{${appointment.startsAt.toISOString()}}} to {{${startsAt.toISOString()}}}${
             parsed.data.mode === 'VIDEO_CALL' ? '. Open My cases to join the conference room.' : '.'
           }`,
     link: '/cases',

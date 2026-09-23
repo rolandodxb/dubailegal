@@ -6,7 +6,10 @@ import { formatAed } from '@/lib/payment-format';
 import { formatDateTime } from '@/lib/format';
 import { Alert, Card } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Payments' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.payments };
+}
 
 const STATUS_STYLE: Record<string, string> = {
   REQUESTED: 'bg-amber-50 text-amber-900 ring-amber-200',
@@ -24,7 +27,7 @@ const STATUS_STYLE: Record<string, string> = {
  */
 export default async function AdminPaymentsPage() {
   await requireReviewer();
-  const [{ t }, overview] = await Promise.all([getI18n(), paymentOverview()]);
+  const [{ t, effectiveLocale }, overview] = await Promise.all([getI18n(), paymentOverview()]);
 
   const statusLabel: Record<string, string> = t.admin.payments.status;
 
@@ -46,7 +49,7 @@ export default async function AdminPaymentsPage() {
           { label: t.admin.payments.stats.withdrawn, value: String(overview.cancelled) },
           {
             label: t.admin.payments.stats.simulatedValue,
-            value: formatAed(overview.paidValueFils),
+            value: formatAed(overview.paidValueFils, effectiveLocale),
           },
         ].map((stat) => (
           <Card key={stat.label}>
@@ -59,7 +62,7 @@ export default async function AdminPaymentsPage() {
       <Card>
         <p className="text-sm text-slate-600">{t.admin.payments.requestedNotPaid}</p>
         <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
-          {formatAed(overview.requestedValueFils)}
+          {formatAed(overview.requestedValueFils, effectiveLocale)}
         </p>
       </Card>
 
@@ -95,7 +98,7 @@ export default async function AdminPaymentsPage() {
                       {row.requestedBy.profile?.fullName?.trim() || row.requestedBy.email}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 font-medium tabular-nums text-slate-900">
-                      {formatAed(row.amountFils)}
+                      {formatAed(row.amountFils, effectiveLocale)}
                     </td>
                     <td className="px-3 py-2">
                       <span

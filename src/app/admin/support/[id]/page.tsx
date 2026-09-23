@@ -12,7 +12,10 @@ import { SupportReplyForm, SolveTicketForm } from '@/components/forms/SupportFor
 import { Alert, buttonClasses, Card, cx } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
-export const metadata: Metadata = { title: 'Support ticket' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.admin.support.metaTitle };
+}
 
 /**
  * One support ticket, from the administrator's side.
@@ -26,7 +29,7 @@ export default async function AdminSupportTicketPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
+  const [{ t, effectiveLocale }] = await Promise.all([getI18n(), requireReviewer()]);
   const { id } = await params;
 
   const ticket = await getTicketForAdmin(id);
@@ -48,7 +51,7 @@ export default async function AdminSupportTicketPage({
           <h1 className="mt-1 text-2xl font-semibold text-slate-900">{ticket.subject}</h1>
           <p className="mt-1 text-sm text-slate-600">
             {supportCategoryLabel(t, ticket.category)} · {t.admin.support.raised}{' '}
-            {formatUaeDateTime(ticket.createdAt)}
+            {formatUaeDateTime(ticket.createdAt, effectiveLocale)}
             {ticket.contextPath ? ` · ${t.admin.support.from} ${ticket.contextPath}` : ''}
           </p>
         </div>
@@ -70,7 +73,7 @@ export default async function AdminSupportTicketPage({
         <Alert tone="success" title={t.labels.supportStatus.SOLVED}>
           {t.admin.support.closedOn.replace(
             '{date}',
-            ticket.solvedAt ? formatUaeDateTime(ticket.solvedAt) : '',
+            ticket.solvedAt ? formatUaeDateTime(ticket.solvedAt, effectiveLocale) : '',
           )}
           {ticket.solvedBy
             ? t.admin.support.closedBy.replace('{email}', ticket.solvedBy.email)
@@ -116,7 +119,7 @@ export default async function AdminSupportTicketPage({
                           {name} · {accountTypeLabel(t, message.author.accountType)}
                         </span>
                       )}{' '}
-                      · {formatUaeDateTime(message.createdAt)}
+                      · {formatUaeDateTime(message.createdAt, effectiveLocale)}
                     </p>
                     <p className="mt-1 whitespace-pre-line rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm leading-relaxed text-slate-800">
                       {message.body}
@@ -160,7 +163,7 @@ export default async function AdminSupportTicketPage({
                 <p className="text-xs text-slate-500">{ticket.user.email}</p>
                 <p className="mt-1 text-xs text-slate-500">
                   {accountTypeLabel(t, ticket.user.accountType)} · {t.admin.support.joined}{' '}
-                  {formatUaeDateTime(ticket.user.createdAt)}
+                  {formatUaeDateTime(ticket.user.createdAt, effectiveLocale)}
                 </p>
               </div>
             </div>

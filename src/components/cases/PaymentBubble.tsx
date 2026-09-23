@@ -10,6 +10,7 @@ import { formatUaeDateTime } from '@/lib/time';
 import { Alert, buttonClasses, Field, Input, cx } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Icon } from '@/components/icons';
+import { useLocale } from '@/components/layout/ClientLocale';
 
 export type ChatPayment = {
   id: string;
@@ -64,6 +65,7 @@ export function PaymentBubble({
   isClient: boolean;
   labels: MemberCasesDict['feeBubble'];
 }) {
+  const locale = useLocale();
   const [proofState, proofAction] = useActionState(submitPaymentProofAction, initialFormState);
   const [cancelState, cancelAction] = useActionState(cancelPaymentAction, initialFormState);
 
@@ -132,7 +134,7 @@ export function PaymentBubble({
             <p className="mt-1.5 text-xs text-slate-500">
               {labels.requestedBy
                 .replace('{name}', payment.requestedByName)
-                .replace('{date}', formatUaeDateTime(new Date(payment.createdAt)))}
+                .replace('{date}', formatUaeDateTime(new Date(payment.createdAt), locale))}
             </p>
 
             {payment.status === 'PAID' ? (
@@ -151,7 +153,7 @@ export function PaymentBubble({
                   <div className="flex justify-between gap-3">
                     <dt>{labels.paidOn}</dt>
                     <dd className="font-medium text-slate-800">
-                      {formatUaeDateTime(new Date(payment.paidAt))}
+                      {formatUaeDateTime(new Date(payment.paidAt), locale)}
                     </dd>
                   </div>
                 ) : null}

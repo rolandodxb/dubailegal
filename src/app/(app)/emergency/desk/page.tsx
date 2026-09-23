@@ -20,8 +20,13 @@ import {
   EmergencyAvailabilityForm,
   EmergencyNoteForm,
 } from '@/components/forms/EmergencyForms';
+import { countryByCode } from '@/lib/countries';
+import { countryName } from '@/lib/i18n/country-names';
 
-export const metadata: Metadata = { title: 'Emergency desk' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.emergencyDesk };
+}
 
 /**
  * The emergency desk, for lawyers and firms only.
@@ -34,7 +39,7 @@ export const metadata: Metadata = { title: 'Emergency desk' };
  * server as well as in the navigation.
  */
 export default async function EmergencyDeskPage() {
-  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireProfessional()]);
   const isFirm = user.accountType === 'FIRM';
 
   const [queue, taken, standing] = await Promise.all([
@@ -44,6 +49,22 @@ export default async function EmergencyDeskPage() {
   ]);
 
   const publicName = t.memberPro.emergencyDesk.memberOfPublic;
+
+/** The client's country, named in the reader's language where the code is known. */
+function countryOf(item: {
+  client?: {
+    profile?: { countryOfResidence?: string | null; countryOfResidenceCode?: string | null } | null;
+  } | null;
+}, locale: string): string | null {
+  const profile = item.client?.profile;
+  if (!profile) return null;
+  const code = profile.countryOfResidenceCode;
+  if (code) {
+    const country = countryByCode(code);
+    return countryName(locale as never, code, country?.name ?? profile.countryOfResidence ?? code);
+  }
+  return profile.countryOfResidence ?? null;
+}
 
   return (
     <div className="space-y-8">
@@ -112,9 +133,7 @@ export default async function EmergencyDeskPage() {
                           <p className="text-sm font-medium text-slate-900">{clientName}</p>
                           <p className="text-xs text-slate-500">
                             {legalAreaLabel(t, item.caseType)}
-                            {item.client?.profile?.countryOfResidence
-                              ? ` · ${item.client.profile.countryOfResidence}`
-                              : ''}
+                            {countryOf(item, effectiveLocale) ? ` · ${countryOf(item, effectiveLocale)}` : ''}
                           </p>
                           <p className="mt-1 text-sm font-medium text-slate-900">
                             {t.memberPro.emergencyDesk.callBack.replace(

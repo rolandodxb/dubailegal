@@ -8,7 +8,10 @@ import { formatUaeDateTime } from '@/lib/time';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
-export const metadata: Metadata = { title: 'Community' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.nav.community };
+}
 
 const STATUS_STYLE: Record<string, string> = {
   PENDING: 'bg-amber-50 text-amber-900 ring-amber-200',
@@ -32,7 +35,7 @@ export default async function AdminCommunityPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
+  const [{ t, effectiveLocale }] = await Promise.all([getI18n(), requireReviewer()]);
   const { status } = await searchParams;
   const filter =
     status === 'PUBLISHED' ||
@@ -141,7 +144,7 @@ export default async function AdminCommunityPage({
                         <span className="text-xs text-slate-500">
                           {blogKindLabel(t, post.kind)} · {author} ·{' '}
                           {accountTypeLabel(t, post.author.accountType)} ·{' '}
-                          {formatUaeDateTime(post.createdAt)}
+                          {formatUaeDateTime(post.createdAt, effectiveLocale)}
                         </span>
                       </div>
                       <h3 className="mt-2 font-medium text-slate-900">{post.title}</h3>
@@ -246,7 +249,7 @@ export default async function AdminCommunityPage({
                       </h3>
                       <p className="mt-0.5 text-xs text-slate-500">
                         {author} · {accountTypeLabel(t, post.author.accountType)} ·{' '}
-                        {formatUaeDateTime(post.createdAt)}
+                        {formatUaeDateTime(post.createdAt, effectiveLocale)}
                       </p>
                       {post.moderationNote ? (
                         <p className="mt-2 rounded-md bg-slate-50 px-2 py-1 text-xs text-slate-600">

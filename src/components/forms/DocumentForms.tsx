@@ -1,5 +1,7 @@
 'use client';
 
+import { isPurgedDocument } from '@/lib/purged-document';
+
 import { useActionState } from 'react';
 import type { DocumentKind } from '@prisma/client';
 import { deleteDocumentAction, uploadDocumentAction } from '@/app/actions/profile-actions';
@@ -44,6 +46,8 @@ export type DocumentUploadFormLabels = {
 
 /** The words the document list shows, in the reader's language. */
 export type DocumentListLabels = {
+  /** Shown in place of a file name whose evidence was destroyed on approval. */
+  purgedNote: string;
   empty: string;
   statusAwaitingReview: string;
   statusApproved: string;
@@ -156,7 +160,9 @@ export function DocumentList({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-medium text-slate-900">{labels.kindLabels[document.kind]}</p>
-              <p className="truncate text-xs text-slate-500">{document.fileName}</p>
+              <p className="truncate text-xs text-slate-500">
+                {isPurgedDocument(document.fileName) ? labels.purgedNote : document.fileName}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <span

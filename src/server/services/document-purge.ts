@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { PURGED_DOCUMENT_NAME } from '@/lib/purged-document';
 import { deleteUpload } from '@/lib/storage';
 import { recordAudit } from '@/lib/audit';
 
@@ -29,8 +30,12 @@ const KINDS_KEPT_ON_APPROVAL: string[] = ['PROFILE_PHOTO', 'BRAND_LOGO'];
 
 export type PurgeSummary = { purged: number; kept: number; failed: number };
 
-/** Replaces a file name with a marker that says the file is gone on purpose. */
-const PURGED_NAME = 'purged after verification';
+/**
+ * Replaces a file name with a marker that says the file is gone on purpose. The
+ * marker itself lives in a server-free module so the components that display a
+ * document can recognise it.
+ */
+const PURGED_NAME = PURGED_DOCUMENT_NAME;
 
 export async function purgeCaseEvidence(
   caseId: string,

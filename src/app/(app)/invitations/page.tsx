@@ -8,7 +8,10 @@ import { formatDateTime } from '@/lib/format';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { InvitationResponseForm } from '@/components/forms/FirmForms';
 
-export const metadata: Metadata = { title: 'Invitations' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.memberCore.invitations.title };
+}
 
 /**
  * A lawyer's pending invitations to join a firm. Accepting links their licence

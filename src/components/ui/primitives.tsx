@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 // `Field` needs the reader's language for its "(optional)" suffix, which a
 // component shared by server and client code cannot look up itself — it lives in
 // its own client module and is re-exported here so every existing import works.
-export { Field, OptionalLabelProvider, useOptionalLabel } from './Field';
+export { Field } from './Field';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Presentational primitives. Server-safe: no hooks, no event handlers, so they

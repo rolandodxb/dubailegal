@@ -8,7 +8,7 @@ import { SiteHeader } from '@/components/layout/SiteHeader';
 import { getI18n } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { SideNav, type NavItem } from '@/components/layout/SideNav';
-import { PrintBrand } from '@/components/layout/Logo';
+import { PrintBrand } from '@/components/layout/BrandLockup';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { t, locale } = await getI18n();
@@ -65,7 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </aside>
           <main className="min-w-0">
             {/* On paper, above whatever page was printed. */}
-            <PrintBrand context="Printed from dubailegal" />
+            <PrintBrand />
             {children}
           </main>
         </div>

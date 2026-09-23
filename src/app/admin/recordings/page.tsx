@@ -9,7 +9,10 @@ import { DeleteAllRecordingsForm, DeleteRecordingForm } from '@/components/rooms
 import { Alert, Card, EmptyState } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
-export const metadata: Metadata = { title: 'Recordings' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.admin.recordings.metaTitle };
+}
 
 /**
  * Recordings, and the way to be rid of them.
@@ -27,7 +30,7 @@ export const metadata: Metadata = { title: 'Recordings' };
  * first is here.
  */
 export default async function AdminRecordingsPage() {
-  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
+  const [{ t, effectiveLocale }] = await Promise.all([getI18n(), requireReviewer()]);
 
   const [overview, recordings] = await Promise.all([
     recordingOverview(),
@@ -117,7 +120,7 @@ export default async function AdminRecordingsPage() {
                     <p className="mt-0.5 text-xs text-slate-500">
                       {t.admin.recordings.recordedBy} {recording.ownerName} (
                       {accountTypeLabel(t, recording.recordedBy.accountType)}) ·{' '}
-                      {formatUaeDateTime(recording.createdAt)} ·{' '}
+                      {formatUaeDateTime(recording.createdAt, effectiveLocale)} ·{' '}
                       {recording.durationMs
                         ? t.admin.recordings.seconds.replace(
                             '{count}',

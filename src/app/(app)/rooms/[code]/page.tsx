@@ -8,13 +8,16 @@ import { formatUaeDateTime } from '@/lib/time';
 import { ConferenceRoom } from '@/components/rooms/ConferenceRoom';
 import { getI18n } from '@/lib/i18n';
 import { iceServersForClient } from '@/lib/webrtc';
-import { BrandLockup } from '@/components/layout/Logo';
+import { BrandLockup } from '@/components/layout/BrandLockup';
 import { CancelCallButton } from '@/components/forms/AppointmentButtons';
 import { listRecordingsForRoom } from '@/server/services/room-recording-service';
 import { formatFileSize } from '@/lib/format';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Conference room' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.memberCases.roomPage.conferenceRoom };
+}
 
 /**
  * A conference room, reached from the meeting it belongs to.
@@ -28,7 +31,7 @@ export default async function ConferenceRoomPage({
 }: {
   params: Promise<{ code: string }>;
 }) {
-  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireActiveUser()]);
   const labels = t.memberCases.roomPage;
   const { code } = await params;
 
@@ -60,7 +63,7 @@ export default async function ConferenceRoomPage({
           {emergency ? labels.yourUrgentCallWith : labels.yourMeetingWith}{' '}
           <strong className="text-slate-900">{access.otherPartyName}</strong>
           {appointment
-            ? labels.scheduledFor.replace('{date}', formatUaeDateTime(appointment.startsAt))
+            ? labels.scheduledFor.replace('{date}', formatUaeDateTime(appointment.startsAt, effectiveLocale))
             : ''}
           .
         </p>
@@ -77,7 +80,7 @@ export default async function ConferenceRoomPage({
 
       {notYet && appointment ? (
         <Alert tone="info" title={labels.notDueYet}>
-          {labels.notDueBody.replace('{date}', formatUaeDateTime(appointment.startsAt))}
+          {labels.notDueBody.replace('{date}', formatUaeDateTime(appointment.startsAt, effectiveLocale))}
         </Alert>
       ) : null}
 
@@ -129,7 +132,7 @@ export default async function ConferenceRoomPage({
                   </span>
                 </p>
                 <p className="text-xs text-slate-500">
-                  {formatUaeDateTime(recording.createdAt)} · {formatFileSize(recording.sizeBytes)}
+                  {formatUaeDateTime(recording.createdAt, effectiveLocale)} · {formatFileSize(recording.sizeBytes)}
                   {recording.durationMs
                     ? ` · ${labels.seconds.replace(
                         '{count}',

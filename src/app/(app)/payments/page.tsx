@@ -10,7 +10,10 @@ import { formatUaeDateTime } from '@/lib/time';
 import { LogoMark } from '@/components/layout/Logo';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Fees and receipts' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.memberCases.fees.title };
+}
 
 const STATUS_STYLE: Record<string, string> = {
   REQUESTED: 'bg-amber-50 text-amber-900 ring-amber-200',
@@ -27,7 +30,7 @@ const STATUS_STYLE: Record<string, string> = {
  * layout produces.
  */
 export default async function PaymentsPage() {
-  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireMember()]);
   const labels = t.memberCases.fees;
   const isProfessional = user.accountType === 'LAWYER' || user.accountType === 'FIRM';
 
@@ -107,7 +110,7 @@ export default async function PaymentsPage() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-lg font-semibold tabular-nums text-slate-900">
-                        {formatMoney(payment.amountFils, payment.currency)}
+                        {formatMoney(payment.amountFils, payment.currency, effectiveLocale)}
                       </p>
                       <span
                         className={cx(
@@ -123,7 +126,7 @@ export default async function PaymentsPage() {
                       {payment.case.reference} — {payment.case.title}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {labels.raised.replace('{date}', formatUaeDateTime(payment.createdAt))}
+                      {labels.raised.replace('{date}', formatUaeDateTime(payment.createdAt, effectiveLocale))}
                       {payment.receiptNumber
                         ? labels.receiptRef.replace('{number}', payment.receiptNumber)
                         : ''}

@@ -1,5 +1,8 @@
 /** Presentation helpers. Pure functions, no I/O. */
 
+/** The BCP-47 tag each language is formatted with. Display only. */
+const LOCALE_TAG: Record<string, string> = { en: 'en-GB', es: 'es-ES' };
+
 export function calculateAge(dateOfBirth: Date | null | undefined, now = new Date()): number | null {
   if (!dateOfBirth) return null;
   let age = now.getUTCFullYear() - dateOfBirth.getUTCFullYear();
@@ -11,9 +14,9 @@ export function calculateAge(dateOfBirth: Date | null | undefined, now = new Dat
   return age;
 }
 
-export function formatDate(value: Date | null | undefined): string {
+export function formatDate(value: Date | null | undefined, locale = 'en'): string {
   if (!value) return '—';
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(LOCALE_TAG[locale] ?? 'en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -21,9 +24,9 @@ export function formatDate(value: Date | null | undefined): string {
   }).format(value);
 }
 
-export function formatDateTime(value: Date | null | undefined): string {
+export function formatDateTime(value: Date | null | undefined, locale = 'en'): string {
   if (!value) return '—';
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(LOCALE_TAG[locale] ?? 'en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

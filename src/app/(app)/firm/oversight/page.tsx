@@ -10,7 +10,10 @@ import { Avatar } from '@/components/Avatar';
 import { CaseStatusChip } from '@/components/cases/CaseStatusChip';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Practice oversight' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.practiceOversight };
+}
 
 /**
  * What a firm administrator oversees: every case the firm holds, which lawyer
@@ -20,7 +23,7 @@ export const metadata: Metadata = { title: 'Practice oversight' };
  * to the lawyer who took the case.
  */
 export default async function FirmOversightPage() {
-  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireProfessional()]);
 
   if (user.accountType !== 'FIRM') {
     return (
@@ -201,7 +204,7 @@ export default async function FirmOversightPage() {
               <li key={appointment.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900">
-                    {formatUaeDateTime(appointment.startsAt)}
+                    {formatUaeDateTime(appointment.startsAt, effectiveLocale)}
                   </p>
                   <p className="text-xs text-slate-600">
                     {t.memberPro.oversight.withLawyer

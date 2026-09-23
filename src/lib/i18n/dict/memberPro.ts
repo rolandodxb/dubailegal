@@ -130,6 +130,8 @@ export const memberProEn = {
   },
 
   verification: {
+    checkDigitWarning:
+      'The Emirates ID you entered does not pass its internal check digit. That does not block you — a reviewer will confirm it against your uploaded card — but please re-read the number if you typed it by hand.',
     intro:
       'Upload the documents a reviewer needs, then submit. Nothing is verified automatically — a person examines each document and records the decision.',
     currentStatus: 'Current status',
@@ -187,6 +189,7 @@ export const memberProEn = {
   },
 
   documents: {
+    purgedNote: 'File deleted after verification',
     title: 'Upload a document',
     type: 'Document type',
     requiredMark: ' — required',
@@ -489,6 +492,8 @@ export const memberProEs: MemberProDict = {
   },
 
   verification: {
+    checkDigitWarning:
+      'El Emirates ID que introdujo no supera su dígito de control interno. Eso no le bloquea: un revisor lo confirmará con la tarjeta que subió. Aun así, vuelva a leer el número si lo escribió a mano.',
     intro:
       'Suba los documentos que necesita un revisor y envíelos. Nada se verifica de forma automática: una persona examina cada documento y deja constancia de la decisión.',
     currentStatus: 'Estado actual',
@@ -546,6 +551,7 @@ export const memberProEs: MemberProDict = {
   },
 
   documents: {
+    purgedNote: 'Archivo eliminado tras la verificación',
     title: 'Subir un documento',
     type: 'Tipo de documento',
     requiredMark: ' — obligatorio',

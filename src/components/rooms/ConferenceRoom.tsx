@@ -6,6 +6,7 @@ import { memberCasesEn, type MemberCasesDict } from '@/lib/i18n/dict/memberCases
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 import { CallRecorder } from './CallRecorder';
 import { Icon } from '@/components/icons';
+import { useLocale } from '@/components/layout/ClientLocale';
 
 type Role = 'PROFESSIONAL' | 'CLIENT';
 
@@ -78,6 +79,7 @@ export function ConferenceRoom({
   labels: { you: string; recording: string; recordingNow: string } &
     Partial<MemberCasesDict['conference']> & { recorder?: MemberCasesDict['recorder'] };
 }) {
+  const locale = useLocale();
   const words: MemberCasesDict['conference'] = { ...memberCasesEn.conference, ...labels };
   const recorderWords = labels.recorder ?? memberCasesEn.recorder;
   const [joined, setJoined] = useState(false);
@@ -510,7 +512,7 @@ export function ConferenceRoom({
           {startsAt ? (
             <div>
               <dt className="text-slate-600">{words.scheduled}</dt>
-              <dd className="font-medium text-slate-900">{formatUaeDateTime(new Date(startsAt))}</dd>
+              <dd className="font-medium text-slate-900">{formatUaeDateTime(new Date(startsAt), locale)}</dd>
             </div>
           ) : null}
           <div>

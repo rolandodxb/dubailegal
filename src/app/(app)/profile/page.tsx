@@ -8,11 +8,15 @@ import { getProfileForEdit } from '@/server/services/profile-service';
 import { ProfileForm } from '@/components/forms/ProfileForm';
 import { ProfilePhotoCard } from '@/components/forms/ProfilePhotoCard';
 import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/primitives';
+import { countryNamesFor } from '@/lib/i18n/country-names';
 
-export const metadata: Metadata = { title: 'My profile' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.myProfile };
+}
 
 export default async function ProfilePage() {
-  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireActiveUser()]);
   const profile = await getProfileForEdit(user.id);
 
   // The form requires a non-null profile row to edit, and registration always
@@ -101,6 +105,7 @@ export default async function ProfilePage() {
             workDescription: profile.workDescription,
             educationBackground: profile.educationBackground,
           }}
+          countryNames={countryNamesFor(effectiveLocale)}
           labels={t.memberCore.profileForm}
         />
       </Card>

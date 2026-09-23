@@ -13,7 +13,10 @@ import {
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
-export const metadata: Metadata = { title: 'Support' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.support };
+}
 
 const STATUS_STYLE: Record<string, string> = {
   OPEN: 'bg-domain-enquiry/5 text-domain-enquiry ring-domain-enquiry/25',
@@ -33,7 +36,7 @@ export default async function SupportPage({
 }: {
   searchParams: Promise<{ ticket?: string }>;
 }) {
-  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireActiveUser()]);
   const { ticket: ticketId } = await searchParams;
 
   const tickets = await listTicketsForUser(user.id);
@@ -60,7 +63,7 @@ export default async function SupportPage({
               <h2 className="mt-0.5 font-semibold text-slate-900">{open.subject}</h2>
               <p className="mt-1 text-xs text-slate-500">
                 {supportCategoryLabel(t, open.category)} ·{' '}
-                {t.memberCore.support.opened} {formatUaeDateTime(open.createdAt)}
+                {t.memberCore.support.opened} {formatUaeDateTime(open.createdAt, effectiveLocale)}
                 {open.contextPath
                   ? ` · ${t.memberCore.support.from} ${open.contextPath}`
                   : ''}
@@ -79,7 +82,7 @@ export default async function SupportPage({
           {open.status === 'SOLVED' ? (
             <Alert tone="success" className="mt-4" title={t.memberCore.support.solvedTitle}>
               {t.memberCore.support.closedWarning
-                .replace('{date}', open.solvedAt ? formatUaeDateTime(open.solvedAt) : '')
+                .replace('{date}', open.solvedAt ? formatUaeDateTime(open.solvedAt, effectiveLocale) : '')
                 .replace(
                   '{closedBy}',
                   open.solvedBy
@@ -121,7 +124,7 @@ export default async function SupportPage({
                       ) : (
                         t.room.you
                       )}{' '}
-                      · {formatUaeDateTime(message.createdAt)}
+                      · {formatUaeDateTime(message.createdAt, effectiveLocale)}
                     </p>
                     <p className="mt-1 whitespace-pre-line rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm leading-relaxed text-slate-800">
                       {message.body}
@@ -197,7 +200,7 @@ export default async function SupportPage({
                       ? t.memberCore.support.messagesOne
                       : t.memberCore.support.messagesMany
                     ).replace('{count}', String(entry._count.messages))}{' '}
-                    · {t.memberCore.support.updated} {formatUaeDateTime(entry.updatedAt)}
+                    · {t.memberCore.support.updated} {formatUaeDateTime(entry.updatedAt, effectiveLocale)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

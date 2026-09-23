@@ -4,6 +4,7 @@ import { requireActiveUser } from '@/lib/auth';
 import { getI18n } from '@/lib/i18n';
 import { listNotifications, unreadNotificationCount } from '@/server/services/notification-service';
 import { formatUaeDateTime } from '@/lib/time';
+import { notificationText } from '@/lib/i18n/notifications';
 import { Card, EmptyState, cx } from '@/components/ui/primitives';
 import { MarkAllReadButton, MarkReadButton } from '@/components/forms/NotificationButtons';
 
@@ -14,7 +15,7 @@ export const metadata: Metadata = { title: 'Alerts' };
  * that a case moved or a meeting was booked.
  */
 export default async function NotificationsPage() {
-  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireActiveUser()]);
   const [notifications, unread] = await Promise.all([
     listNotifications(user.id),
     unreadNotificationCount(user.id),
@@ -60,12 +61,16 @@ export default async function NotificationsPage() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="font-medium text-slate-900">{notification.title}</h2>
+                  <h2 className="font-medium text-slate-900">
+                    {notificationText(effectiveLocale, notification.title)}
+                  </h2>
                   {notification.body ? (
-                    <p className="mt-1 text-sm text-slate-700">{notification.body}</p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {notificationText(effectiveLocale, notification.body)}
+                    </p>
                   ) : null}
                   <p className="mt-1 text-xs text-slate-500">
-                    {formatUaeDateTime(notification.createdAt)}
+                    {formatUaeDateTime(notification.createdAt, effectiveLocale)}
                     {notification.readAt ? '' : t.memberCore.notifications.unreadSuffix}
                   </p>
                 </div>

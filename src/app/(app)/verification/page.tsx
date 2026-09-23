@@ -18,7 +18,10 @@ import {
   WithdrawVerificationForm,
 } from '@/components/forms/VerificationActions';
 
-export const metadata: Metadata = { title: 'Verification' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.verification };
+}
 
 export default async function VerificationPage() {
   const user = await requireMember();
@@ -114,7 +117,7 @@ export default async function VerificationPage() {
 
       {overview.checkDigitWarning ? (
         <Alert tone="warning" title={t.memberPro.verification.checkDigitTitle}>
-          {overview.checkDigitWarning}
+          {t.memberPro.verification.checkDigitWarning}
         </Alert>
       ) : null}
 
@@ -222,6 +225,7 @@ export default async function VerificationPage() {
               removeConfirm: t.memberPro.documents.removeConfirm,
               removing: t.memberPro.documents.removing,
               kindLabels,
+              purgedNote: t.memberPro.documents.purgedNote,
             }}
           />
         </div>

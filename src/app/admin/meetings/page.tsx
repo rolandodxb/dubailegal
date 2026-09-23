@@ -7,7 +7,10 @@ import { recordingOverview } from '@/server/services/room-recording-service';
 import { formatUaeDateTime } from '@/lib/time';
 import { Alert, Card } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Meetings' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.labels.domain.meeting };
+}
 
 /**
  * Meetings and conference rooms, for oversight.
@@ -17,7 +20,7 @@ export const metadata: Metadata = { title: 'Meetings' };
  * their client is exactly what an administrator must not be able to sit in on.
  */
 export default async function AdminMeetingsPage() {
-  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
+  const [{ t, effectiveLocale }] = await Promise.all([getI18n(), requireReviewer()]);
   const [meetings, rooms, recordings] = await Promise.all([
     appointmentOverview(),
     roomOverview(),
@@ -102,7 +105,7 @@ export default async function AdminMeetingsPage() {
                 {meetings.rows.map((row) => (
                   <tr key={row.id}>
                     <td className="whitespace-nowrap px-3 py-2 text-xs text-slate-600">
-                      {formatUaeDateTime(row.startsAt)}
+                      {formatUaeDateTime(row.startsAt, effectiveLocale)}
                     </td>
                     <td className="max-w-40 truncate px-3 py-2 text-xs text-slate-600">
                       {row.client.profile?.fullName?.trim() || row.client.email}

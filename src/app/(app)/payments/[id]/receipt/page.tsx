@@ -10,10 +10,14 @@ import { receiptPresentationForPayment } from '@/server/services/receipt-templat
 import { formatMoney, maskCard } from '@/lib/payment-format';
 import { formatUaeDateTime } from '@/lib/time';
 import { ReceiptActions } from '@/components/forms/ReceiptActions';
-import { BrandLockup, LogoMark } from '@/components/layout/Logo';
+import { LogoMark } from '@/components/layout/Logo';
+import { BrandLockup } from '@/components/layout/BrandLockup';
 import { Alert, Card, DescriptionList } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Receipt' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.memberCases.receipt.receipt };
+}
 
 /**
  * The receipt for a paid fee.
@@ -34,7 +38,7 @@ export default async function PaymentReceiptPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ paid?: string }>;
 }) {
-  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireActiveUser()]);
   const labels = t.memberCases.receipt;
   const [{ id }, { paid }] = await Promise.all([params, searchParams]);
 
@@ -118,7 +122,7 @@ export default async function PaymentReceiptPage({
               {labels.amountPaid}
             </p>
             <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">
-              {formatMoney(payment.amountFils, payment.currency)}
+              {formatMoney(payment.amountFils, payment.currency, effectiveLocale)}
             </p>
           </div>
           <div className="text-right">
@@ -193,7 +197,7 @@ export default async function PaymentReceiptPage({
             {
               term: labels.paidOn,
               detail: payment.paidAt
-                ? formatUaeDateTime(payment.paidAt)
+                ? formatUaeDateTime(payment.paidAt, effectiveLocale)
                 : labels.notPaidDetail,
             },
             { term: labels.case, detail: `${legalCase.reference} — ${legalCase.title}` },

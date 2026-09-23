@@ -11,7 +11,10 @@ import {
   MarkInquiryReadButton,
 } from '@/components/forms/InquiryReplyForm';
 
-export const metadata: Metadata = { title: 'Inquiries' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.inquiries };
+}
 
 const STATUS_STYLES: Record<string, string> = {
   NEW: 'bg-brand-50 text-brand-800 ring-brand-200',

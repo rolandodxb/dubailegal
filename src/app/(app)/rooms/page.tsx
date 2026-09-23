@@ -10,7 +10,10 @@ import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitiv
 import { Icon } from '@/components/icons';
 import { DOMAINS } from '@/lib/domains';
 
-export const metadata: Metadata = { title: 'Conference rooms' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.rooms };
+}
 
 /**
  * Conference rooms.
@@ -24,7 +27,7 @@ export const metadata: Metadata = { title: 'Conference rooms' };
  * finished, and urgent calls their clients have asked for.
  */
 export default async function RoomsPage() {
-  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireMember()]);
   const labels = t.memberCases.rooms;
   const isClient = user.accountType === 'USER';
 
@@ -93,8 +96,8 @@ export default async function RoomsPage() {
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
                         {urgent
-                          ? labels.asked.replace('{date}', formatUaeDateTime(room.startsAt))
-                          : formatUaeDateTime(room.startsAt)}
+                          ? labels.asked.replace('{date}', formatUaeDateTime(room.startsAt, effectiveLocale))
+                          : formatUaeDateTime(room.startsAt, effectiveLocale)}
                         {labels.withSuffix}
                         {room.lawyer.user.profile?.fullName?.trim() || labels.yourFirm}
                       </p>
@@ -227,7 +230,7 @@ export default async function RoomsPage() {
                       {scheduled.map((room) => (
                         <li key={room.id} className="flex flex-wrap items-center justify-between gap-2">
                           <span className="text-sm text-slate-700">
-                            {formatUaeDateTime(room.startsAt)}
+                            {formatUaeDateTime(room.startsAt, effectiveLocale)}
                           </span>
                           <Link
                             href={`/rooms/${room.roomCode}`}

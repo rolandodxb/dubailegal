@@ -7,7 +7,10 @@ import { listReviewQueue } from '@/server/services/verification-service';
 import { formatDateTime } from '@/lib/format';
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Verification requests' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.admin.verifications.title };
+}
 
 export default async function VerificationQueuePage({
   searchParams,

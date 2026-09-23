@@ -70,6 +70,7 @@ export const memberCoreEn = {
   },
 
   account: {
+    metaTitle: 'Account and security',
     sessionsRevoked: 'Every other device has been signed out.',
     intro: 'Your sign-in details, active sessions and verification state.',
     heading: 'Account',
@@ -319,6 +320,7 @@ export const memberCoreEn = {
   },
 
   profileForm: {
+    notSpecified: 'Not specified',
     errorTitle: 'Your profile was not saved',
     fullName: 'Full name',
     dateOfBirth: 'Date of birth',
@@ -506,6 +508,7 @@ export const memberCoreEs: MemberCoreDict = {
   },
 
   account: {
+    metaTitle: 'Cuenta y seguridad',
     sessionsRevoked: 'Se ha cerrado la sesión en todos los demás dispositivos.',
     intro: 'Sus datos de acceso, sus sesiones activas y el estado de su verificación.',
     heading: 'Cuenta',
@@ -755,6 +758,7 @@ export const memberCoreEs: MemberCoreDict = {
   },
 
   profileForm: {
+    notSpecified: 'Sin especificar',
     errorTitle: 'No se guardó su perfil',
     fullName: 'Nombre completo',
     dateOfBirth: 'Fecha de nacimiento',

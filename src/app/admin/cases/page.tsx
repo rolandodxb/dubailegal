@@ -8,7 +8,10 @@ import { formatDateTime } from '@/lib/format';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 import { CaseStatusChip } from '@/components/cases/CaseStatusChip';
 
-export const metadata: Metadata = { title: 'Cases' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.labels.domain.case };
+}
 
 /**
  * Case oversight.

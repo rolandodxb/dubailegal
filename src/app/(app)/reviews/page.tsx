@@ -16,7 +16,10 @@ import { RatingBreakdown, StarRating } from '@/components/StarRating';
 import { ReviewForm } from '@/components/forms/ReviewForm';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Reviews' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.reviews };
+}
 
 /**
  * Reviews, from both sides.

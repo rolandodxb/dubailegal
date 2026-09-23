@@ -10,14 +10,17 @@ import { CaseCard } from '@/components/cases/CaseCard';
 import { CancelAppointmentButton } from '@/components/forms/AppointmentButtons';
 import { OfficeRequestActions } from '@/components/forms/OfficeRequestActions';
 
-export const metadata: Metadata = { title: 'My cases' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.myCases };
+}
 
 /**
  * What a client sees: every case they have sent, its current state, and the
  * meetings booked with them.
  */
 export default async function CasesPage() {
-  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireMember()]);
   const labels = t.memberCases.cases;
 
   const isProfessional = user.accountType === 'LAWYER' || user.accountType === 'FIRM';
@@ -57,7 +60,7 @@ export default async function CasesPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-900">
-                        {formatUaeDateTime(appointment.startsAt)}
+                        {formatUaeDateTime(appointment.startsAt, effectiveLocale)}
                       </p>
                       <p className="text-xs text-slate-600">
                         {labels.withProfessional.replace('{name}', professional)}

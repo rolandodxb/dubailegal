@@ -11,7 +11,7 @@ import { CancelEmergencyForm, EmergencyRequestForm } from '@/components/forms/Em
 import { listMyEmergencies } from '@/server/services/emergency-service';
 import { formatDateTime } from '@/lib/format';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
-import { BrandLockup } from '@/components/layout/Logo';
+import { BrandLockup } from '@/components/layout/BrandLockup';
 import { Icon } from '@/components/icons';
 
 export async function generateMetadata(): Promise<Metadata> {

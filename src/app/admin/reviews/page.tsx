@@ -8,7 +8,10 @@ import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { ModerateReviewForm } from '@/components/forms/AdminOpsForms';
 import { StarRating } from '@/components/StarRating';
 
-export const metadata: Metadata = { title: 'Reviews' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.reviews };
+}
 
 /**
  * Review moderation.
