@@ -8,6 +8,8 @@ export type DirectoryQuery = {
   kind?: AccountType | 'ALL';
   areas?: LegalArea[];
   emirates?: Emirate[];
+  /** ISO alpha-2 codes. A listing matches if it offers to work in any of them. */
+  countries?: string[];
   verifiedOnly?: boolean;
   acceptsNewClients?: boolean;
   page?: number;
@@ -159,6 +161,19 @@ async function runSearchDirectory(query: DirectoryQuery) {
   }
   if (query.emirates && query.emirates.length > 0) {
     where.emirates = { hasSome: query.emirates };
+  }
+  if (query.countries && query.countries.length > 0) {
+    // Kept in AND rather than OR so it composes with the text search below, which
+    // owns OR. A listing matches a country if it offers to work there — not merely
+    // if that is where its head office is, because a professional may cover several.
+    where.AND = [
+      {
+        OR: [
+          { primaryCountryCode: { in: query.countries } },
+          { coverage: { some: { countryCode: { in: query.countries } } } },
+        ],
+      },
+    ];
   }
   if (query.acceptsNewClients) {
     where.acceptsNewClients = true;

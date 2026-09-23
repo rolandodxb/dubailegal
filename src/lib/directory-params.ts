@@ -28,6 +28,10 @@ export function parseDirectoryParams(params: RawSearchParams): DirectoryQuery {
     Object.prototype.hasOwnProperty.call(Emirate, value),
   );
 
+  const countryValues = toArray(params.countries)
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => /^[A-Z]{2}$/.test(value));
+
   const kindRaw = toSingle(params.kind);
   const kind: AccountType | 'ALL' | undefined =
     kindRaw && Object.prototype.hasOwnProperty.call(AccountType, kindRaw)
@@ -46,6 +50,7 @@ export function parseDirectoryParams(params: RawSearchParams): DirectoryQuery {
     kind,
     areas: areaValues,
     emirates: emirateValues,
+    countries: countryValues,
     verifiedOnly: toSingle(params.verifiedOnly) === 'on' || toSingle(params.verifiedOnly) === 'true',
     acceptsNewClients:
       toSingle(params.acceptsNewClients) === 'on' || toSingle(params.acceptsNewClients) === 'true',
@@ -60,6 +65,7 @@ export function buildDirectoryUrl(query: DirectoryQuery, page: number): string {
   if (query.kind && query.kind !== 'ALL') params.set('kind', query.kind);
   for (const area of query.areas ?? []) params.append('areas', area);
   for (const emirate of query.emirates ?? []) params.append('emirates', emirate);
+  for (const country of query.countries ?? []) params.append('countries', country);
   if (query.verifiedOnly) params.set('verifiedOnly', 'on');
   if (query.acceptsNewClients) params.set('acceptsNewClients', 'on');
   if (page > 1) params.set('page', String(page));

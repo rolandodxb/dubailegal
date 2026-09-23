@@ -17,6 +17,7 @@ import { DirectoryFilters } from '@/components/directory/DirectoryFilters';
 import { ListingCard } from '@/components/directory/ListingCard';
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { listingPlaceText } from '@/lib/i18n/place';
+import { detectedCountry } from '@/lib/geo-detect';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -31,9 +32,32 @@ export default async function DirectoryPage({
 }: {
   searchParams: Promise<RawSearchParams>;
 }) {
-  const [{ t }, params] = await Promise.all([getI18n(), searchParams]);
+  const [{ t, effectiveLocale }, params] = await Promise.all([getI18n(), searchParams]);
   const page = t.publicPages.directoryPage;
-  const query = parseDirectoryParams(params);
+  const parsed = parseDirectoryParams(params);
+
+  /**
+   * The directory opens on the visitor's own country.
+   *
+   * Silent, and only a default: the country comes from a header the host platform
+   * already attached to the request, and the filter overrides it the moment the
+   * visitor chooses something else. `?countries=ALL` is how the filter says "show
+   * me everywhere", which is why an explicit empty answer is respected rather than
+   * replaced.
+   */
+  const countriesParam = params.countries;
+  const countriesFirst = Array.isArray(countriesParam) ? countriesParam[0] : countriesParam;
+  const anywhere = countriesFirst === 'ALL';
+  const detected = parsed.countries && parsed.countries.length > 0
+    ? null
+    : anywhere
+      ? null
+      : await detectedCountry();
+
+  const query =
+    detected && (!parsed.countries || parsed.countries.length === 0)
+      ? { ...parsed, countries: [detected] }
+      : parsed;
 
   const [results, facets, viewer, availability] = await Promise.all([
     searchDirectory(query),
