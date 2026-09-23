@@ -8,12 +8,14 @@ import {
   buttonClasses,
   Checkbox,
   ChipCheckbox,
+  Select,
   Field,
   Input,
   cx,
 } from '@/components/ui/primitives';
 import { countryName } from '@/lib/i18n/country-names';
 import { divisionName } from '@/lib/geo';
+import { ALL_COUNTRIES } from '@/lib/countries';
 
 type Facets = {
   areaCounts: Map<LegalArea, number>;
@@ -47,7 +49,14 @@ export async function DirectoryFilters({
   const selectedAreas = new Set(query.areas ?? []);
   const selectedEmirates = new Set(query.emirates ?? []);
   const selectedCountries = new Set(query.countries ?? []);
-  const selectedDivisions = new Set(query.divisions ?? []);
+  const selectedDivision = (query.divisions ?? [])[0] ?? null;
+  const selectedCountry = (query.countries ?? [])[0] ?? null;
+  /** Every country, with the number of profiles in each, most populated first. */
+  const countryOptions = ALL_COUNTRIES.map((country) => ({
+    code: country.code,
+    name: countryName(effectiveLocale, country.code, country.name),
+    count: facets.countryCounts.get(country.code) ?? 0,
+  })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   /**
    * The regions on offer.
    *
@@ -56,7 +65,7 @@ export async function DirectoryFilters({
    * question than the one it answers.
    */
   const regionCodes = [...facets.divisionCounts.keys()]
-    .filter((code) => selectedCountries.size === 0 || selectedCountries.has(code.split('.')[0] ?? ''))
+    .filter((code) => !selectedCountry || code.startsWith(`${selectedCountry}.`))
     .sort((a, b) => (divisionName(a) ?? a).localeCompare(divisionName(b) ?? b));
   // The emirate list is a question about the United Arab Emirates only, so it is
   // asked only when that is the country being looked at — or when no country has
@@ -143,21 +152,27 @@ export async function DirectoryFilters({
       <fieldset>
         <legend className="text-sm font-medium text-slate-800">{labels.country}</legend>
         <p className="mt-0.5 text-xs text-slate-500">{labels.countryHint}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {countryCodes.map((code) => (
-            <ChipCheckbox
-              key={code}
-              id={`country-${code}`}
-              name="countries"
-              value={code}
-              label={countryName(effectiveLocale, code, code)}
-              count={facets.countryCounts.get(code)}
-              defaultChecked={selectedCountries.has(code)}
-            />
-          ))}
-          {countryCodes.length === 0 ? (
-            <p className="text-xs text-slate-500">{labels.noCountries}</p>
-          ) : null}
+        {/*
+          A picker over every country rather than a chip for each one that happens
+          to have a listing: the whole point of the filter is to look somewhere
+          else, and a list that only offers what is already nearby cannot do that.
+          Countries with profiles are counted, so the reader can see where the
+          directory is populated before choosing.
+        */}
+        <div className="mt-2">
+          <Select
+            id="countries"
+            name="countries"
+            defaultValue={selectedCountry ?? ''}
+            aria-label={labels.country}
+          >
+            <option value="">{labels.anywhere}</option>
+            {countryOptions.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.count > 0 ? `${option.name} (${option.count})` : option.name}
+              </option>
+            ))}
+          </Select>
         </div>
       </fieldset>
 
@@ -165,18 +180,20 @@ export async function DirectoryFilters({
         <fieldset>
           <legend className="text-sm font-medium text-slate-800">{labels.region}</legend>
           <p className="mt-0.5 text-xs text-slate-500">{labels.regionHint}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {regionCodes.map((code) => (
-              <ChipCheckbox
-                key={code}
-                id={`division-${code}`}
-                name="divisions"
-                value={code}
-                label={divisionName(code) ?? code}
-                count={facets.divisionCounts.get(code)}
-                defaultChecked={selectedDivisions.has(code)}
-              />
-            ))}
+          <div className="mt-2">
+            <Select
+              id="divisions"
+              name="divisions"
+              defaultValue={selectedDivision ?? ''}
+              aria-label={labels.region}
+            >
+              <option value="">{labels.allRegions}</option>
+              {regionCodes.map((code) => (
+                <option key={code} value={code}>
+                  {`${divisionName(code) ?? code} (${facets.divisionCounts.get(code) ?? 0})`}
+                </option>
+              ))}
+            </Select>
           </div>
         </fieldset>
       ) : null}

@@ -88,3 +88,64 @@ export function listingOtherPlacesText(
 
   return out;
 }
+
+/**
+ * Everywhere a professional works, as "Country - Division".
+ *
+ * The card names each place in full rather than saying "also works in", because
+ * "Tucuman" alone does not tell a reader which country it is in — and a client
+ * searching from abroad is reading exactly that line to decide whether this
+ * professional is any use to them. The primary place comes first, then the rest.
+ */
+export function listingPlacesText(
+  t: Dictionary,
+  locale: Locale,
+  listing: {
+    primaryEmirate?: string | null;
+    primaryCountryCode?: string | null;
+    primaryDivisionCode?: string | null;
+    primaryLocality?: string | null;
+    coverage?: {
+      countryCode: string;
+      divisionCode: string | null;
+      locality: string | null;
+      isPrimary: boolean;
+    }[];
+  },
+): string[] {
+  const nameOf = (countryCode: string, divisionCode: string | null, locality: string | null) => {
+    const country = countryName(
+      locale,
+      countryCode,
+      countryByCode(countryCode)?.name ?? countryCode,
+    );
+    const division = divisionCode ? divisionName(divisionCode) : null;
+    const place = division ?? locality?.trim() ?? '';
+    return place.length > 0 ? `${country} - ${place}` : country;
+  };
+
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const add = (value: string) => {
+    if (seen.has(value)) return;
+    seen.add(value);
+    out.push(value);
+  };
+
+  // The primary place first: the emirate where there is one, since that is what a
+  // United Arab Emirates profile is known by.
+  if (listing.primaryEmirate) {
+    add(nameOf('AE', listing.primaryDivisionCode ?? null, listing.primaryLocality ?? null));
+  } else if (listing.primaryCountryCode) {
+    add(
+      nameOf(listing.primaryCountryCode, listing.primaryDivisionCode ?? null, listing.primaryLocality ?? null),
+    );
+  }
+
+  for (const place of listing.coverage ?? []) {
+    if (place.isPrimary) continue;
+    add(nameOf(place.countryCode, place.divisionCode, place.locality));
+  }
+
+  return out;
+}

@@ -269,6 +269,9 @@ async function loadFacetCounts() {
       kind: true,
       primaryCountryCode: true,
       primaryDivisionCode: true,
+      // The countries and regions where the professional offers to work, so the
+      // counts beside the pickers match what filtering on them returns.
+      coverage: { select: { countryCode: true, divisionCode: true } },
     },
   });
 
@@ -289,10 +292,19 @@ async function loadFacetCounts() {
     kindCounts.set(row.kind, (kindCounts.get(row.kind) ?? 0) + 1);
     for (const area of row.areas) areaCounts.set(area, (areaCounts.get(area) ?? 0) + 1);
     for (const emirate of row.emirates) emirateCounts.set(emirate, (emirateCounts.get(emirate) ?? 0) + 1);
-    const country = row.primaryCountryCode;
-    if (country) countryCounts.set(country, (countryCounts.get(country) ?? 0) + 1);
-    const region = row.primaryDivisionCode;
-    if (region) divisionCounts.set(region, (divisionCounts.get(region) ?? 0) + 1);
+    const countries = new Set<string>(
+      [row.primaryCountryCode, ...row.coverage.map((c) => c.countryCode)].filter(
+        (code): code is string => Boolean(code),
+      ),
+    );
+    for (const code of countries) countryCounts.set(code, (countryCounts.get(code) ?? 0) + 1);
+
+    const regions = new Set<string>(
+      [row.primaryDivisionCode, ...row.coverage.map((c) => c.divisionCode)].filter(
+        (code): code is string => Boolean(code),
+      ),
+    );
+    for (const code of regions) divisionCounts.set(code, (divisionCounts.get(code) ?? 0) + 1);
   }
 
   return {

@@ -25,7 +25,7 @@ import { Alert, buttonClasses, Card, Chip, DescriptionList, cx } from '@/compone
 import { Icon } from '@/components/icons';
 import { relativeTime } from '@/lib/i18n/format';
 import { listingPlaceText } from '@/lib/i18n/place';
-import { listingOtherPlacesText } from '@/lib/i18n/place';
+import { listingPlacesText } from '@/lib/i18n/place';
 
 export async function generateMetadata({
   params,
@@ -166,10 +166,10 @@ export default async function ListingDetailPage({
   // the account's login email would leak a private address into a public page.
   const contactEmail = listing.contactEmail;
   const place = listingPlaceText(t, listing);
-  const category = [accountTypeLabel(t, owner.accountType), place].filter(Boolean).join(' · ');
+  const category = accountTypeLabel(t, owner.accountType);
   // Everywhere else this professional works. A profile that names only the first
   // country hides the very thing a client abroad came to find out.
-  const otherPlaces = listingOtherPlacesText(t, effectiveLocale, listing);
+  const places = listingPlacesText(t, effectiveLocale, listing);
   const tabHref = (key: Tab) => `/directory/${listing.id}?tab=${key}`;
   const recommendationCount = (summary.count === 1 ? labels.recommendationOne : labels.recommendationOther).replace(
     '{count}',
@@ -224,15 +224,14 @@ export default async function ListingDetailPage({
                   {listing.displayName}
                 </h1>
                 <p className="mt-0.5 text-sm text-slate-600">{category}</p>
-                {otherPlaces.length > 0 ? (
+                {places.length > 0 ? (
                   <p className="mt-2 flex flex-wrap items-center gap-1.5 text-sm text-slate-600">
-                    <span>{t.publicPages.listingCard.alsoWorksIn}</span>
-                    {otherPlaces.map((other) => (
-                      <span
-                        key={other}
-                        className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700"
-                      >
-                        {other}
+                    {places.map((entry, index) => (
+                      <span key={entry} className="flex items-center gap-1.5">
+                        {index > 0 ? <span className="text-slate-300">/</span> : null}
+                        <span className="rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200">
+                          {entry}
+                        </span>
                       </span>
                     ))}
                   </p>
