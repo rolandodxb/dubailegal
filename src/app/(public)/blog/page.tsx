@@ -12,6 +12,7 @@ import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/prim
 import { Icon, type IconName } from '@/components/icons';
 import { relativeTime } from '@/lib/i18n/format';
 import { composerLabels } from '@/lib/i18n/dict/feed';
+import { detectedCountry } from '@/lib/geo-detect';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -30,17 +31,52 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CommunityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; topic?: string; recommend?: string }>;
+  searchParams: Promise<{ sort?: string; topic?: string; recommend?: string; countries?: string }>;
 }) {
   const [{ t }, user, params] = await Promise.all([getI18n(), getSessionUser(), searchParams]);
+
+  // The member's own country first, the network's only as a fallback.
+  const userCountry = user
+    ? (
+        await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { profile: { select: { countryOfResidenceCode: true } } },
+        })
+      )?.profile?.countryOfResidenceCode ?? null
+    : null;
+  const detected = userCountry ? null : await detectedCountry();
   const blog = t.publicPages.blog;
   const sort = params.sort === 'new' ? 'new' : 'hot';
   const topic = COMMUNITY_TOPICS.some((entry) => entry.value === params.topic) ? params.topic! : null;
+
+  /**
+   * The board opens on the reader's own country, silently.
+   *
+   * Same rule as the directory: the country comes from a header the host platform
+   * already attached, nothing says so on the page, and `?countries=ALL` — which is
+   * what the country control sends for "everywhere" — is respected rather than
+   * replaced by the detected country. A member's own recorded country wins over
+   * the network, because somebody who has told us where they are should be taken
+   * at their word.
+   */
+  const anywhere = params.countries === 'ALL';
+  const explicit = params.countries && /^[A-Za-z]{2}$/.test(params.countries)
+    ? params.countries.toUpperCase()
+    : null;
+  const boardCountries = explicit
+    ? [explicit]
+    : anywhere
+      ? undefined
+      : userCountry
+        ? [userCountry]
+        : detected
+          ? [detected]
+          : undefined;
   const recommend = params.recommend ?? '';
 
   const [topics, posts, listings, waiting] = await Promise.all([
     listTopicCounts(),
-    listPosts(user?.id ?? null, { sort, topic: topic ?? undefined }),
+    listPosts(user?.id ?? null, { sort, topic: topic ?? undefined, countries: boardCountries }),
     user
       ? prisma.listing.findMany({
           where: { published: true },

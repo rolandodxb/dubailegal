@@ -114,14 +114,26 @@ export async function listPosts(
     listingId?: string;
     authorId?: string;
     topic?: string;
+    /**
+     * ISO alpha-2 codes to narrow the board to. Posts written before the platform
+     * went worldwide carry no country and are shown everywhere, because hiding
+     * them from every reader would be worse than showing them to the wrong one.
+     */
+    countries?: string[];
     limit?: number;
   } = {},
 ) {
+  const countryFilter =
+    options.countries && options.countries.length > 0
+      ? { OR: [{ countryCode: { in: options.countries } }, { countryCode: null }] }
+      : {};
+
   const where = {
     status: 'PUBLISHED' as const,
     ...(options.listingId ? { listingId: options.listingId } : {}),
     ...(options.authorId ? { authorId: options.authorId } : {}),
     ...(options.topic ? { topic: options.topic as never } : {}),
+    ...countryFilter,
   };
 
   const rows = await prisma.blogPost.findMany({
@@ -485,6 +497,15 @@ export async function createPost(
     }
   }
 
+  // The board is worldwide, so a post is filed under the country its author lives
+  // in: that is the country whose readers it is most useful to, and the one whose
+  // board it will appear on by default. Never asked for — it follows the profile,
+  // and a member who has not recorded a country posts without one.
+  const author = await prisma.user.findUnique({
+    where: { id: authorId },
+    select: { profile: { select: { countryOfResidenceCode: true, divisionCode: true } } },
+  });
+
   const post = await prisma.blogPost.create({
     data: {
       authorId,
@@ -494,6 +515,8 @@ export async function createPost(
       body: parsed.data.body,
       listingId: parsed.data.listingId,
       status: 'PENDING',
+      countryCode: author?.profile?.countryOfResidenceCode ?? null,
+      divisionCode: author?.profile?.divisionCode ?? null,
     },
     select: { id: true, title: true },
   });
