@@ -341,6 +341,13 @@ export const memberCoreEn = {
     phone: 'Phone number',
     phoneHint: 'Include the country code, for example +971 50 123 4567.',
     emiratesId: 'Emirates ID',
+    identityHeading: 'Your identity document',
+    identityBody:
+      'Required for every account type, and it is the document your own country issues — a DNI in Argentina, an Emirates ID in the United Arab Emirates, an INE in France. One identity document can verify only one Legal Dash account. It is never shown publicly.',
+    identityNumber: 'Document number',
+    identityNumberHint: 'Exactly as printed on the document.',
+    identityNumberHintUae: '15 digits, in the form 784-YYYY-NNNNNNN-C.',
+    identityExpiry: 'Expiry date',
     emiratesIdBody:
       'Required for every account type. One Emirates ID can verify only one Legal Dash account. It is never shown publicly — reviewers see the full number, everyone else sees it masked.',
     emiratesIdNumber: 'Emirates ID number',
@@ -779,6 +786,13 @@ export const memberCoreEs: MemberCoreDict = {
     phone: 'Número de teléfono',
     phoneHint: 'Incluya el prefijo del país, por ejemplo +971 50 123 4567.',
     emiratesId: 'Emirates ID',
+    identityHeading: 'Su documento de identidad',
+    identityBody:
+      'Obligatorio para todos los tipos de cuenta, y es el documento que expide su propio país: un DNI en Argentina, un Emirates ID en los Emiratos Árabes Unidos, un INE en Francia. Un documento de identidad solo puede verificar una cuenta de Legal Dash. Nunca se muestra públicamente.',
+    identityNumber: 'Número del documento',
+    identityNumberHint: 'Exactamente como figura en el documento.',
+    identityNumberHintUae: '15 dígitos, con el formato 784-AAAA-NNNNNNN-C.',
+    identityExpiry: 'Fecha de caducidad',
     emiratesIdBody:
       'Obligatorio para todos los tipos de cuenta. Un Emirates ID solo puede verificar una cuenta de Legal Dash. Nunca se muestra públicamente: los revisores ven el número completo y los demás lo ven enmascarado.',
     emiratesIdNumber: 'Número de Emirates ID',

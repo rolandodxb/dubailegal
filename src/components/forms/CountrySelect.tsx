@@ -30,6 +30,7 @@ export function CountrySelect({
   error,
   placeholder = 'Search for a country…',
   emptyOption = 'Not specified',
+  onChange,
   names,
 }: {
   id: string;
@@ -41,10 +42,16 @@ export function CountrySelect({
   error?: string;
   placeholder?: string;
   emptyOption?: string;
+  /** Told the chosen code, so a caller can react to the country. */
+  onChange?: (code: string) => void;
   names?: Record<string, string>;
 }) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(defaultValue);
+  const choose = (code: string) => {
+    setSelected(code);
+    onChange?.(code);
+  };
   const [open, setOpen] = useState(false);
 
   const labelFor = (country: (typeof ALL_COUNTRIES)[number]) =>
@@ -115,7 +122,7 @@ export function CountrySelect({
                     role="option"
                     aria-selected={country.code === selected}
                     onClick={() => {
-                      setSelected(country.code);
+                      choose(country.code);
                       setOpen(false);
                       setQuery('');
                     }}

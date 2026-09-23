@@ -8,6 +8,7 @@ import { calculateAge, toDateInputValue } from '@/lib/format';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Textarea } from '@/components/ui/primitives';
 import { CountrySelect } from './CountrySelect';
+import { countryByCode } from '@/lib/countries';
 
 export type ProfileFormValues = {
   fullName: string;
@@ -44,6 +45,10 @@ export function ProfileForm({
   countryNames?: Record<string, string>;
   labels: {
     notSpecified: string;
+    identityBody: string;
+    identityNumber: string;
+    identityNumberHint: string;
+    identityNumberHintUae: string;
     errorTitle: string;
     fullName: string;
     dateOfBirth: string;
@@ -82,6 +87,25 @@ export function ProfileForm({
   /** Same idea for the country codes, which are stored as codes rather than text. */
   const countryValue = (key: 'countryOfBirthCode' | 'nationalityCode' | 'countryOfResidenceCode') =>
     state?.values?.[key] ?? (profile?.[key] as string | null) ?? '';
+
+  /**
+   * The identity document this member's country issues.
+   *
+   * A member in Argentina holds a DNI, one in France an INE, one in the Emirates an
+   * Emirates ID — so the field is named for their document rather than for the
+   * platform's home country. It follows the nationality they choose, and falls back
+   * to where they live, and it updates as they choose: the point is that somebody
+   * who has said they are in Argentina is never asked for an Emirates ID.
+   */
+  const [identityCountry, setIdentityCountry] = useState(
+    countryValue('nationalityCode') || countryValue('countryOfResidenceCode') || '',
+  );
+  const identityCountryNames = countryNames ?? {};
+  const identityDocName =
+    identityCountry === 'AE'
+      ? labels.emiratesId
+      : countryByCode(identityCountry)?.nationalId ?? labels.identityNumber;
+  const identityIsEmirates = identityCountry === 'AE';
 
   const [emiratesId, setEmiratesId] = useState(
     state?.values?.emiratesIdNumber ?? profile?.emiratesIdNumber ?? '',
@@ -156,6 +180,7 @@ export function ProfileForm({
         <CountrySelect
           emptyOption={labels.notSpecified}
           id="nationalityCode"
+          onChange={setIdentityCountry}
           name="nationalityCode"
           label={labels.nationality}
           required
@@ -167,6 +192,7 @@ export function ProfileForm({
         <CountrySelect
           emptyOption={labels.notSpecified}
           id="countryOfResidenceCode"
+          onChange={(code) => setIdentityCountry(code)}
           name="countryOfResidenceCode"
           label={labels.countryOfResidence}
           required
@@ -213,26 +239,28 @@ export function ProfileForm({
 
       {/* ── Emirates ID ─────────────────────────────────────────────────── */}
       <fieldset className="rounded-xl border border-slate-200 p-4">
-        <legend className="px-1 text-sm font-semibold text-slate-900">{labels.emiratesId}</legend>
-        <p className="mb-4 text-xs text-slate-500">{labels.emiratesIdBody}</p>
+        <legend className="px-1 text-sm font-semibold text-slate-900">{identityDocName}</legend>
+        <p className="mb-4 text-xs text-slate-500">{labels.identityBody}</p>
 
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
-            label={labels.emiratesIdNumber}
+            label={identityDocName}
             htmlFor="emiratesIdNumber"
             required
             error={state?.fieldErrors?.emiratesIdNumber}
-            hint={labels.emiratesIdNumberHint}
+            hint={identityIsEmirates ? labels.identityNumberHintUae : labels.identityNumberHint}
           >
             <Input
               id="emiratesIdNumber"
               name="emiratesIdNumber"
               required
-              inputMode="numeric"
+              inputMode={identityIsEmirates ? 'numeric' : 'text'}
               value={emiratesId}
               onChange={(event) => setEmiratesId(event.target.value)}
-              onBlur={(event) => setEmiratesId(formatEmiratesId(event.target.value))}
-              placeholder={labels.emiratesIdNumberPlaceholder}
+              onBlur={(event) => {
+                if (identityIsEmirates) setEmiratesId(formatEmiratesId(event.target.value));
+              }}
+              placeholder={identityIsEmirates ? labels.emiratesIdNumberPlaceholder : ''}
               error={state?.fieldErrors?.emiratesIdNumber}
             />
           </Field>
