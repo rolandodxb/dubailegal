@@ -28,8 +28,11 @@ type Place = {
 export function CoverageList({
   countries,
   labels,
+  defaultRows = [],
 }: {
   countries: { code: string; name: string }[];
+  /** The countries already offered, so an edit shows them instead of dropping them. */
+  defaultRows?: Place[];
   labels: {
     heading: string;
     hint: string;
@@ -48,7 +51,7 @@ export function CoverageList({
     optional: string;
   };
 }) {
-  const [rows, setRows] = useState<Place[]>([]);
+  const [rows, setRows] = useState<Place[]>(defaultRows);
 
   /**
    * Stable, and a no-op when nothing changed.
@@ -117,6 +120,10 @@ export function CoverageList({
                 /* The rows above the first are not the record: they are read into
                    `coverage` by the JSON field, so their controls must not be named. */
                 unnamed
+                defaultCountry={row.countryCode}
+                defaultDivision={row.divisionCode}
+                defaultDistrict={row.districtCode}
+                defaultLocality={row.locality}
                 onPlaceChange={(place) => update(index, place)}
               />
             </li>

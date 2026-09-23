@@ -29,7 +29,13 @@ export type ListingFormValues = {
   primaryDivisionCode?: string | null;
   primaryDistrictCode?: string | null;
   /** The further countries the professional works in. */
-  coverage?: { countryCode: string; divisionCode: string | null; districtCode: string | null; locality: string | null }[];
+  coverage?: {
+    countryCode: string;
+    divisionCode: string | null;
+    districtCode: string | null;
+    locality: string | null;
+    isPrimary?: boolean;
+  }[];
   primaryLocality?: string | null;
   areas: string[];
   languages: string[];
@@ -227,6 +233,16 @@ export function ListingForm({
       {/* A practice is not always in one country, so further ones can be added. */}
       <CoverageList
         countries={countries}
+        /* Everything except the primary place and, in the Emirates, the emirates
+           themselves — those are the checklist above, not further countries. */
+        defaultRows={(listing?.coverage ?? [])
+          .filter((row) => !row.isPrimary && row.countryCode !== 'AE')
+          .map((row) => ({
+            countryCode: row.countryCode,
+            divisionCode: row.divisionCode ?? '',
+            districtCode: row.districtCode ?? '',
+            locality: row.locality ?? '',
+          }))}
         labels={{
           heading: labels.placeCountriesHeading,
           hint: labels.placeCountriesHint,

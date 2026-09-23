@@ -145,7 +145,12 @@ export async function saveListing(
 }
 
 export async function getListingForEdit(userId: string) {
-  return prisma.listing.findUnique({ where: { userId } });
+  // The coverage rows come with it: an edit form that cannot see the countries a
+  // professional already offered would silently drop them on the next save.
+  return prisma.listing.findUnique({
+    where: { userId },
+    include: { coverage: { orderBy: [{ isPrimary: 'desc' }, { countryCode: 'asc' }] } },
+  });
 }
 
 /** Takes a listing out of the public directory without discarding it. */

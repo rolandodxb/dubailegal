@@ -132,6 +132,12 @@ export default async function ListingPage({
                   contactPhone: listing.contactPhone,
                   website: listing.website,
                   addressLine: listing.addressLine,
+                  primaryCountryCode: listing.primaryCountryCode,
+                  primaryDivisionCode: listing.primaryDivisionCode,
+                  primaryDistrictCode: listing.primaryDistrictCode,
+                  primaryLocality: listing.primaryLocality,
+                  coverage: listing.coverage,
+
                 }
               : null
           }
