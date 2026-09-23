@@ -154,6 +154,7 @@ export function ProfileForm({
         />
 
         <CountrySelect
+          emptyOption={labels.notSpecified}
           id="nationalityCode"
           name="nationalityCode"
           label={labels.nationality}
@@ -164,6 +165,7 @@ export function ProfileForm({
         />
 
         <CountrySelect
+          emptyOption={labels.notSpecified}
           id="countryOfResidenceCode"
           name="countryOfResidenceCode"
           label={labels.countryOfResidence}

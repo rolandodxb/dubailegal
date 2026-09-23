@@ -126,3 +126,16 @@ function localiseFragment(value: string): string | null {
 
 /** Compiled once at module load; the list is short and frozen. */
 const PATTERNS: CompiledPattern[] = messagesEsPatterns.map(compile);
+
+/**
+ * A field's name on its own, for the places that list what is missing.
+ *
+ * The catalogue above translates whole sentences and, for the sentences that
+ * paste a field name into them, refuses to translate at all unless the name is
+ * known. This is that same name lookup, for the callers that want only the names
+ * — "Falta: Nombre completo, Fecha de nacimiento" — rather than a sentence.
+ */
+export function fieldName(locale: Locale | undefined, name: string): string {
+  if (locale !== 'es') return name;
+  return localiseFragment(name) ?? name;
+}

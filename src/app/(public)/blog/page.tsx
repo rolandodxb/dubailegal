@@ -11,6 +11,7 @@ import { CommunityPostCard } from '@/components/community/CommunityPostCard';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 import { Icon, type IconName } from '@/components/icons';
 import { relativeTime } from '@/lib/i18n/format';
+import { composerLabels } from '@/lib/i18n/dict/feed';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -191,7 +192,12 @@ export default async function CommunityPage({
               {t.community.writePost}
             </summary>
             <p className="mt-1 mb-4 text-sm text-slate-600">{blog.writeHelp}</p>
-            <PostForm listings={listings} defaultListingId={recommend} defaultTopic={topic ?? ''} />
+            <PostForm
+              listings={listings}
+              defaultListingId={recommend}
+              defaultTopic={topic ?? ''}
+              labels={composerLabels(t)}
+            />
           </details>
         </Card>
       ) : (

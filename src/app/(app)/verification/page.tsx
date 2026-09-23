@@ -17,6 +17,8 @@ import {
   SubmitVerificationForm,
   WithdrawVerificationForm,
 } from '@/components/forms/VerificationActions';
+import { fieldName } from '@/lib/i18n/messages';
+import { requirementText } from '@/lib/i18n/requirements';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -158,7 +160,9 @@ export default async function VerificationPage() {
                 ? undefined
                 : t.memberPro.verification.missing.replace(
                     '{items}',
-                    overview.missingProfileFields.join(', '),
+                    overview.missingProfileFields
+                      .map((field) => fieldName(effectiveLocale, field))
+                      .join(', '),
                   )
             }
             href="/profile"
@@ -188,8 +192,8 @@ export default async function VerificationPage() {
                 ? undefined
                 : t.memberPro.verification.missing.replace(
                     '{items}',
-                    overview.missingDocuments
-                      .map((kind) => documentKindLabel(t, kind as DocumentKind))
+                    overview.missingDocumentRequests
+                      .map((request) => requirementText(t, effectiveLocale, request, overview.documentRules).label)
                       .join(', '),
                   )
             }
