@@ -18,6 +18,7 @@ import { blogKindLabel, communityTopicHint, communityTopicLabel } from '../label
  * shared label dictionary, and are read from there.
  */
 export const feedEn = {
+  reactionFailed: 'That reaction did not save. Please try again.',
   /**
    * What a post is, as the short chip on its card.
    *
@@ -43,6 +44,8 @@ export const feedEn = {
     remove: 'Remove your {label}',
     one: '{count} reaction',
     many: '{count} reactions',
+    /** Shown when a reaction could not be saved, so the button never looks inert. */
+    reactionFailed: 'That reaction did not save. Please try again.',
   },
 
   comments: {
@@ -139,6 +142,7 @@ export const feedEn = {
 export type FeedDict = Translated<typeof feedEn>;
 
 export const feedEs: FeedDict = {
+  reactionFailed: 'No se ha guardado la reacción. Inténtelo de nuevo.',
   kind: {
     recommendation: 'Recomendación',
     question: 'Pregunta',
@@ -155,6 +159,7 @@ export const feedEs: FeedDict = {
     remove: 'Quitar su reacción «{label}»',
     one: '{count} reacción',
     many: '{count} reacciones',
+    reactionFailed: 'No se ha guardado la reacción. Inténtelo de nuevo.',
   },
 
   comments: {

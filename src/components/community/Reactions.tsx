@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState, useTransition } from 'react';
 import {
   addCommentAction,
   reactToCommentAction,
@@ -27,6 +27,8 @@ export type CommunityLabels = {
   removeReaction: string;
   reactionOne: string;
   reactionMany: string;
+  /** Shown when a reaction could not be saved, so it never looks inert. */
+  reactionFailed: string;
   commentOne: string;
   commentMany: string;
   reply: string;
@@ -72,25 +74,45 @@ export function ReactionBar({
   onComments?: () => void;
   labels: CommunityLabels;
 }) {
-  const [state, formAction] = useActionState(
-    kind === 'post' ? reactToPostAction : reactToCommentAction,
-    initialFormState,
-  );
+  /**
+   * One small request per press, and the counters it returns are the counters in
+   * the database.
+   *
+   * This was a server action and it never ran: the markup was right, the service
+   * behind it works, and yet no request reached the server — not even a native form
+   * submission. A reaction is a tiny piece of state, so it is sent as what it is.
+   */
+  const [current, setCurrent] = useState(counts);
+  const [mine, setMine] = useState<string | null>(myReaction);
+  const [pending, startTransition] = useTransition();
+  const [failed, setFailed] = useState(false);
 
-  const mine = state?.ok ? (state.values?.kind || null) : myReaction;
-  let current = counts;
-  if (state?.ok && state.values?.counts) {
-    try {
-      current = JSON.parse(state.values.counts) as typeof counts;
-    } catch {
-      current = counts;
-    }
-  }
+  const press = (value: string) => {
+    const next = mine === value ? '' : value;
+    setFailed(false);
+    startTransition(async () => {
+      try {
+        const response = await fetch('/api/community/reaction', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id, kind: next, type: kind }),
+        });
+        if (!response.ok) {
+          setFailed(true);
+          return;
+        }
+        const body = (await response.json()) as { kind: string | null; counts: typeof counts };
+        setMine(body.kind);
+        setCurrent(body.counts);
+      } catch {
+        setFailed(true);
+      }
+    });
+  };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
-      <form action={formAction} className="flex items-center gap-1">
-        <input type="hidden" name="id" value={id} />
+      <div className="flex items-center gap-1">
         {REACTIONS.map((reaction) => {
           const held = mine === reaction.value;
           const count = current[reaction.value as 'LIKE' | 'HEART' | 'WOW'];
@@ -98,9 +120,9 @@ export function ReactionBar({
           return (
             <button
               key={reaction.value}
-              type="submit"
-              name="kind"
-              value={held ? '' : reaction.value}
+              type="button"
+              disabled={pending}
+              onClick={() => press(reaction.value)}
               aria-pressed={held}
               aria-label={held ? labels.removeReaction.replace('{label}', label) : label}
               title={label}
@@ -118,7 +140,13 @@ export function ReactionBar({
             </button>
           );
         })}
-      </form>
+      </div>
+
+      {failed ? (
+        <span className="text-xs font-medium text-red-600" role="status">
+          {labels.reactionFailed}
+        </span>
+      ) : null}
 
       <div className="flex items-center gap-3 text-xs text-slate-500">
         {current.total > 0 ? (

@@ -244,6 +244,7 @@ export async function CommunityPostCard({
       WOW: reactionLabel(t, 'WOW'),
     },
     removeReaction: t.feed.reactions.remove,
+    reactionFailed: t.feed.reactions.reactionFailed,
     reactionOne: t.feed.reactions.one,
     reactionMany: t.feed.reactions.many,
     commentOne: t.feed.comments.one,
