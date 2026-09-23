@@ -187,7 +187,7 @@ async function main(): Promise<void> {
       lawyer.userId,
       {
         licenseNumber: `BRD-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2032-01-01',
         yearsOfExperience: '8',
         bankAccountName: 'Brand Lawyer',
@@ -300,13 +300,13 @@ async function main(): Promise<void> {
     });
     check('so their receipts use the standard layout', standard.mode === 'STANDARD');
     check('with the platform mark', standard.logoUrl === '/logo.svg');
-    check('and the platform name', standard.brandName === 'Dubai Legal');
+    check('and the platform name', standard.brandName === 'Legal Dash');
 
     const standardReceipt = markup(
       await html(`/payments/${fee.data.paymentId}/receipt`, client.sessionToken),
     );
     check('the receipt shows the mark', standardReceipt.includes('/logo.svg'));
-    check('and the platform lockup', standardReceipt.includes('Lawyers and legal firms of the United Arab Emirates'));
+    check('and the platform lockup', standardReceipt.includes('Verified lawyers and legal firms, worldwide'));
     check('and says the payment was simulated', standardReceipt.includes('Simulated payment'));
     check('and offers the printable receipt', standardReceipt.includes('Download receipt as PDF'));
     check(
@@ -408,7 +408,7 @@ async function main(): Promise<void> {
     check('and their footer note', customReceipt.includes('billing@example.ae'));
     check(
       'the platform mark stays on the receipt, at the foot',
-      customReceipt.includes('/logo.svg') && customReceipt.includes('Issued through Dubai Legal'),
+      customReceipt.includes('/logo.svg') && customReceipt.includes('Issued through Legal Dash'),
     );
 
     const lawyerSeesSame = markup(
@@ -421,7 +421,7 @@ async function main(): Promise<void> {
     check('the layout page opens for a professional', templatePage.status === 200, `got ${templatePage.status}`);
     check(
       'and offers both choices',
-      templateHtml.includes('The standard Dubai Legal layout') && templateHtml.includes('My own letterhead'),
+      templateHtml.includes('The standard Legal Dash layout') && templateHtml.includes('My own letterhead'),
     );
 
     const postPage = await get('/payments', lawyer.sessionToken);

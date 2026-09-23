@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireReviewer } from '@/lib/auth';
 import { getCaseForAdmin } from '@/server/services/admin-service';
-import { LEGAL_AREA_LABEL, LEGAL_CASE_STATUS_LABEL } from '@/lib/constants';
+import { getI18n } from '@/lib/i18n';
+import { caseStatusLabel, legalAreaLabel } from '@/lib/i18n/labels';
 import { formatDateTime, formatFileSize } from '@/lib/format';
 import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/primitives';
 import { CaseStatusChip } from '@/components/cases/CaseStatusChip';
@@ -22,17 +23,20 @@ export default async function AdminCaseOversightPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireReviewer();
+  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
   const { id } = await params;
 
   const legalCase = await getCaseForAdmin(id);
   if (!legalCase) notFound();
 
+  const accountStatusLabel: Record<string, string> = t.admin.cases.accountStatusLabel;
+  const reviewStatusLabel: Record<string, string> = t.admin.cases.reviewStatusLabel;
+
   return (
     <div className="space-y-6">
-      <nav className="text-sm" aria-label="Breadcrumb">
+      <nav className="text-sm" aria-label={t.admin.cases.breadcrumb}>
         <Link href="/admin/cases" className="text-brand-700 hover:underline">
-          ← Back to all cases
+          {t.admin.cases.backToAllCases}
         </Link>
       </nav>
 
@@ -42,7 +46,7 @@ export default async function AdminCaseOversightPage({
             <p className="font-mono text-xs text-slate-500">{legalCase.reference}</p>
             <h1 className="mt-1 text-xl font-semibold text-slate-900">{legalCase.title}</h1>
             <p className="mt-1 text-sm text-slate-600">
-              {LEGAL_AREA_LABEL[legalCase.caseType] ?? legalCase.caseType} · submitted{' '}
+              {legalAreaLabel(t, legalCase.caseType)} · {t.admin.cases.submittedAt}{' '}
               {formatDateTime(legalCase.submittedAt)}
             </p>
           </div>
@@ -50,62 +54,68 @@ export default async function AdminCaseOversightPage({
         </div>
       </Card>
 
-      <Alert tone="info" title="Oversight view — read only">
-        The client&rsquo;s description and the messages in this case may be legally privileged, so
-        they are not shown to administrators. Case files are listed by name only and cannot be
-        opened from here. Nothing on this screen can accept, decline or progress a case.
+      <Alert tone="info" title={t.admin.cases.oversightAlert}>
+        {t.admin.cases.oversightAlertBody}
       </Alert>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="font-semibold text-slate-900">Parties</h2>
+          <h2 className="font-semibold text-slate-900">{t.admin.cases.parties}</h2>
           <div className="mt-3">
             <DescriptionList
               items={[
                 {
-                  term: 'Client',
+                  term: t.admin.cases.client,
                   detail: (
                     <>
                       {legalCase.client.profile?.fullName?.trim() || legalCase.client.email}
                       <span className="block text-xs text-slate-500">{legalCase.client.email}</span>
                       <span className="block text-xs text-slate-500">
-                        Account status: {legalCase.client.status.toLowerCase()}
+                        {t.admin.cases.accountStatus}:{' '}
+                        {accountStatusLabel[legalCase.client.status] ??
+                          legalCase.client.status.toLowerCase()}
                       </span>
                     </>
                   ),
                 },
                 {
-                  term: 'Assigned lawyer',
+                  term: t.admin.cases.assignedLawyer,
                   detail: legalCase.lawyer
                     ? (
                         <>
                           {legalCase.lawyer.user.profile?.fullName?.trim() ||
                             legalCase.lawyer.user.email}
                           <span className="block text-xs text-slate-500">
-                            Licence {legalCase.lawyer.licenseNumber} ·{' '}
+                            {t.admin.cases.licence} {legalCase.lawyer.licenseNumber} ·{' '}
                             {legalCase.lawyer.licensingAuthority}
                           </span>
                         </>
                       )
-                    : 'Not assigned',
+                    : t.admin.cases.notAssigned,
                 },
                 {
-                  term: 'Firm',
+                  term: t.admin.cases.firm,
                   detail: legalCase.firm
-                    ? `${legalCase.firm.legalName} · trade licence ${legalCase.firm.tradeLicenseNumber}`
-                    : 'Sent to a named lawyer',
+                    ? `${legalCase.firm.legalName} · ${t.admin.cases.tradeLicence} ${legalCase.firm.tradeLicenseNumber}`
+                    : t.admin.cases.sentToNamedLawyer,
                 },
                 {
-                  term: 'Reviewed',
-                  detail: legalCase.reviewedAt ? formatDateTime(legalCase.reviewedAt) : 'Not yet',
+                  term: t.admin.cases.reviewed,
+                  detail: legalCase.reviewedAt
+                    ? formatDateTime(legalCase.reviewedAt)
+                    : t.admin.cases.notYet,
                 },
                 {
-                  term: 'Assigned',
-                  detail: legalCase.assignedAt ? formatDateTime(legalCase.assignedAt) : 'Not yet',
+                  term: t.admin.cases.assigned,
+                  detail: legalCase.assignedAt
+                    ? formatDateTime(legalCase.assignedAt)
+                    : t.admin.cases.notYet,
                 },
                 {
-                  term: 'Completed',
-                  detail: legalCase.completedAt ? formatDateTime(legalCase.completedAt) : 'Not yet',
+                  term: t.admin.cases.completed,
+                  detail: legalCase.completedAt
+                    ? formatDateTime(legalCase.completedAt)
+                    : t.admin.cases.notYet,
                 },
               ]}
             />
@@ -113,21 +123,24 @@ export default async function AdminCaseOversightPage({
         </Card>
 
         <Card>
-          <h2 className="font-semibold text-slate-900">Volume</h2>
+          <h2 className="font-semibold text-slate-900">{t.admin.cases.volume}</h2>
           <div className="mt-3">
             <DescriptionList
               items={[
-                { term: 'Attachments', detail: String(legalCase._count.files) },
-                { term: 'Messages', detail: String(legalCase._count.messages) },
+                { term: t.admin.cases.attachments, detail: String(legalCase._count.files) },
+                { term: t.admin.cases.messages, detail: String(legalCase._count.messages) },
                 {
-                  term: 'Client review',
+                  term: t.admin.cases.clientReview,
                   detail: legalCase.review
-                    ? `${legalCase.review.rating}.0 — ${legalCase.review.status.toLowerCase()}`
-                    : 'None written',
+                    ? `${legalCase.review.rating}.0 — ${
+                        reviewStatusLabel[legalCase.review.status] ??
+                        legalCase.review.status.toLowerCase()
+                      }`
+                    : t.admin.cases.noneWritten,
                 },
                 {
-                  term: 'Decline reason recorded',
-                  detail: legalCase.declineReason ? 'Yes' : 'Not applicable',
+                  term: t.admin.cases.declineReasonRecorded,
+                  detail: legalCase.declineReason ? t.common.yes : t.admin.cases.notApplicable,
                 },
               ]}
             />
@@ -135,7 +148,7 @@ export default async function AdminCaseOversightPage({
 
           {legalCase.files.length > 0 ? (
             <div className="mt-4 border-t border-slate-100 pt-4">
-              <h3 className="text-sm font-medium text-slate-800">File names</h3>
+              <h3 className="text-sm font-medium text-slate-800">{t.admin.cases.fileNames}</h3>
               <ul className="mt-2 space-y-1">
                 {legalCase.files.map((file) => (
                   <li key={file.id} className="flex items-center justify-between gap-3 text-xs">
@@ -150,16 +163,16 @@ export default async function AdminCaseOversightPage({
       </div>
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Timeline</h2>
+        <h2 className="font-semibold text-slate-900">{t.admin.cases.timeline}</h2>
         <ol className="mt-3 divide-y divide-slate-100">
           {legalCase.events.map((event) => (
             <li key={event.id} className="py-2.5">
               <p className="text-sm text-slate-800">
-                {event.fromStatus ? `${LEGAL_CASE_STATUS_LABEL[event.fromStatus] ?? event.fromStatus} → ` : ''}
-                {LEGAL_CASE_STATUS_LABEL[event.toStatus] ?? event.toStatus}
+                {event.fromStatus ? `${caseStatusLabel(t, event.fromStatus)} → ` : ''}
+                {caseStatusLabel(t, event.toStatus)}
               </p>
               <p className="text-xs text-slate-500">
-                {event.actor?.email ?? 'System'} · {formatDateTime(event.createdAt)}
+                {event.actor?.email ?? t.admin.cases.system} · {formatDateTime(event.createdAt)}
                 {event.note ? ` · ${event.note}` : ''}
               </p>
             </li>
@@ -169,10 +182,10 @@ export default async function AdminCaseOversightPage({
 
       <div className="flex flex-wrap gap-3">
         <Link href="/admin/cases" className={buttonClasses('secondary', 'md')}>
-          All cases
+          {t.admin.cases.allCases}
         </Link>
         <Link href={`/admin/users?q=${encodeURIComponent(legalCase.client.email)}`} className={buttonClasses('secondary', 'md')}>
-          Look up the client account
+          {t.admin.cases.lookUpClient}
         </Link>
       </div>
     </div>

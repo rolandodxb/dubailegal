@@ -3,6 +3,7 @@
 import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
 import { saveRoomRecordingAction } from '@/app/actions/room-actions';
 import { initialFormState } from '@/lib/form-state';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { buttonClasses, Card } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
@@ -33,6 +34,7 @@ export function CallRecorder({
   localLabel,
   remoteLabel,
   onSaved,
+  labels,
 }: {
   roomCode: string;
   /** The local camera and microphone, once the call is joined. */
@@ -45,6 +47,8 @@ export function CallRecorder({
   localLabel: string;
   remoteLabel: string;
   onSaved?: () => void;
+  /** The recorder panel's words, in the reader's language. */
+  labels: MemberCasesDict['recorder'];
 }) {
   const [state, saveRecording] = useActionState(saveRoomRecordingAction, initialFormState);
   const [recording, setRecording] = useState(false);
@@ -166,17 +170,17 @@ export function CallRecorder({
         context.fillRect(0, 0, canvas.width, canvas.height);
         const half = canvas.width / 2;
         if (theirs) {
-          draw(theirs, 0, half, remoteLabel, 'Waiting…');
+          draw(theirs, 0, half, remoteLabel, labels.waiting);
         } else {
           context.fillStyle = '#0f172a';
           context.fillRect(0, 0, half, canvas.height);
           context.fillStyle = '#94a3b8';
           context.font = '500 24px system-ui, sans-serif';
           context.textAlign = 'center';
-          context.fillText('Waiting…', half / 2, canvas.height / 2);
+          context.fillText(labels.waiting, half / 2, canvas.height / 2);
           context.textAlign = 'start';
         }
-        draw(mine, half, half, localLabel, 'Camera off');
+        draw(mine, half, half, localLabel, labels.cameraOff);
 
         // A divider, so the two halves read as two people rather than one picture.
         context.fillStyle = '#1e293b';
@@ -296,7 +300,7 @@ export function CallRecorder({
         composite?.stop();
       }
     };
-  }, [active, stream, remoteStream, localLabel, remoteLabel, saveRecording]);
+  }, [active, stream, remoteStream, localLabel, remoteLabel, saveRecording, labels]);
 
   // A tab that is closed, or a room that is left, still saves what was captured.
   useEffect(() => {
@@ -326,20 +330,23 @@ export function CallRecorder({
           </span>
           <div>
             <h2 className="font-semibold text-slate-900">
-              {recording ? 'Recording this call' : uploading ? 'Saving the recording' : 'Recording'}
+              {recording
+                ? labels.recordingThisCall
+                : uploading
+                  ? labels.savingRecording
+                  : labels.recording}
             </h2>
             <p className="text-xs text-slate-600">
               {recording ? (
                 <>
-                  {minutes}:{seconds} · both sides are recording, and both recordings are kept private
-                  to the two of you
+                  {minutes}:{seconds} · {labels.bothSides}
                 </>
               ) : uploading ? (
-                'Uploading the recording, encrypted.'
+                labels.uploading
               ) : active ? (
-                'Recording starts with the call.'
+                labels.startsWithCall
               ) : (
-                'Join the call and it is recorded from the moment you are connected.'
+                labels.joinAndRecorded
               )}
             </p>
           </div>
@@ -347,7 +354,7 @@ export function CallRecorder({
 
         {recording ? (
           <button type="button" onClick={finish} className={buttonClasses('secondary', 'sm')}>
-            Stop recording
+            {labels.stop}
           </button>
         ) : null}
       </div>
@@ -360,10 +367,8 @@ export function CallRecorder({
       ) : null}
 
       <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-        <strong className="font-medium text-slate-800">Private and encrypted.</strong> Recordings are
-        stored encrypted, available to you and to the other person on the call, and to nobody else. An
-        administrator of this platform cannot play them. They are deleted with the meeting or the
-        emergency request they belong to.
+        <strong className="font-medium text-slate-800">{labels.privateEncryptedTitle}</strong>
+        {labels.privateEncryptedBody}
       </p>
     </Card>
   );

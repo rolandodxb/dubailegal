@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { requestUrgentCallAction } from '@/app/actions/appointment-actions';
 import { initialFormState } from '@/lib/form-state';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Icon } from '@/components/icons';
 
@@ -17,10 +18,12 @@ export function RequestUrgentCallButton({
   caseId,
   professionalName,
   className,
+  labels,
 }: {
   caseId: string;
   professionalName: string;
   className?: string;
+  labels: MemberCasesDict['urgentCall'];
 }) {
   const [state, formAction] = useActionState(requestUrgentCallAction, initialFormState);
 
@@ -30,14 +33,11 @@ export function RequestUrgentCallButton({
       {state && !state.ok && state.message ? (
         <p className="mb-2 text-xs font-medium text-red-700">{state.message}</p>
       ) : null}
-      <SubmitButton pendingLabel="Opening the room…">
+      <SubmitButton pendingLabel={labels.opening}>
         <Icon name="phoneCall" size={17} />
-        Ask {professionalName} for an urgent call
+        {labels.ask.replace('{name}', professionalName)}
       </SubmitButton>
-      <p className="mt-2 text-[11px] text-slate-500">
-        Opens a conference room and alerts them. If they cannot answer, send a message in the case
-        instead — nothing is left waiting silently.
-      </p>
+      <p className="mt-2 text-[11px] text-slate-500">{labels.body}</p>
     </form>
   );
 }

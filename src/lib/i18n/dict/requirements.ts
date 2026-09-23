@@ -83,6 +83,11 @@ export const requirementsEn = {
     why: 'Shown beside your name. It is not evidence of anything, and it is never required.',
   },
 
+  /** The list of documents still outstanding, named one by one. */
+  blockerDocuments: {
+    text: 'Provide the documents for your account: {items}.',
+  },
+
   /** A document issued in one country and read in another. */
   legalisation: {
     apostille:
@@ -152,6 +157,11 @@ export const requirementsEs: RequirementsDict = {
   photograph: {
     label: 'Fotografía de perfil',
     why: 'Se muestra junto a su nombre. No es prueba de nada y nunca es obligatoria.',
+  },
+
+  /** The list of documents still outstanding, named one by one. */
+  blockerDocuments: {
+    text: 'Aporte los documentos de su cuenta: {items}.',
   },
 
   legalisation: {

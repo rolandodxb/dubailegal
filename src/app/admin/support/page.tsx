@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getI18n } from '@/lib/i18n';
+import { accountTypeLabel, supportCategoryLabel, supportStatusLabel } from '@/lib/i18n/labels';
 import { requireReviewer } from '@/lib/auth';
 import { listTicketsForAdmin } from '@/server/services/support-service';
-import { SUPPORT_CATEGORY_LABEL, SUPPORT_STATUS_LABEL } from '@/lib/support';
 import { formatUaeDateTime } from '@/lib/time';
-import { ACCOUNT_TYPE_LABEL } from '@/lib/constants';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
@@ -28,28 +28,27 @@ export default async function AdminSupportPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireReviewer();
+  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
   const { status } = await searchParams;
   const filter = status === 'OPEN' || status === 'ANSWERED' || status === 'SOLVED' ? status : undefined;
 
   const { rows, open, answered, solved } = await listTicketsForAdmin(filter);
 
+  const showingLabel: Record<string, string> = t.admin.support.showing;
+  const emptyFilteredLabel: Record<string, string> = t.admin.support.emptyFiltered;
+
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Support</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Problems reported by users, lawyers and firms. Support is read by administrators only: it is
-          never shown to the other side of a case. Open a ticket, answer it, and press the solved
-          button when it is finished — that closes it for both sides.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.support}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{t.admin.support.intro}</p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Waiting for a reply', value: open, href: '/admin/support?status=OPEN' },
-          { label: 'Answered, awaiting them', value: answered, href: '/admin/support?status=ANSWERED' },
-          { label: 'Solved and closed', value: solved, href: '/admin/support?status=SOLVED' },
+          { label: t.admin.support.statWaiting, value: open, href: '/admin/support?status=OPEN' },
+          { label: t.admin.support.statAnswered, value: answered, href: '/admin/support?status=ANSWERED' },
+          { label: t.labels.supportStatus.SOLVED, value: solved, href: '/admin/support?status=SOLVED' },
         ].map((stat) => (
           <Link key={stat.label} href={stat.href} className="block">
             <Card
@@ -67,17 +66,17 @@ export default async function AdminSupportPage({
 
       {filter ? (
         <p className="text-sm text-slate-600">
-          Showing {filter.toLowerCase()} tickets.{' '}
+          {showingLabel[filter]}{' '}
           <Link href="/admin/support" className="font-medium text-brand-700 hover:underline">
-            Show all
+            {t.admin.support.showAll}
           </Link>
         </p>
       ) : null}
 
       {rows.length === 0 ? (
         <EmptyState
-          title={filter ? `No ${filter.toLowerCase()} tickets` : 'No tickets have been raised'}
-          description="When somebody reports a problem it appears here, with their account and the whole conversation attached."
+          title={filter ? emptyFilteredLabel[filter] : t.admin.support.emptyTitle}
+          description={t.admin.support.emptyBody}
         />
       ) : (
         <ul className="space-y-3">
@@ -97,14 +96,14 @@ export default async function AdminSupportPage({
                           STATUS_STYLE[ticket.status] ?? 'bg-slate-100 text-slate-600 ring-slate-200',
                         )}
                       >
-                        {SUPPORT_STATUS_LABEL[ticket.status] ?? ticket.status}
+                        {supportStatusLabel(t, ticket.status)}
                       </span>
                       <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
-                        {ACCOUNT_TYPE_LABEL[ticket.user.accountType]}
+                        {accountTypeLabel(t, ticket.user.accountType)}
                       </span>
                       {ticket.user.isDemo ? (
                         <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200">
-                          Seeded demo data
+                          {t.admin.support.seededDemoData}
                         </span>
                       ) : null}
                     </div>
@@ -112,15 +111,20 @@ export default async function AdminSupportPage({
                     <h2 className="mt-2 font-medium text-slate-900">{ticket.subject}</h2>
                     <p className="mt-0.5 text-xs text-slate-500">
                       {reporter} · {ticket.user.email} ·{' '}
-                      {SUPPORT_CATEGORY_LABEL[ticket.category] ?? ticket.category} · raised{' '}
-                      {formatUaeDateTime(ticket.createdAt)} · {ticket._count.messages} message
-                      {ticket._count.messages === 1 ? '' : 's'}
+                      {supportCategoryLabel(t, ticket.category)} · {t.admin.support.raised}{' '}
+                      {formatUaeDateTime(ticket.createdAt)} ·{' '}
+                      {(ticket._count.messages === 1
+                        ? t.admin.support.messagesOne
+                        : t.admin.support.messagesMany
+                      ).replace('{count}', String(ticket._count.messages))}
                     </p>
 
                     {last ? (
                       <p className="mt-2 line-clamp-2 whitespace-pre-line text-sm text-slate-700">
                         <span className="font-medium text-slate-500">
-                          {last.fromStaff ? 'Support: ' : 'Reporter: '}
+                          {last.fromStaff
+                            ? t.admin.support.supportPrefix
+                            : t.admin.support.reporterPrefix}
                         </span>
                         {last.body}
                       </p>
@@ -132,7 +136,7 @@ export default async function AdminSupportPage({
                     className={buttonClasses(ticket.status === 'OPEN' ? 'primary' : 'secondary', 'md')}
                   >
                     <Icon name="message" size={16} />
-                    Open the ticket
+                    {t.admin.support.openTicket}
                   </Link>
                 </div>
               </Card>
@@ -141,10 +145,8 @@ export default async function AdminSupportPage({
         </ul>
       )}
 
-      <Alert tone="info" title="Support is private to administrators and the reporter">
-        A ticket can contain anything about an account. It is never visible to the other side of a
-        case, and solving one closes it for both sides — the reporter raises a new ticket if the
-        problem returns.
+      <Alert tone="info" title={t.admin.support.privateTitle}>
+        {t.admin.support.privateBody}
       </Alert>
     </div>
   );

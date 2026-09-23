@@ -26,6 +26,7 @@ export function FeatureToggle({
   enabled,
   updatedBy,
   updatedAt,
+  labels,
 }: {
   settingKey: string;
   label: string;
@@ -33,6 +34,19 @@ export function FeatureToggle({
   enabled: boolean;
   updatedBy?: string | null;
   updatedAt?: Date | null;
+  /** The words this switch shows, in the reader's language. */
+  labels: {
+    enabled: string;
+    disabled: string;
+    lastChanged: string;
+    changedBy: string;
+    neverChanged: string;
+    saving: string;
+    turnOff: string;
+    turnOn: string;
+    confirmDisable: string;
+    confirmEnable: string;
+  };
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4 py-4">
@@ -46,17 +60,20 @@ export function FeatureToggle({
                 : 'bg-red-50 text-red-800 ring-red-200'
             }`}
           >
-            {enabled ? 'Enabled' : 'Disabled'}
+            {enabled ? labels.enabled : labels.disabled}
           </span>
         </div>
         <p className="mt-1 text-xs text-slate-600">{description}</p>
         {updatedAt ? (
           <p className="mt-1 text-xs text-slate-400">
-            Last changed {updatedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC
-            {updatedBy ? ` by ${updatedBy}` : ''}
+            {labels.lastChanged.replace(
+              '{date}',
+              updatedAt.toISOString().slice(0, 16).replace('T', ' '),
+            )}
+            {updatedBy ? labels.changedBy.replace('{email}', updatedBy) : ''}
           </p>
         ) : (
-          <p className="mt-1 text-xs text-slate-400">Never changed from its default.</p>
+          <p className="mt-1 text-xs text-slate-400">{labels.neverChanged}</p>
         )}
       </div>
 
@@ -66,14 +83,14 @@ export function FeatureToggle({
         <SubmitButton
           variant={enabled ? 'danger' : 'primary'}
           size="sm"
-          pendingLabel="Saving…"
+          pendingLabel={labels.saving}
           confirm={
             enabled
-              ? `Disable “${label}” for everyone? Existing data is not affected.`
-              : `Enable “${label}”?`
+              ? labels.confirmDisable.replace('{label}', label)
+              : labels.confirmEnable.replace('{label}', label)
           }
         >
-          {enabled ? 'Turn off' : 'Turn on'}
+          {enabled ? labels.turnOff : labels.turnOn}
         </SubmitButton>
       </form>
     </div>
@@ -81,7 +98,14 @@ export function FeatureToggle({
 }
 
 /** The message people see while maintenance mode is on. */
-export function MaintenanceMessageForm({ message }: { message: string }) {
+export function MaintenanceMessageForm({
+  message,
+  labels,
+}: {
+  message: string;
+  /** The words this form shows, in the reader's language. */
+  labels: { fieldLabel: string; saving: string; submit: string };
+}) {
   const [state, formAction] = useActionState(setMaintenanceMessageAction, initialFormState);
 
   return (
@@ -90,7 +114,7 @@ export function MaintenanceMessageForm({ message }: { message: string }) {
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
       <Field
-        label="Message shown during maintenance"
+        label={labels.fieldLabel}
         htmlFor="maintenance-message"
         error={state?.fieldErrors?.message}
       >
@@ -104,14 +128,19 @@ export function MaintenanceMessageForm({ message }: { message: string }) {
         />
       </Field>
 
-      <SubmitButton variant="secondary" pendingLabel="Saving…">
-        Save message
+      <SubmitButton variant="secondary" pendingLabel={labels.saving}>
+        {labels.submit}
       </SubmitButton>
     </form>
   );
 }
 
-export function ClearTrafficForm() {
+export function ClearTrafficForm({
+  labels,
+}: {
+  /** The words this form shows, in the reader's language. */
+  labels: { confirm: string; pending: string; submit: string };
+}) {
   const [state, formAction] = useActionState(clearTrafficAction, initialFormState);
 
   return (
@@ -121,10 +150,10 @@ export function ClearTrafficForm() {
       <SubmitButton
         variant="danger"
         size="sm"
-        confirm="Delete the entire traffic register? This cannot be undone, though the deletion itself is recorded."
-        pendingLabel="Clearing…"
+        confirm={labels.confirm}
+        pendingLabel={labels.pending}
       >
-        Clear the traffic register
+        {labels.submit}
       </SubmitButton>
     </form>
   );
@@ -133,9 +162,19 @@ export function ClearTrafficForm() {
 export function ModerateReviewForm({
   reviewId,
   hidden,
+  labels,
 }: {
   reviewId: string;
   hidden: boolean;
+  /** The words this form shows, in the reader's language. */
+  labels: {
+    placeholder: string;
+    saving: string;
+    confirmRestore: string;
+    confirmHide: string;
+    restore: string;
+    hide: string;
+  };
 }) {
   const [state, formAction] = useActionState(moderateReviewAction, initialFormState);
 
@@ -154,7 +193,7 @@ export function ModerateReviewForm({
       {!hidden ? (
         <Input
           name="reason"
-          placeholder="Reason shown to the author"
+          placeholder={labels.placeholder}
           maxLength={200}
           className="max-w-xs"
         />
@@ -163,10 +202,10 @@ export function ModerateReviewForm({
       <SubmitButton
         variant={hidden ? 'secondary' : 'danger'}
         size="sm"
-        pendingLabel="Saving…"
-        confirm={hidden ? 'Restore this review?' : 'Hide this review from the public profile?'}
+        pendingLabel={labels.saving}
+        confirm={hidden ? labels.confirmRestore : labels.confirmHide}
       >
-        {hidden ? 'Restore review' : 'Hide review'}
+        {hidden ? labels.restore : labels.hide}
       </SubmitButton>
     </form>
   );
@@ -178,35 +217,47 @@ export function ModerateReviewForm({
  * Guarded by a typed phrase rather than a checkbox, because there is no way to
  * undo it from the browser: the app has to be started again from a terminal.
  */
-export function ShutdownForm() {
+export function ShutdownForm({
+  labels,
+}: {
+  /** The words this form shows, in the reader's language. */
+  labels: {
+    alertTitle: string;
+    fieldLabel: string;
+    fieldHint: string;
+    placeholder: string;
+    pending: string;
+    submit: string;
+  };
+}) {
   const [state, formAction] = useActionState(shutdownServerAction, initialFormState);
 
   return (
     <form action={formAction} className="space-y-3">
       {state?.ok && state.message ? (
-        <Alert tone="warning" title="Shutting down">
+        <Alert tone="warning" title={labels.alertTitle}>
           {state.message}
         </Alert>
       ) : null}
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
       <Field
-        label="Type SHUT DOWN to confirm"
+        label={labels.fieldLabel}
         htmlFor="confirm-shutdown"
         error={state?.fieldErrors?.confirm}
-        hint="The application will stop responding and must be started again from a terminal."
+        hint={labels.fieldHint}
       >
         <Input
           id="confirm-shutdown"
           name="confirm"
           autoComplete="off"
-          placeholder="SHUT DOWN"
+          placeholder={labels.placeholder}
           error={state?.fieldErrors?.confirm}
         />
       </Field>
 
-      <SubmitButton variant="danger" pendingLabel="Shutting down…">
-        Shut down the server
+      <SubmitButton variant="danger" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
     </form>
   );
@@ -220,7 +271,24 @@ export function ShutdownForm() {
  * never touched, whatever they are called — but the confirmation phrase is typed
  * rather than clicked, because an operator should have to mean it.
  */
-export function DeleteSampleDataForm({ accountCount }: { accountCount: number }) {
+export function DeleteSampleDataForm({
+  accountCount,
+  labels,
+}: {
+  accountCount: number;
+  /** The words this form shows, in the reader's language. */
+  labels: {
+    empty: string;
+    one: string;
+    many: string;
+    fieldLabel: string;
+    fieldHint: string;
+    /** The literal phrase the operator must type; never translated. */
+    placeholder: string;
+    pending: string;
+    submit: string;
+  };
+}) {
   const [state, formAction] = useActionState(deleteSampleDataAction, initialFormState);
 
   return (
@@ -230,31 +298,34 @@ export function DeleteSampleDataForm({ accountCount }: { accountCount: number })
 
       <p className="text-sm text-slate-600">
         {accountCount === 0
-          ? 'There are no sample accounts on this installation, so there is nothing to delete.'
-          : `${accountCount} seeded sample account${accountCount === 1 ? '' : 's'} will be deleted, with every document, case and message belonging to ${accountCount === 1 ? 'it' : 'them'}. No real account is affected.`}
+          ? labels.empty
+          : (accountCount === 1 ? labels.one : labels.many).replace(
+              '{count}',
+              String(accountCount),
+            )}
       </p>
 
       <Field
-        label="Type DELETE SAMPLE DATA to confirm"
+        label={labels.fieldLabel}
         htmlFor="confirm-sample-data"
         error={state?.fieldErrors?.confirm}
-        hint="This cannot be undone."
+        hint={labels.fieldHint}
       >
         <Input
           id="confirm-sample-data"
           name="confirm"
           autoComplete="off"
-          placeholder="DELETE SAMPLE DATA"
+          placeholder={labels.placeholder}
           error={state?.fieldErrors?.confirm}
         />
       </Field>
 
       <SubmitButton
         variant="danger"
-        pendingLabel="Deleting sample data…"
+        pendingLabel={labels.pending}
         disabled={accountCount === 0}
       >
-        Delete all sample data
+        {labels.submit}
       </SubmitButton>
     </form>
   );

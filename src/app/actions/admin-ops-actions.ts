@@ -11,6 +11,7 @@ import {
 } from '@/server/services/settings-service';
 import { clearAllTraffic, deleteAccount, deleteAllSampleData } from '@/server/services/admin-service';
 import { setReviewVisibility } from '@/server/services/review-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 const BOOLEAN_SETTINGS: SettingKey[] = [
   'maintenance.enabled',
@@ -33,7 +34,7 @@ function isSettingKey(value: string): value is SettingKey {
  * The value is derived from whether the checkbox was submitted, so an unchecked
  * box means "off" rather than "missing" — the opposite of the usual form trap.
  */
-export async function toggleFeatureAction(formData: FormData): Promise<void> {
+async function toggleFeatureActionImpl(formData: FormData): Promise<void> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -49,7 +50,7 @@ export async function toggleFeatureAction(formData: FormData): Promise<void> {
 }
 
 /** Sets the maintenance message shown while maintenance mode is on. */
-export async function setMaintenanceMessageAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function setMaintenanceMessageActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -69,7 +70,7 @@ export async function setMaintenanceMessageAction(_prev: FormState, formData: Fo
 }
 
 /** Empties the traffic register. Records that it happened. */
-export async function clearTrafficAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+async function clearTrafficActionImpl(_prev: FormState, _formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -79,7 +80,7 @@ export async function clearTrafficAction(_prev: FormState, _formData: FormData):
 }
 
 /** Hides or restores a review after moderation. */
-export async function moderateReviewAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function moderateReviewActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -104,7 +105,7 @@ export async function moderateReviewAction(_prev: FormState, formData: FormData)
  * a terminal — there is no way to bring it back up from the browser, which the
  * screen says before the button is pressed.
  */
-export async function shutdownServerAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function shutdownServerActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -146,7 +147,7 @@ export async function shutdownServerAction(_prev: FormState, formData: FormData)
  * the wrong person. The account's role is refused if it is the last reviewer, to
  * prevent an operator locking themselves out of the console.
  */
-export async function deleteAccountAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function deleteAccountActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -181,7 +182,7 @@ export async function deleteAccountAction(_prev: FormState, formData: FormData):
  * accounts created by `npm run seed:demo` are flagged `isDemo`. This is the button
  * that undoes it, so nobody has to remember which addresses were seeded.
  */
-export async function deleteSampleDataAction(
+async function deleteSampleDataActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -217,4 +218,55 @@ export async function deleteSampleDataAction(
     ok: true,
     message: `Deleted ${accounts} sample account${accounts === 1 ? '' : 's'}, ${documents} stored document${documents === 1 ? '' : 's'} and ${cases} case${cases === 1 ? '' : 's'} (${emails.join(', ')}). The deletion is recorded in the audit trail.`,
   };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function toggleFeatureAction(
+  ...args: Parameters<typeof toggleFeatureActionImpl>
+): Promise<Awaited<ReturnType<typeof toggleFeatureActionImpl>>> {
+  return localiseFormState(await toggleFeatureActionImpl(...args));
+}
+
+export async function setMaintenanceMessageAction(
+  ...args: Parameters<typeof setMaintenanceMessageActionImpl>
+): Promise<Awaited<ReturnType<typeof setMaintenanceMessageActionImpl>>> {
+  return localiseFormState(await setMaintenanceMessageActionImpl(...args));
+}
+
+export async function clearTrafficAction(
+  ...args: Parameters<typeof clearTrafficActionImpl>
+): Promise<Awaited<ReturnType<typeof clearTrafficActionImpl>>> {
+  return localiseFormState(await clearTrafficActionImpl(...args));
+}
+
+export async function moderateReviewAction(
+  ...args: Parameters<typeof moderateReviewActionImpl>
+): Promise<Awaited<ReturnType<typeof moderateReviewActionImpl>>> {
+  return localiseFormState(await moderateReviewActionImpl(...args));
+}
+
+export async function shutdownServerAction(
+  ...args: Parameters<typeof shutdownServerActionImpl>
+): Promise<Awaited<ReturnType<typeof shutdownServerActionImpl>>> {
+  return localiseFormState(await shutdownServerActionImpl(...args));
+}
+
+export async function deleteAccountAction(
+  ...args: Parameters<typeof deleteAccountActionImpl>
+): Promise<Awaited<ReturnType<typeof deleteAccountActionImpl>>> {
+  return localiseFormState(await deleteAccountActionImpl(...args));
+}
+
+export async function deleteSampleDataAction(
+  ...args: Parameters<typeof deleteSampleDataActionImpl>
+): Promise<Awaited<ReturnType<typeof deleteSampleDataActionImpl>>> {
+  return localiseFormState(await deleteSampleDataActionImpl(...args));
 }

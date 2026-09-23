@@ -8,14 +8,15 @@ import {
   resetReceiptTemplate,
   saveReceiptTemplate,
 } from '@/server/services/receipt-template-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 /**
  * Saves a lawyer's or firm's billing letterhead.
  *
- * Administrators are refused by the service: the Dubai Legal mark is fixed for
+ * Administrators are refused by the service: the Legal Dash mark is fixed for
  * them. Everybody else either uses the standard layout or uploads their own.
  */
-export async function saveReceiptTemplateAction(
+async function saveReceiptTemplateActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -65,12 +66,12 @@ export async function saveReceiptTemplateAction(
     message:
       result.data.layout === 'CUSTOM'
         ? 'Saved. New receipts you raise carry your own letterhead.'
-        : 'Saved. New receipts you raise use the standard Dubai Legal layout.',
+        : 'Saved. New receipts you raise use the standard Legal Dash layout.',
   };
 }
 
 /** Returns the account to the standard layout and removes any uploaded mark. */
-export async function resetReceiptTemplateAction(
+async function resetReceiptTemplateActionImpl(
   _prev: FormState,
   _formData: FormData,
 ): Promise<FormState> {
@@ -83,4 +84,25 @@ export async function resetReceiptTemplateAction(
   revalidatePath('/receipt-template');
   revalidatePath('/account');
   return { ok: true, message: 'Back to the standard layout. Your uploaded mark was removed.' };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function saveReceiptTemplateAction(
+  ...args: Parameters<typeof saveReceiptTemplateActionImpl>
+): Promise<Awaited<ReturnType<typeof saveReceiptTemplateActionImpl>>> {
+  return localiseFormState(await saveReceiptTemplateActionImpl(...args));
+}
+
+export async function resetReceiptTemplateAction(
+  ...args: Parameters<typeof resetReceiptTemplateActionImpl>
+): Promise<Awaited<ReturnType<typeof resetReceiptTemplateActionImpl>>> {
+  return localiseFormState(await resetReceiptTemplateActionImpl(...args));
 }

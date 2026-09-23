@@ -125,7 +125,7 @@ async function main(): Promise<void> {
       lawyer.userId,
       {
         licenseNumber: `RLIC-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2031-01-01',
         yearsOfExperience: '7',
       },
@@ -413,7 +413,7 @@ async function main(): Promise<void> {
     const openHtml = await (await fetch(`${BASE_URL}/register`)).text();
     check(
       'reopening registration brings the form back',
-      openHtml.includes('Create your Dubai Legal account'),
+      openHtml.includes('Create your Legal Dash account'),
     );
 
     await settings.setSetting(adminAccount.userId, 'feature.directory', 'false', meta);

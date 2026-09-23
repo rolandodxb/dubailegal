@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireActiveUser } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { accountTypeLabel } from '@/lib/i18n/labels';
 import { calculateAge, formatDate } from '@/lib/format';
-import { ACCOUNT_TYPE_LABEL } from '@/lib/constants';
 import { getProfileForEdit } from '@/server/services/profile-service';
 import { ProfileForm } from '@/components/forms/ProfileForm';
 import { ProfilePhotoCard } from '@/components/forms/ProfilePhotoCard';
@@ -11,15 +12,15 @@ import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/pri
 export const metadata: Metadata = { title: 'My profile' };
 
 export default async function ProfilePage() {
-  const user = await requireActiveUser();
+  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
   const profile = await getProfileForEdit(user.id);
 
   // The form requires a non-null profile row to edit, and registration always
   // creates one, so this is a safety net rather than an expected path.
   if (!profile) {
     return (
-      <Alert tone="error" title="Profile missing">
-        Your profile record could not be loaded. Please sign out and in again.
+      <Alert tone="error" title={t.memberCore.profile.missingTitle}>
+        {t.memberCore.profile.missingBody}
       </Alert>
     );
   }
@@ -29,53 +30,64 @@ export default async function ProfilePage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">My profile</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          These are the basics every account must supply. Only your work description, education and
-          country of residence appear on a public listing — your Emirates ID, date of birth and
-          place of birth are never published.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.myProfile}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.memberCore.profile.intro}</p>
       </header>
 
       <Card>
-        <h2 className="mb-4 font-semibold text-slate-900">Profile picture</h2>
+        <h2 className="mb-4 font-semibold text-slate-900">{t.memberCore.profile.picture}</h2>
         <ProfilePhotoCard
           userId={user.id}
-          name={profile.fullName || 'Your account'}
+          name={profile.fullName || t.memberCore.profile.yourAccount}
           hasPhoto={Boolean(profile.avatarDocumentId)}
           documentId={profile.avatarDocumentId}
+          labels={t.memberCore.profilePhoto}
         />
       </Card>
 
       <Card>
-        <h2 className="font-semibold text-slate-900">What you have on file</h2>
+        <h2 className="font-semibold text-slate-900">{t.memberCore.profile.onFile}</h2>
         <div className="mt-3">
           <DescriptionList
             items={[
-              { term: 'Account type', detail: ACCOUNT_TYPE_LABEL[user.accountType] },
-              { term: 'Full name', detail: profile.fullName || 'Not provided' },
               {
-                term: 'Age',
-                detail: age !== null ? `${age} (from date of birth)` : 'Date of birth not provided',
+                term: t.memberCore.profile.accountType,
+                detail: accountTypeLabel(t, user.accountType),
+              },
+              { term: t.memberCore.profile.fullName, detail: profile.fullName || t.memberCore.profile.notProvided },
+              {
+                term: t.memberCore.profile.age,
+                detail:
+                  age !== null
+                    ? t.memberCore.profile.ageFromDob.replace('{age}', String(age))
+                    : t.memberCore.profile.dobNotProvided,
               },
               {
-                term: 'Date of birth',
-                detail: profile.dateOfBirth ? formatDate(profile.dateOfBirth) : 'Not provided',
+                term: t.memberCore.profile.dateOfBirth,
+                detail: profile.dateOfBirth
+                  ? formatDate(profile.dateOfBirth)
+                  : t.memberCore.profile.notProvided,
               },
-              { term: 'Place of birth', detail: profile.placeOfBirth ?? 'Not provided' },
               {
-                term: 'Country of residence',
-                detail: profile.countryOfResidence ?? 'Not provided',
+                term: t.memberCore.profile.placeOfBirth,
+                detail: profile.placeOfBirth ?? t.memberCore.profile.notProvided,
               },
-              { term: 'Nationality', detail: profile.nationality ?? 'Not provided' },
-              { term: 'Phone', detail: profile.phone ?? 'Not provided' },
+              {
+                term: t.memberCore.profile.countryOfResidence,
+                detail: profile.countryOfResidence ?? t.memberCore.profile.notProvided,
+              },
+              {
+                term: t.memberCore.profile.nationality,
+                detail: profile.nationality ?? t.memberCore.profile.notProvided,
+              },
+              { term: t.common.phone, detail: profile.phone ?? t.memberCore.profile.notProvided },
             ]}
           />
         </div>
       </Card>
 
       <Card>
-        <h2 className="mb-5 font-semibold text-slate-900">Edit your details</h2>
+        <h2 className="mb-5 font-semibold text-slate-900">{t.memberCore.profile.editDetails}</h2>
         <ProfileForm
           profile={{
             fullName: profile.fullName,
@@ -89,33 +101,33 @@ export default async function ProfilePage() {
             workDescription: profile.workDescription,
             educationBackground: profile.educationBackground,
           }}
+          labels={t.memberCore.profileForm}
         />
       </Card>
 
       {user.accountType !== 'USER' ? (
         <Card>
-          <h2 className="font-semibold text-slate-900">Next step</h2>
+          <h2 className="font-semibold text-slate-900">{t.memberCore.profile.nextStep}</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Add your {user.accountType === 'FIRM' ? 'firm\u2019s legal registration' : 'legal licence'}{' '}
-            details, then upload your documents.
+            {user.accountType === 'FIRM'
+              ? t.memberCore.profile.firmRegistration
+              : t.memberCore.profile.licence}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/credentials" className={buttonClasses('primary', 'md')}>
-              Edit legal details
+              {t.memberCore.profile.editLegalDetails}
             </Link>
             <Link href="/verification" className={buttonClasses('secondary', 'md')}>
-              Go to documents
+              {t.memberCore.profile.goToDocuments}
             </Link>
           </div>
         </Card>
       ) : (
         <Card>
-          <h2 className="font-semibold text-slate-900">Next step</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Upload your Emirates ID to submit your account for verification.
-          </p>
+          <h2 className="font-semibold text-slate-900">{t.memberCore.profile.nextStep}</h2>
+          <p className="mt-1 text-sm text-slate-600">{t.memberCore.profile.uploadEmiratesId}</p>
           <Link href="/verification" className={buttonClasses('primary', 'md', 'mt-4')}>
-            Go to documents
+            {t.memberCore.profile.goToDocuments}
           </Link>
         </Card>
       )}

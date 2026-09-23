@@ -124,7 +124,7 @@ async function main(): Promise<void> {
       account.userId,
       {
         licenseNumber: `COLLAB-${sequence}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2032-01-01',
         yearsOfExperience: '5',
       },
@@ -218,8 +218,8 @@ async function main(): Promise<void> {
       emergencyPageHtml.includes('Get a lawyer on video now') && emergencyPageHtml.includes('No account'),
     );
     check(
-      'and warns to call 999 for danger',
-      emergencyPageHtml.includes('999'),
+      'and warns to call the local emergency number for danger',
+      emergencyPageHtml.includes('call your local emergency number first'),
     );
 
     // ════════════════════════════════════════════════════════════════════════

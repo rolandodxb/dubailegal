@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { requireReviewer } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { accountTypeLabel } from '@/lib/i18n/labels';
 import { listRecordingsForAdmin, recordingOverview } from '@/server/services/room-recording-service';
 import { formatFileSize } from '@/lib/format';
 import { formatUaeDateTime } from '@/lib/time';
-import { ACCOUNT_TYPE_LABEL } from '@/lib/constants';
 import { DeleteAllRecordingsForm, DeleteRecordingForm } from '@/components/rooms/RecordingAdminForms';
 import { Alert, Card, EmptyState } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
@@ -26,7 +27,7 @@ export const metadata: Metadata = { title: 'Recordings' };
  * first is here.
  */
 export default async function AdminRecordingsPage() {
-  await requireReviewer();
+  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
 
   const [overview, recordings] = await Promise.all([
     recordingOverview(),
@@ -35,29 +36,30 @@ export default async function AdminRecordingsPage() {
 
   const totalBytes = recordings.reduce((sum, row) => sum + row.sizeBytes, 0);
 
+  const deleteEveryBody = (
+    overview.count === 1
+      ? t.admin.recordings.deleteEvery.bodyOne
+      : t.admin.recordings.deleteEvery.body
+  ).replace('{count}', String(overview.count));
+
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Call recordings</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Every call in a conference room or an emergency room is recorded from both sides. Each
-          recording is a composed picture of the room — both cameras and both microphones — so the
-          interaction itself is on the record. They are encrypted, and available to the two people on
-          the call and to nobody else.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.admin.recordings.title}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{t.admin.recordings.subtitle}</p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
-          <p className="text-sm text-slate-600">Recordings held</p>
+          <p className="text-sm text-slate-600">{t.admin.recordings.stats.held}</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">{overview.count}</p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-600">Rooms recorded</p>
+          <p className="text-sm text-slate-600">{t.admin.recordings.stats.rooms}</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">{overview.rooms}</p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-600">Storage used</p>
+          <p className="text-sm text-slate-600">{t.admin.recordings.stats.storage}</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
             {formatFileSize(totalBytes)}
           </p>
@@ -75,14 +77,19 @@ export default async function AdminRecordingsPage() {
             <Icon name="trash" size={19} />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="font-semibold text-slate-900">Delete every recording</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Destroys all {overview.count} recording{overview.count === 1 ? '' : 's'} and the files
-              they are stored in. There is no undo, and the two people on each call will no longer be
-              able to play them back. Recordings still being uploaded are not affected.
-            </p>
+            <h2 className="font-semibold text-slate-900">{t.admin.recordings.deleteEvery.title}</h2>
+            <p className="mt-1 text-sm text-slate-600">{deleteEveryBody}</p>
             <div className="mt-3">
-              <DeleteAllRecordingsForm count={overview.count} />
+              <DeleteAllRecordingsForm
+                count={overview.count}
+                labels={{
+                  label: t.admin.recordings.deleteEvery.label,
+                  hint: t.admin.recordings.deleteEvery.hint,
+                  hintOne: t.admin.recordings.deleteEvery.hintOne,
+                  submit: t.admin.recordings.deleteEvery.submit,
+                  pending: t.admin.recordings.deleting,
+                }}
+              />
             </div>
           </div>
         </div>
@@ -90,31 +97,45 @@ export default async function AdminRecordingsPage() {
 
       {recordings.length === 0 ? (
         <EmptyState
-          title="No recordings are held"
-          description="Nothing has been recorded yet, so there is nothing to delete."
+          title={t.admin.recordings.empty.title}
+          description={t.admin.recordings.empty.body}
         />
       ) : (
         <section>
-          <h2 className="mb-3 font-semibold text-slate-900">Held ({recordings.length})</h2>
+          <h2 className="mb-3 font-semibold text-slate-900">
+            {t.admin.recordings.held.replace('{count}', String(recordings.length))}
+          </h2>
           <ul className="space-y-3">
             {recordings.map((recording) => (
               <Card as="li" key={recording.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-medium text-slate-900">
-                      Room <span className="font-mono text-sm">{recording.roomCode}</span>
+                      {t.admin.recordings.room}{' '}
+                      <span className="font-mono text-sm">{recording.roomCode}</span>
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      Recorded by {recording.ownerName} (
-                      {ACCOUNT_TYPE_LABEL[recording.recordedBy.accountType]}) ·{' '}
+                      {t.admin.recordings.recordedBy} {recording.ownerName} (
+                      {accountTypeLabel(t, recording.recordedBy.accountType)}) ·{' '}
                       {formatUaeDateTime(recording.createdAt)} ·{' '}
                       {recording.durationMs
-                        ? `${Math.max(1, Math.round(recording.durationMs / 1000))} seconds`
-                        : 'length not recorded'}{' '}
+                        ? t.admin.recordings.seconds.replace(
+                            '{count}',
+                            String(Math.max(1, Math.round(recording.durationMs / 1000))),
+                          )
+                        : t.admin.recordings.lengthNotRecorded}{' '}
                       · {formatFileSize(recording.sizeBytes)}
                     </p>
                   </div>
-                  <DeleteRecordingForm recordingId={recording.id} roomCode={recording.roomCode} />
+                  <DeleteRecordingForm
+                    recordingId={recording.id}
+                    roomCode={recording.roomCode}
+                    labels={{
+                      confirm: t.admin.recordings.row.confirm,
+                      submit: t.common.delete,
+                      pending: t.admin.recordings.deleting,
+                    }}
+                  />
                 </div>
               </Card>
             ))}
@@ -122,10 +143,8 @@ export default async function AdminRecordingsPage() {
         </section>
       )}
 
-      <Alert tone="info" title="An administrator cannot watch these">
-        The console shows that a recording exists, how long it is and when it was made — enough to
-        decide whether it should still exist. Playing one is refused for every administrator account,
-        because a conversation between a lawyer and their client is not the platform&rsquo;s to watch.
+      <Alert tone="info" title={t.admin.recordings.alert.title}>
+        {t.admin.recordings.alert.body}
       </Alert>
     </div>
   );

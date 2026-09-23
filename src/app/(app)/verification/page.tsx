@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DocumentKind } from '@prisma/client';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { blockerTexts } from '@/lib/i18n/requirements';
+import { documentKindLabel, verificationRequestLabel } from '@/lib/i18n/labels';
 import { getVerificationOverview } from '@/server/services/verification-service';
 import { getAvailability, isEnabled } from '@/lib/availability';
-import { VERIFICATION_REQUEST_LABEL, DOCUMENT_KIND_LABEL, VERIFICATION_STATUS_LABEL } from '@/lib/constants';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { maskEmiratesId } from '@/lib/emirates-id';
 import { EncryptionNotice } from '@/components/SecurityNotice';
@@ -20,7 +22,8 @@ export const metadata: Metadata = { title: 'Verification' };
 
 export default async function VerificationPage() {
   const user = await requireMember();
-  const [overview, availability] = await Promise.all([
+  const [{ t, effectiveLocale }, overview, availability] = await Promise.all([
+    getI18n(),
     getVerificationOverview(user.id),
     getAvailability(),
   ]);
@@ -46,6 +49,18 @@ export default async function VerificationPage() {
     usable.filter((doc) => doc.status !== 'REJECTED').map((doc) => doc.kind),
   );
   const openCase = overview.openCase;
+  const requestedKindCount = overview.rules.requests.filter(
+    (request) => request.kinds.length > 0 && request.kinds[0] !== 'PROFILE_PHOTO',
+  ).length;
+
+  // The names of the document kinds, resolved once here so the document forms
+  // can render them without carrying the dictionary into the client bundle.
+  const kindLabels = Object.fromEntries(
+    (Object.values(DocumentKind) as DocumentKind[]).map((kind) => [
+      kind,
+      documentKindLabel(t, kind),
+    ]),
+  );
 
   // ── Checklist ────────────────────────────────────────────────────────────
   const profileDone = overview.missingProfileFields.length === 0;
@@ -55,122 +70,136 @@ export default async function VerificationPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Verification</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Upload the documents a reviewer needs, then submit. Nothing is verified automatically —
-          a person examines each document and records the decision.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.verification}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.memberPro.verification.intro}</p>
       </header>
 
       {/* ── Current status ──────────────────────────────────────────────── */}
       <Card>
-        <h2 className="font-semibold text-slate-900">Current status</h2>
+        <h2 className="font-semibold text-slate-900">{t.memberPro.verification.currentStatus}</h2>
         <div className="mt-3">
           <DescriptionList
             items={[
-              { term: 'Status', detail: VERIFICATION_STATUS_LABEL[overview.status] },
+              { term: t.common.status, detail: t.verificationStatus[overview.status] },
               {
-                term: 'Emirates ID on file',
+                term: t.memberPro.verification.emiratesIdOnFile,
                 detail: overview.profile?.emiratesIdNumber
                   ? maskEmiratesId(overview.profile.emiratesIdNumber)
-                  : 'Not provided yet',
+                  : t.memberPro.verification.notProvidedYet,
               },
               {
-                term: 'Documents on file',
-                detail: `${usable.length} (${presentKinds.size} of ${overview.rules.requests.filter((request) => request.kinds.length > 0 && request.kinds[0] !== 'PROFILE_PHOTO').length} requested types)`,
+                term: t.dashboard.documentsOnFile,
+                detail: `${usable.length} (${t.memberPro.verification.requestedTypes
+                  .replace('{present}', String(presentKinds.size))
+                  .replace('{total}', String(requestedKindCount))})`,
               },
               {
-                term: 'Requests submitted',
+                term: t.memberPro.verification.requestsSubmitted,
                 detail: String(overview.cases.length),
               },
               {
-                term: 'Open request',
+                term: t.memberPro.verification.openRequest,
                 detail: openCase
-                  ? `Round ${openCase.round}, submitted ${formatDate(openCase.submittedAt)}`
-                  : 'None',
+                  ? t.memberPro.verification.roundSubmitted
+                      .replace('{round}', String(openCase.round))
+                      .replace('{date}', formatDate(openCase.submittedAt))
+                  : t.common.none,
               },
             ]}
           />
         </div>
       </Card>
 
-      <EncryptionNotice subject="Identity documents" className="mb-6" />
+      <EncryptionNotice subject={t.memberPro.verification.encryptionSubject} className="mb-6" />
 
       {overview.checkDigitWarning ? (
-        <Alert tone="warning" title="About your Emirates ID number">
+        <Alert tone="warning" title={t.memberPro.verification.checkDigitTitle}>
           {overview.checkDigitWarning}
         </Alert>
       ) : null}
 
       {/* ── Reviewer feedback ───────────────────────────────────────────── */}
       {overview.latestCase?.status === 'REJECTED' && overview.latestCase.decisionNotes ? (
-        <Alert tone="error" title="Why your last request was not approved">
+        <Alert tone="error" title={t.memberPro.verification.notApprovedTitle}>
           <p className="whitespace-pre-line">{overview.latestCase.decisionNotes}</p>
-          <p className="mt-2 text-xs">
-            Fix what is described, then submit again. Uploading a replacement document does not
-            require a new account.
-          </p>
+          <p className="mt-2 text-xs">{t.memberPro.verification.notApprovedBody}</p>
         </Alert>
       ) : null}
 
       {overview.latestCase?.status === 'APPROVED' ? (
-        <Alert tone="success" title="Your account is verified">
-          Approved by a reviewer on {formatDateTime(overview.latestCase.decidedAt)}. Replacing a
-          required document withdraws the badge until it is reviewed again.
+        <Alert tone="success" title={t.memberPro.verification.verifiedTitle}>
+          {t.memberPro.verification.verifiedBody.replace(
+            '{date}',
+            formatDateTime(overview.latestCase.decidedAt),
+          )}
         </Alert>
       ) : null}
 
       {/* ── Checklist ───────────────────────────────────────────────────── */}
       <Card>
-        <h2 className="font-semibold text-slate-900">What is still needed</h2>
+        <h2 className="font-semibold text-slate-900">{t.memberPro.verification.stillNeeded}</h2>
         <ul className="mt-3 space-y-2 text-sm">
-          <ChecklistItem done={overview.emailVerified} label="Email address confirmed" />
+          <ChecklistItem
+            done={overview.emailVerified}
+            label={t.memberPro.verification.emailConfirmed}
+            completeLabel={t.memberPro.verification.completeSr}
+            outstandingLabel={t.memberPro.verification.outstandingSr}
+          />
           <ChecklistItem
             done={profileDone}
-            label="Profile complete"
+            label={t.memberPro.verification.profileComplete}
+            completeLabel={t.memberPro.verification.completeSr}
+            outstandingLabel={t.memberPro.verification.outstandingSr}
             detail={
               profileDone
                 ? undefined
-                : `Missing: ${overview.missingProfileFields.join(', ')}`
+                : t.memberPro.verification.missing.replace(
+                    '{items}',
+                    overview.missingProfileFields.join(', '),
+                  )
             }
             href="/profile"
-            hrefLabel="Open my profile"
+            hrefLabel={t.memberPro.verification.openMyProfile}
           />
           {overview.needsCredential ? (
             <ChecklistItem
               done={credentialDone}
               label={
                 overview.accountType === 'FIRM'
-                  ? 'Firm legal registration added'
-                  : 'Legal licence added'
+                  ? t.memberPro.verification.firmRegistrationAdded
+                  : t.memberPro.verification.legalLicenceAdded
               }
+              completeLabel={t.memberPro.verification.completeSr}
+              outstandingLabel={t.memberPro.verification.outstandingSr}
               href="/credentials"
-              hrefLabel="Open legal details"
+              hrefLabel={t.memberPro.verification.openLegalDetails}
             />
           ) : null}
           <ChecklistItem
             done={documentsDone}
-            label="Required documents uploaded"
+            label={t.memberPro.verification.requiredDocumentsUploaded}
+            completeLabel={t.memberPro.verification.completeSr}
+            outstandingLabel={t.memberPro.verification.outstandingSr}
             detail={
               documentsDone
                 ? undefined
-                : `Missing: ${overview.missingDocuments
-                    .map((kind) => DOCUMENT_KIND_LABEL[kind as DocumentKind])
-                    .join(', ')}`
+                : t.memberPro.verification.missing.replace(
+                    '{items}',
+                    overview.missingDocuments
+                      .map((kind) => documentKindLabel(t, kind as DocumentKind))
+                      .join(', '),
+                  )
             }
             href="#documents"
-            hrefLabel="Upload below"
+            hrefLabel={t.memberPro.verification.uploadBelow}
           />
         </ul>
       </Card>
 
       {/* ── Documents ───────────────────────────────────────────────────── */}
       <Card>
-        <h2 className="font-semibold text-slate-900">Your documents</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Documents are stored privately. Only you and the reviewer examining your case can open
-          them.
-        </p>
+        <h2 className="font-semibold text-slate-900">{t.memberPro.verification.yourDocuments}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t.memberPro.verification.documentsPrivacy}</p>
         <div className="mt-4">
           <DocumentList
             documents={usable.map((doc) => ({
@@ -181,6 +210,19 @@ export default async function VerificationPage() {
               reviewNotes: doc.reviewNotes,
               reviewedAt: doc.reviewedAt,
             }))}
+            labels={{
+              empty: t.memberPro.documents.empty,
+              statusAwaitingReview: t.memberPro.documents.statusAwaitingReview,
+              statusApproved: t.memberPro.documents.statusApproved,
+              statusRejected: t.memberPro.documents.statusRejected,
+              statusSuperseded: t.memberPro.documents.statusSuperseded,
+              view: t.memberPro.documents.view,
+              reviewerSaid: t.memberPro.documents.reviewerSaid,
+              remove: t.memberPro.documents.remove,
+              removeConfirm: t.memberPro.documents.removeConfirm,
+              removing: t.memberPro.documents.removing,
+              kindLabels,
+            }}
           />
         </div>
       </Card>
@@ -188,17 +230,33 @@ export default async function VerificationPage() {
       {/* ── Upload ──────────────────────────────────────────────────────── */}
       <Card>
         <h2 id="documents" className="font-semibold text-slate-900">
-          Upload a document
+          {t.memberPro.documents.title}
         </h2>
 
         {openCase ? (
-          <Alert tone="info" className="mt-3" title="Your documents are with a reviewer">
-            Documents cannot be changed while a request is being reviewed. Withdraw the request
-            below if you need to replace something.
+          <Alert tone="info" className="mt-3" title={t.memberPro.verification.withReviewerTitle}>
+            {t.memberPro.verification.withReviewerBody}
           </Alert>
         ) : (
           <div className="mt-4">
-            <DocumentUploadForm kinds={uniqueKinds} requiredKinds={requestedKinds} />
+            <DocumentUploadForm
+              kinds={uniqueKinds}
+              requiredKinds={requestedKinds}
+              labels={{
+                notUploadedTitle: t.memberPro.documents.notUploadedTitle,
+                type: t.memberPro.documents.type,
+                requiredMark: t.memberPro.documents.requiredMark,
+                optionalMark: t.memberPro.documents.optionalMark,
+                file: t.memberPro.documents.file,
+                fileHint: t.memberPro.documents.fileHint,
+                documentNumber: t.memberPro.documents.documentNumber,
+                documentNumberHint: t.memberPro.documents.documentNumberHint,
+                expiryDate: t.memberPro.documents.expiryDate,
+                uploading: t.memberPro.documents.uploading,
+                upload: t.memberPro.documents.upload,
+                kindLabels,
+              }}
+            />
           </div>
         )}
       </Card>
@@ -206,19 +264,33 @@ export default async function VerificationPage() {
       {/* ── Submit ─────────────────────────────────────────────────────── */}
       <Card>
         <h2 className="font-semibold text-slate-900">
-          {openCase ? 'Request in progress' : 'Submit for verification'}
+          {openCase
+            ? t.memberPro.verification.requestInProgress
+            : t.memberPro.verification.submitForVerification}
         </h2>
 
         <div className="mt-4">
           {openCase ? (
-            <WithdrawVerificationForm />
+            <WithdrawVerificationForm
+              labels={{
+                confirm: t.memberPro.verification.withdrawConfirm,
+                withdrawing: t.memberPro.verification.withdrawing,
+                withdrawRequest: t.memberPro.verification.withdrawRequest,
+                withdrawNote: t.memberPro.verification.withdrawNote,
+              }}
+            />
           ) : canSubmitDocuments ? (
-            <SubmitVerificationForm blockers={overview.blockers} />
+            <SubmitVerificationForm
+              blockers={blockerTexts(t, effectiveLocale, overview.blockerItems, overview.documentRules)}
+              labels={{
+                beforeSubmitTitle: t.memberPro.verification.beforeSubmitTitle,
+                submit: t.memberPro.verification.submitForVerification,
+                submitting: t.memberPro.verification.submitting,
+                buttonActive: t.memberPro.verification.buttonActive,
+              }}
+            />
           ) : (
-            <Alert tone="warning">
-              Submitting documents for verification is currently switched off. You can still upload
-              and review your documents, and submit once it is switched back on.
-            </Alert>
+            <Alert tone="warning">{t.memberPro.verification.submissionOff}</Alert>
           )}
         </div>
       </Card>
@@ -226,21 +298,30 @@ export default async function VerificationPage() {
       {/* ── History ────────────────────────────────────────────────────── */}
       {overview.cases.length > 0 ? (
         <Card>
-          <h2 className="font-semibold text-slate-900">History</h2>
+          <h2 className="font-semibold text-slate-900">{t.memberPro.verification.history}</h2>
           <ul className="mt-3 divide-y divide-slate-100">
             {overview.cases.map((item) => (
               <li key={item.id} className="py-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-medium text-slate-900">
-                    Round {item.round} · {VERIFICATION_REQUEST_LABEL[item.status] ?? item.status}
+                    {t.memberPro.verification.roundStatus
+                      .replace('{round}', String(item.round))
+                      .replace('{status}', verificationRequestLabel(t, item.status))}
                   </p>
                   <p className="text-xs text-slate-500">
-                    Submitted {formatDate(item.submittedAt)}
-                    {item.decidedAt ? ` · decided ${formatDate(item.decidedAt)}` : ''}
+                    {t.memberPro.verification.submittedOn.replace(
+                      '{date}',
+                      formatDate(item.submittedAt),
+                    )}
+                    {item.decidedAt
+                      ? ` ${t.memberPro.verification.decidedOn.replace('{date}', formatDate(item.decidedAt))}`
+                      : ''}
                   </p>
                 </div>
                 {item.status === 'WITHDRAWN' ? (
-                  <p className="mt-1 text-xs text-slate-500">Withdrawn by you.</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {t.memberPro.verification.withdrawnByYou}
+                  </p>
                 ) : null}
                 {item.decisionNotes ? (
                   <p className="mt-1 whitespace-pre-line text-xs text-slate-600">
@@ -249,7 +330,7 @@ export default async function VerificationPage() {
                 ) : null}
                 {item.reviewer ? (
                   <p className="mt-1 text-xs text-slate-500">
-                    Reviewed by {item.reviewer.email}
+                    {t.memberPro.verification.reviewedBy.replace('{email}', item.reviewer.email)}
                   </p>
                 ) : null}
               </li>
@@ -264,12 +345,16 @@ export default async function VerificationPage() {
 function ChecklistItem({
   done,
   label,
+  completeLabel,
+  outstandingLabel,
   detail,
   href,
   hrefLabel,
 }: {
   done: boolean;
   label: string;
+  completeLabel: string;
+  outstandingLabel: string;
   detail?: string;
   href?: string;
   hrefLabel?: string;
@@ -286,7 +371,7 @@ function ChecklistItem({
       <span className="min-w-0">
         <span className={`block ${done ? 'text-slate-700' : 'font-medium text-slate-900'}`}>
           {label}
-          <span className="sr-only">{done ? ' — complete' : ' — outstanding'}</span>
+          <span className="sr-only">{done ? completeLabel : outstandingLabel}</span>
         </span>
         {detail ? <span className="mt-0.5 block text-xs text-slate-500">{detail}</span> : null}
         {!done && href && hrefLabel ? (

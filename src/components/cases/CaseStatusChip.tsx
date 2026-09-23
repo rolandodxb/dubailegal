@@ -1,14 +1,18 @@
-import { LEGAL_CASE_STATUS_LABEL, LEGAL_CASE_STATUS_STYLE } from '@/lib/constants';
+import { getI18n } from '@/lib/i18n';
+import { caseStatusLabel } from '@/lib/i18n/labels';
+import { LEGAL_CASE_STATUS_STYLE } from '@/lib/constants';
 import { cx } from '@/components/ui/primitives';
 
 /** The lifecycle state of a client case, in the colour that belongs to it. */
-export function CaseStatusChip({
+export async function CaseStatusChip({
   status,
   className,
 }: {
   status: string;
   className?: string;
 }) {
+  const { t } = await getI18n();
+
   return (
     <span
       className={cx(
@@ -17,7 +21,7 @@ export function CaseStatusChip({
         className,
       )}
     >
-      {LEGAL_CASE_STATUS_LABEL[status] ?? status}
+      {caseStatusLabel(t, status)}
     </span>
   );
 }
@@ -26,7 +30,8 @@ export function CaseStatusChip({
  * The progress a client is shown: Submitted → Under review → Assigned.
  * Rendered as a simple track so the current step is obvious at a glance.
  */
-export function CaseProgressTrack({ status }: { status: string }) {
+export async function CaseProgressTrack({ status }: { status: string }) {
+  const { t } = await getI18n();
   const steps = ['SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED'];
   const closed = status === 'COMPLETED' || status === 'DECLINED';
   const activeIndex = closed ? steps.length - 1 : steps.indexOf(status);
@@ -47,7 +52,7 @@ export function CaseProgressTrack({ status }: { status: string }) {
               {index + 1}
             </span>
             <span className={reached ? 'font-medium text-slate-900' : 'text-slate-500'}>
-              {LEGAL_CASE_STATUS_LABEL[step]}
+              {caseStatusLabel(t, step)}
             </span>
             {index < steps.length - 1 ? (
               <span aria-hidden="true" className="text-slate-300">
@@ -58,10 +63,10 @@ export function CaseProgressTrack({ status }: { status: string }) {
         );
       })}
       {status === 'DECLINED' ? (
-        <li className="ml-1 font-medium text-red-700">Declined</li>
+        <li className="ml-1 font-medium text-red-700">{caseStatusLabel(t, 'DECLINED')}</li>
       ) : null}
       {status === 'COMPLETED' ? (
-        <li className="ml-1 font-medium text-slate-700">· Completed</li>
+        <li className="ml-1 font-medium text-slate-700">· {caseStatusLabel(t, 'COMPLETED')}</li>
       ) : null}
     </ol>
   );

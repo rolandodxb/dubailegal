@@ -33,10 +33,32 @@ export function PushNotificationSettings({
   vapidPublicKey,
   configured,
   subscriptionCount,
+  labels,
 }: {
   vapidPublicKey: string;
   configured: boolean;
   subscriptionCount: number;
+  labels: {
+    heading: string;
+    status: {
+      checking: string;
+      on: string;
+      off: string;
+      denied: string;
+      unsupported: string;
+      unconfigured: string;
+    };
+    bodyOn: string;
+    bodyDenied: string;
+    bodyUnsupported: string;
+    bodyUnconfigured: string;
+    bodyOff: string;
+    subscriptionOne: string;
+    subscriptionMany: string;
+    turningOff: string;
+    turnOff: string;
+    turnOn: string;
+  };
 }) {
   const [status, setStatus] = useState<Status>('checking');
   const [endpoint, setEndpoint] = useState<string | null>(null);
@@ -146,7 +168,7 @@ export function PushNotificationSettings({
         <div className="min-w-64 flex-1">
           <div className="flex items-center gap-2">
             <Icon name="bell" size={18} className="text-slate-500" />
-            <p className="text-sm font-medium text-slate-900">Browser notifications</p>
+            <p className="text-sm font-medium text-slate-900">{labels.heading}</p>
             <span
               className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
                 status === 'on'
@@ -159,35 +181,37 @@ export function PushNotificationSettings({
               }`}
             >
               {status === 'checking'
-                ? 'Checking…'
+                ? labels.status.checking
                 : status === 'on'
-                  ? 'On for this browser'
+                  ? labels.status.on
                   : status === 'off'
-                    ? 'Off'
+                    ? labels.status.off
                     : status === 'denied'
-                      ? 'Blocked by the browser'
+                      ? labels.status.denied
                       : status === 'unsupported'
-                        ? 'Not supported here'
-                        : 'Not configured'}
+                        ? labels.status.unsupported
+                        : labels.status.unconfigured}
             </span>
           </div>
 
           <p className="mt-1 text-xs text-slate-600">
             {status === 'on'
-              ? 'Case updates, new messages, emergencies and meeting requests will reach this device even when Dubai Legal is closed.'
+              ? labels.bodyOn
               : status === 'denied'
-                ? 'This browser has blocked notifications for this site. Allow them in the browser’s site settings, then reload this page.'
+                ? labels.bodyDenied
                 : status === 'unsupported'
-                  ? 'This browser does not support push notifications. In-app alerts still appear under Alerts.'
+                  ? labels.bodyUnsupported
                   : status === 'unconfigured'
-                    ? 'This installation has no VAPID key pair, so browser push cannot be offered. In-app alerts still appear under Alerts.'
-                    : 'Turn notifications on to be told about case updates, new messages, emergencies and meeting requests on this device.'}
+                    ? labels.bodyUnconfigured
+                    : labels.bodyOff}
           </p>
 
           {subscriptionCount > 0 ? (
             <p className="mt-1 text-xs text-slate-500">
-              {subscriptionCount} browser{subscriptionCount === 1 ? '' : 's'} currently receive
-              notifications for your account.
+              {(subscriptionCount === 1
+                ? labels.subscriptionOne
+                : labels.subscriptionMany
+              ).replace('{count}', String(subscriptionCount))}
             </p>
           ) : null}
         </div>
@@ -196,8 +220,8 @@ export function PushNotificationSettings({
           {status === 'on' ? (
             <form action={unsubscribeAction}>
               <input type="hidden" name="endpoint" value={endpoint ?? ''} />
-              <SubmitButton variant="secondary" pendingLabel="Turning off…">
-                Turn off
+              <SubmitButton variant="secondary" pendingLabel={labels.turningOff}>
+                {labels.turnOff}
               </SubmitButton>
             </form>
           ) : (
@@ -207,7 +231,7 @@ export function PushNotificationSettings({
               disabled={status !== 'off'}
               className={buttonClasses('primary', 'md')}
             >
-              Turn on notifications
+              {labels.turnOn}
             </button>
           )}
         </div>

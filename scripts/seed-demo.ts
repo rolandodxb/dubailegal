@@ -1,5 +1,5 @@
 /**
- * Seeds the two sample accounts used to explore Dubai Legal.
+ * Seeds the two sample accounts used to explore Legal Dash.
  *
  *   npm run seed:demo              # creates them, then approves them if an admin exists
  *   npm run seed:demo -- --pending # leaves them awaiting review, so the queue has work
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
       emiratesIdNumber: emiratesId(3002),
       emiratesIdExpiry: '2031-06-30',
       workDescription:
-        'Sample legal firm used to explore Dubai Legal. This account is fabricated demo data.',
+        'Sample legal firm used to explore Legal Dash. This account is fabricated demo data.',
       educationBackground: 'Not applicable — this is a sample firm record.',
     },
     meta,
@@ -192,7 +192,7 @@ async function main(): Promise<void> {
       emiratesIdNumber: emiratesId(3001),
       emiratesIdExpiry: '2030-11-30',
       workDescription:
-        'Sample lawyer record used to explore Dubai Legal. Practises commercial and civil litigation and arbitration. All of this is fabricated demo data.',
+        'Sample lawyer record used to explore Legal Dash. Practises commercial and civil litigation and arbitration. All of this is fabricated demo data.',
       educationBackground: 'LLB, United Arab Emirates University, 2011. LLM Commercial Law, 2014.',
     },
     meta,
@@ -202,7 +202,7 @@ async function main(): Promise<void> {
     lawyerUserId,
     {
       licenseNumber: 'DLAD-DEMO-4471',
-      licensingAuthority: 'Dubai Legal Affairs Department',
+      licensingAuthority: 'Legal Dash Affairs Department',
       licenseIssuedOn: '2019-05-01',
       licenseExpiresOn: '2027-04-30',
       yearsOfExperience: '12',
@@ -319,11 +319,11 @@ async function main(): Promise<void> {
   await prisma.$disconnect();
 
   // ── Report ────────────────────────────────────────────────────────────────
-  console.info('\nDubai Legal — sample data created\n');
+  console.info('\nLegal Dash — sample data created\n');
   console.info('  LAWYER');
   console.info(`    email     ${LAWYER_EMAIL}`);
   console.info(`    password  ${LAWYER_PASSWORD}`);
-  console.info('    licence   DLAD-DEMO-4471 · Dubai Legal Affairs Department');
+  console.info('    licence   DLAD-DEMO-4471 · Legal Dash Affairs Department');
   console.info('    listing   published · Commercial, Civil, Arbitration · Dubai, Sharjah');
   console.info('    also      registered as a lawyer of the sample firm');
   console.info('\n  LEGAL FIRM');

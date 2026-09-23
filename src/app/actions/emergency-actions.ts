@@ -14,12 +14,13 @@ import {
   setEmergencyAvailability,
   setFirmEmergencyLawyer,
 } from '@/server/services/emergency-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 /**
  * Raises an urgent request and pushes it to every professional who takes
  * emergencies.
  */
-export async function raiseEmergencyAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function raiseEmergencyActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
 
   if (isAdministrator(user)) {
@@ -61,7 +62,7 @@ export async function raiseEmergencyAction(_prev: FormState, formData: FormData)
   };
 }
 
-export async function acceptEmergencyAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function acceptEmergencyActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const requestId = String(formData.get('requestId') ?? '');
@@ -81,7 +82,7 @@ export async function acceptEmergencyAction(_prev: FormState, formData: FormData
   redirect(`/cases/${result.data.caseId}?notice=case-assigned`);
 }
 
-export async function cancelEmergencyAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function cancelEmergencyActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const result = await cancelEmergency(String(formData.get('requestId') ?? ''), user.id);
   revalidatePath('/emergency');
@@ -89,7 +90,7 @@ export async function cancelEmergencyAction(_prev: FormState, formData: FormData
   return { ok: true, message: 'Your urgent request has been withdrawn.' };
 }
 
-export async function setEmergencyAvailabilityAction(
+async function setEmergencyAvailabilityActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -113,7 +114,7 @@ export async function setEmergencyAvailabilityAction(
   };
 }
 
-export async function setFirmEmergencyLawyerAction(
+async function setFirmEmergencyLawyerActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -142,7 +143,7 @@ export async function setFirmEmergencyLawyerAction(
  * detained should not have to remember an email and a password. The only
  * credential is the token in the link they are redirected to.
  */
-export async function raisePublicEmergencyAction(
+async function raisePublicEmergencyActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -189,7 +190,7 @@ export async function raisePublicEmergencyAction(
  * No account, no password: the same credential that let the caller into the room
  * is what lets them call the whole thing off.
  */
-export async function cancelGuestEmergencyAction(
+async function cancelGuestEmergencyActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -209,7 +210,7 @@ export async function cancelGuestEmergencyAction(
 }
 
 /** The professional who answered ends the call. The caller is told. */
-export async function closeEmergencyAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function closeEmergencyActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const requestId = String(formData.get('requestId') ?? '');
 
@@ -219,4 +220,61 @@ export async function closeEmergencyAction(_prev: FormState, formData: FormData)
   revalidatePath('/emergency/desk');
   revalidatePath('/emergency');
   return { ok: true, message: 'Closed. The caller has been told the call is over.' };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function raiseEmergencyAction(
+  ...args: Parameters<typeof raiseEmergencyActionImpl>
+): Promise<Awaited<ReturnType<typeof raiseEmergencyActionImpl>>> {
+  return localiseFormState(await raiseEmergencyActionImpl(...args));
+}
+
+export async function acceptEmergencyAction(
+  ...args: Parameters<typeof acceptEmergencyActionImpl>
+): Promise<Awaited<ReturnType<typeof acceptEmergencyActionImpl>>> {
+  return localiseFormState(await acceptEmergencyActionImpl(...args));
+}
+
+export async function cancelEmergencyAction(
+  ...args: Parameters<typeof cancelEmergencyActionImpl>
+): Promise<Awaited<ReturnType<typeof cancelEmergencyActionImpl>>> {
+  return localiseFormState(await cancelEmergencyActionImpl(...args));
+}
+
+export async function setEmergencyAvailabilityAction(
+  ...args: Parameters<typeof setEmergencyAvailabilityActionImpl>
+): Promise<Awaited<ReturnType<typeof setEmergencyAvailabilityActionImpl>>> {
+  return localiseFormState(await setEmergencyAvailabilityActionImpl(...args));
+}
+
+export async function setFirmEmergencyLawyerAction(
+  ...args: Parameters<typeof setFirmEmergencyLawyerActionImpl>
+): Promise<Awaited<ReturnType<typeof setFirmEmergencyLawyerActionImpl>>> {
+  return localiseFormState(await setFirmEmergencyLawyerActionImpl(...args));
+}
+
+export async function raisePublicEmergencyAction(
+  ...args: Parameters<typeof raisePublicEmergencyActionImpl>
+): Promise<Awaited<ReturnType<typeof raisePublicEmergencyActionImpl>>> {
+  return localiseFormState(await raisePublicEmergencyActionImpl(...args));
+}
+
+export async function cancelGuestEmergencyAction(
+  ...args: Parameters<typeof cancelGuestEmergencyActionImpl>
+): Promise<Awaited<ReturnType<typeof cancelGuestEmergencyActionImpl>>> {
+  return localiseFormState(await cancelGuestEmergencyActionImpl(...args));
+}
+
+export async function closeEmergencyAction(
+  ...args: Parameters<typeof closeEmergencyActionImpl>
+): Promise<Awaited<ReturnType<typeof closeEmergencyActionImpl>>> {
+  return localiseFormState(await closeEmergencyActionImpl(...args));
 }

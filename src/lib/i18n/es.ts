@@ -7,13 +7,37 @@ import { adminEs } from './dict/admin';
 import { feedEs } from './dict/feed';
 import { labelsEs } from './dict/labels';
 import { requirementsEs } from './dict/requirements';
+import { emergencyEs } from './dict/emergency';
 
 /** Spanish. Typed against English, so nothing can be forgotten. */
 const baseEs: Omit<
   Dictionary,
-  'publicPages' | 'memberCore' | 'memberCases' | 'memberPro' | 'admin' | 'feed' | 'labels' | 'requirements'
+  'publicPages' | 'memberCore' | 'memberCases' | 'memberPro' | 'admin' | 'feed' | 'labels' | 'requirements' | 'emergency'
 > = {
   language: { label: 'Idioma', change: 'Cambiar de idioma' },
+
+  bankTransfer: {
+    accountName: 'Titular de la cuenta',
+    bank: 'Banco',
+    iban: 'IBAN',
+    accountNumber: 'Número de cuenta',
+    swift: 'SWIFT / BIC',
+    branch: 'Sucursal',
+  },
+
+  brand: {
+    tagline: 'Abogados y despachos verificados en todo el mundo',
+  },
+
+  /**
+   * The default tab title and search description, for every page that does not
+   * set its own. The brand name stays in Latin script in both languages.
+   */
+  meta: {
+    title: 'Legal Dash — abogados y despachos legales verificados',
+    description:
+      'Encuentre abogados y despachos esté donde esté, filtre por área del derecho y ubicación, y vea qué perfiles han sido verificados con sus documentos oficiales.',
+  },
 
   nav: {
     menu: 'Menú',
@@ -82,10 +106,10 @@ const baseEs: Omit<
   tabs: { home: 'Inicio', community: 'Comunidad', allBoards: 'Todos los tableros' },
 
   landing: {
-    badge: 'Emiratos Árabes Unidos',
+    badge: 'Disponible en todo el mundo',
     heroTitle: 'Encuentre un abogado que realmente pueda comprobar.',
     heroBody:
-      'Dubai Legal le conecta con abogados y despachos de todos los Emiratos: con sus credenciales verificadas, su caso seguido desde el primer mensaje hasta el último y todo lo importante en un solo lugar.',
+      'Legal Dash le conecta con abogados y despachos esté donde esté: con sus credenciales verificadas frente a documentos de identidad oficiales, su caso seguido desde el primer mensaje hasta el último y todo lo importante en un solo lugar.',
     findLawyer: 'Buscar un abogado',
     iAmProfessional: 'Soy abogado o despacho',
     urgentHelp: 'Ayuda urgente, sin cuenta',
@@ -117,9 +141,10 @@ const baseEs: Omit<
     emergencyEyebrow: 'Representación urgente',
     emergencyTitle: 'Cuando no puede esperar al lunes',
     emergencyBody: 'Envíe una solicitud urgente y llega directamente a todos los abogados y despachos que atienden urgencias. El primero que responda abre un caso y entra en una sala de vídeo con usted.',
-    emergencyNote: 'Dubai Legal le conecta con un abogado. No envía servicios de emergencia: si alguien está en peligro, llame al 999.',
+    emergencyNote: 'Legal Dash le conecta con un abogado. No envía servicios de emergencia: si alguien está en peligro, llame al número de emergencias local.',
     emergencyCta: 'Pedir ayuda urgente',
     emergencyForProfessionals: 'Atender urgencias',
+    emergencyStepsHeading: 'Cómo llega a alguien',
     emergencyStep1: 'Usted describe lo que ha ocurrido y da un número de teléfono.',
     emergencyStep2: 'La solicitud llega a todos los profesionales que han activado las urgencias.',
     emergencyStep3: 'El primero que la acepta abre un caso y se le asigna, y a usted se le dice quién es.',
@@ -132,7 +157,7 @@ const baseEs: Omit<
     closingBody: 'Busque en el directorio gratis, o cree una cuenta para enviar su primer caso.',
     howItWorks: 'Cómo conseguir un abogado',
     howStep1Title: 'Encuentre a alguien',
-    howStep1Body: 'Filtre por área del derecho y emirato. Compare lo que publica cada profesional, incluida su licencia y si un revisor la ha aprobado.',
+    howStep1Body: 'Filtre por área del derecho y ubicación. Compare lo que publica cada profesional, incluida su licencia y si un revisor la ha aprobado.',
     howStep2Title: 'Envíe su caso',
     howStep2Body: 'Póngale nombre, descríbalo y adjunte los documentos. Llega como una solicitud que el profesional puede aceptar o rechazar.',
     howStep3Title: 'Acuerden y conversen',
@@ -147,7 +172,7 @@ const baseEs: Omit<
     documentsNeeded: '{count} documentos necesarios para verificar, incluido el permiso para ejercer la representación legal.',
     documentsNeededOne: 'Un documento necesario para verificar, incluido el permiso para ejercer la representación legal.',
     step1Title: 'Busque',
-    step1Body: 'Filtre por área del derecho y emirato. Compare lo que publica cada profesional, incluida su licencia y la dirección de su despacho.',
+    step1Body: 'Filtre por área del derecho y ubicación. Compare lo que publica cada profesional, incluida su licencia y la dirección de su despacho.',
     step2Title: 'Envíe su caso',
     step2Body: 'Póngale nombre, descríbalo y adjunte los documentos. Llega como una solicitud que el profesional puede aceptar o rechazar.',
     step3Title: 'Acuerden y conversen',
@@ -162,11 +187,9 @@ const baseEs: Omit<
     enquiryEmergencyLead: 'Si es una urgencia, no envíe una consulta —',
     enquiryEmergencyLink: 'consiga un abogado por vídeo ahora',
     enquiryEmergencyTail: ', sin necesidad de cuenta.',
-    metaTitle: 'Dubai Legal — abogados y despachos legales verificados en los EAU',
-    metaDescription: 'Busque abogados y despachos verificados en los siete Emiratos, envíe un caso, sígalo y guarde cada documento, mensaje y honorario en un mismo lugar.',
     emergencyPageTitle: 'Consiga un abogado por vídeo ahora',
     verifiedByHand: 'Revisado por una persona, nunca por una máquina',
-    clientsIntro: 'La mayoría encuentra un abogado por medio de un conocido y confía en la suerte. Dubai Legal le da los detalles para juzgar por sí mismo y un registro de todo lo que ocurre después. Todo lo de abajo es lo que obtiene como cliente: buscar es gratis y seguirá siéndolo.',
+    clientsIntro: 'La mayoría encuentra un abogado por medio de un conocido y confía en la suerte. Legal Dash le da los detalles para juzgar por sí mismo y un registro de todo lo que ocurre después. Todo lo de abajo es lo que obtiene como cliente: buscar es gratis y seguirá siéndolo.',
     needLawyer: 'Necesito un abogado',
     needLawyerBody: 'Una cuenta es lo que convierte una ficha del directorio en un caso que puede seguir. Necesita sus documentos de identidad para verificarle, y su número nunca se publica.',
     createFreeAccount: 'Crear una cuenta gratuita',
@@ -233,12 +256,12 @@ const baseEs: Omit<
     fullNameHint: 'Tal como figura en su identificación, para que un revisor pueda cotejarlo.',
     phone: 'Número de teléfono',
     phoneHint: 'Cómo le contacta la otra parte de un caso y cómo se le avisa de una respuesta.',
-    accountType: '¿Cómo utilizará Dubai Legal?',
+    accountType: '¿Cómo utilizará Legal Dash?',
     accountTypeHint:
       'Esto determina lo que debe aportar para verificarse y no puede cambiarse después. Sus datos de identidad y sus documentos se solicitan en la pestaña de verificación, donde los lee un revisor.',
     createAccountTitle: 'Cree su cuenta',
     haveAccount: '¿Ya tiene una cuenta?',
-    noAccount: '¿Es nuevo en Dubai Legal?',
+    noAccount: '¿Es nuevo en Legal Dash?',
   },
 
   common: {
@@ -265,6 +288,13 @@ const baseEs: Omit<
     yes: 'Sí',
     no: 'No',
     optional: 'Opcional',
+    justNow: 'ahora mismo',
+    minuteAgo: 'hace {count} minuto',
+    minutesAgo: 'hace {count} minutos',
+    hourAgo: 'hace {count} hora',
+    hoursAgo: 'hace {count} horas',
+    optionalSuffix: '(opcional)',
+    sections: 'Secciones',
     required: 'Obligatorio',
     status: 'Estado',
     actions: 'Acciones',
@@ -341,7 +371,7 @@ const baseEs: Omit<
 
   footer: {
     disclaimer:
-      'Dubai Legal no es un despacho de abogados y no ofrece asesoramiento jurídico. La información del directorio la facilitan sus miembros. Confirme siempre que un profesional esté colegiado antes de contratarlo.',
+      'Legal Dash no es un despacho de abogados y no ofrece asesoramiento jurídico. La información del directorio la facilitan sus miembros. Confirme siempre que un profesional esté colegiado antes de contratarlo.',
   },
 };
 
@@ -356,4 +386,5 @@ export const es: Dictionary = {
   feed: feedEs,
   labels: labelsEs,
   requirements: requirementsEs,
+  emergency: emergencyEs,
 };

@@ -13,13 +13,14 @@ import {
   rescheduleAppointment,
   respondToOfficeRequest,
 } from '@/server/services/appointment-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 /**
  * Books a meeting into the signed-in lawyer's own diary for one of their
  * clients. The client is alerted in-app, which is the only channel available on
  * an installation with no mail provider.
  */
-export async function bookAppointmentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function bookAppointmentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
 
   if (isAdministrator(user)) {
@@ -79,7 +80,7 @@ export async function bookAppointmentAction(_prev: FormState, formData: FormData
   };
 }
 
-export async function cancelAppointmentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function cancelAppointmentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const result = await cancelAppointment(String(formData.get('appointmentId') ?? ''), user.id);
   if (!result.ok) return { ok: false, message: result.message };
@@ -96,7 +97,7 @@ export async function cancelAppointmentAction(_prev: FormState, formData: FormDa
  * failed by the product — the only action here that says nothing to the client is
  * deletion, which erases the arrangement instead of changing it.
  */
-export async function rescheduleAppointmentAction(
+async function rescheduleAppointmentActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -140,7 +141,7 @@ export async function rescheduleAppointmentAction(
  * No notification is sent: this erases the arrangement rather than changing it,
  * and the button says so before it is pressed.
  */
-export async function deleteAppointmentAction(
+async function deleteAppointmentActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -161,7 +162,7 @@ export async function deleteAppointmentAction(
  * This is the client's own way into a conference room, so they do not have to
  * wait for an appointment to be booked for them.
  */
-export async function requestUrgentCallAction(
+async function requestUrgentCallActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -185,7 +186,7 @@ export async function requestUrgentCallAction(
  * Declining leaves the meeting in place so the professional can rearrange it —
  * it is an answer, not a cancellation.
  */
-export async function respondToOfficeRequestAction(
+async function respondToOfficeRequestActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -208,4 +209,49 @@ export async function respondToOfficeRequestAction(
         ? 'Thank you — the professional has been told you will attend.'
         : 'The professional has been told you cannot come. They may offer a video call instead.',
   };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function bookAppointmentAction(
+  ...args: Parameters<typeof bookAppointmentActionImpl>
+): Promise<Awaited<ReturnType<typeof bookAppointmentActionImpl>>> {
+  return localiseFormState(await bookAppointmentActionImpl(...args));
+}
+
+export async function cancelAppointmentAction(
+  ...args: Parameters<typeof cancelAppointmentActionImpl>
+): Promise<Awaited<ReturnType<typeof cancelAppointmentActionImpl>>> {
+  return localiseFormState(await cancelAppointmentActionImpl(...args));
+}
+
+export async function rescheduleAppointmentAction(
+  ...args: Parameters<typeof rescheduleAppointmentActionImpl>
+): Promise<Awaited<ReturnType<typeof rescheduleAppointmentActionImpl>>> {
+  return localiseFormState(await rescheduleAppointmentActionImpl(...args));
+}
+
+export async function deleteAppointmentAction(
+  ...args: Parameters<typeof deleteAppointmentActionImpl>
+): Promise<Awaited<ReturnType<typeof deleteAppointmentActionImpl>>> {
+  return localiseFormState(await deleteAppointmentActionImpl(...args));
+}
+
+export async function requestUrgentCallAction(
+  ...args: Parameters<typeof requestUrgentCallActionImpl>
+): Promise<Awaited<ReturnType<typeof requestUrgentCallActionImpl>>> {
+  return localiseFormState(await requestUrgentCallActionImpl(...args));
+}
+
+export async function respondToOfficeRequestAction(
+  ...args: Parameters<typeof respondToOfficeRequestActionImpl>
+): Promise<Awaited<ReturnType<typeof respondToOfficeRequestActionImpl>>> {
+  return localiseFormState(await respondToOfficeRequestActionImpl(...args));
 }

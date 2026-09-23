@@ -13,8 +13,15 @@ import { SubmitButton } from '@/components/ui/SubmitButton';
 import { MIN_PASSWORD_LENGTH } from '@/lib/constants';
 import { Alert, Checkbox, Field, Input } from '@/components/ui/primitives';
 
+/** The words the invite form shows, in the reader's language. */
+export type InviteLawyerFormLabels = {
+  lawyerEmail: string;
+  inviting: string;
+  registerProfessional: string;
+};
+
 /** Invites a professional to the firm by email address. */
-export function InviteLawyerForm() {
+export function InviteLawyerForm({ labels }: { labels: InviteLawyerFormLabels }) {
   const [state, formAction] = useActionState(inviteLawyerAction, initialFormState);
 
   return (
@@ -23,7 +30,7 @@ export function InviteLawyerForm() {
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
       <Field
-        label="Lawyer's email address"
+        label={labels.lawyerEmail}
         htmlFor="invite-email"
         required
         error={state?.fieldErrors?.email}
@@ -39,12 +46,18 @@ export function InviteLawyerForm() {
         />
       </Field>
 
-      <SubmitButton pendingLabel="Inviting…">Register professional</SubmitButton>
+      <SubmitButton pendingLabel={labels.inviting}>{labels.registerProfessional}</SubmitButton>
     </form>
   );
 }
 
-export function RevokeInvitationButton({ invitationId }: { invitationId: string }) {
+export function RevokeInvitationButton({
+  invitationId,
+  labels,
+}: {
+  invitationId: string;
+  labels: { withdraw: string };
+}) {
   const [state, formAction] = useActionState(revokeInvitationAction, initialFormState);
 
   return (
@@ -57,7 +70,7 @@ export function RevokeInvitationButton({ invitationId }: { invitationId: string 
       ) : null}
       <input type="hidden" name="invitationId" value={invitationId} />
       <SubmitButton variant="ghost" size="sm" pendingLabel="…">
-        Withdraw
+        {labels.withdraw}
       </SubmitButton>
     </form>
   );
@@ -66,9 +79,11 @@ export function RevokeInvitationButton({ invitationId }: { invitationId: string 
 export function RemoveLawyerButton({
   lawyerProfileId,
   name,
+  labels,
 }: {
   lawyerProfileId: string;
   name: string;
+  labels: { confirm: string; removeFromFirm: string; removing: string };
 }) {
   const [state, formAction] = useActionState(removeLawyerAction, initialFormState);
 
@@ -85,22 +100,32 @@ export function RemoveLawyerButton({
         variant="ghost"
         size="sm"
         className="text-red-700 hover:bg-red-50"
-        confirm={`Remove ${name} from your firm? Their account and any open cases assigned to them are untouched.`}
-        pendingLabel="Removing…"
+        confirm={labels.confirm.replace('{name}', name)}
+        pendingLabel={labels.removing}
       >
-        Remove from firm
+        {labels.removeFromFirm}
       </SubmitButton>
     </form>
   );
 }
 
+/** The words the invitation response shows, in the reader's language. */
+export type InvitationResponseFormLabels = {
+  joining: string;
+  acceptAndJoin: string;
+  declining: string;
+  decline: string;
+};
+
 /** Accept or decline a firm's invitation, from the lawyer's own dashboard. */
 export function InvitationResponseForm({
   invitationId,
   firmName,
+  labels,
 }: {
   invitationId: string;
   firmName: string;
+  labels: InvitationResponseFormLabels;
 }) {
   const [state, formAction] = useActionState(respondToInvitationAction, initialFormState);
 
@@ -113,19 +138,44 @@ export function InvitationResponseForm({
         <form action={formAction}>
           <input type="hidden" name="invitationId" value={invitationId} />
           <input type="hidden" name="accept" value="true" />
-          <SubmitButton pendingLabel="Joining…">Accept and join {firmName}</SubmitButton>
+          <SubmitButton pendingLabel={labels.joining}>
+            {labels.acceptAndJoin.replace('{firm}', firmName)}
+          </SubmitButton>
         </form>
         <form action={formAction}>
           <input type="hidden" name="invitationId" value={invitationId} />
           <input type="hidden" name="accept" value="false" />
-          <SubmitButton variant="secondary" pendingLabel="Declining…">
-            Decline
+          <SubmitButton variant="secondary" pendingLabel={labels.declining}>
+            {labels.decline}
           </SubmitButton>
         </form>
       </div>
     </div>
   );
 }
+
+/** The words the create-lawyer form shows, in the reader's language. */
+export type CreateLawyerFormLabels = {
+  createdTitle: string;
+  notCreatedTitle: string;
+  fullName: string;
+  emailAddress: string;
+  emailHint: string;
+  tempPassword: string;
+  tempPasswordHint: string;
+  phone: string;
+  licenceNumber: string;
+  licensingAuthority: string;
+  licenceExpires: string;
+  yearsOfExperience: string;
+  whereAppearsTitle: string;
+  whereAppearsBefore: string;
+  lawyersAtThisFirm: string;
+  whereAppearsAfter: string;
+  creatingAccount: string;
+  createLawyerAccount: string;
+  createLawyerNote: string;
+};
 
 /**
  * Creates a lawyer account directly from the firm's roster.
@@ -134,7 +184,7 @@ export function InvitationResponseForm({
  * invitation. The credentials are shown once on success, because this
  * installation has no mail provider and the firm is the delivery channel.
  */
-export function CreateLawyerForm() {
+export function CreateLawyerForm({ labels }: { labels: CreateLawyerFormLabels }) {
   const [state, formAction] = useActionState(createLawyerAction, initialFormState);
 
   const text = (key: string) => state?.values?.[key] ?? '';
@@ -142,18 +192,18 @@ export function CreateLawyerForm() {
   return (
     <form action={formAction} className="space-y-5" noValidate>
       {state?.ok && state.message ? (
-        <Alert tone="success" title="Lawyer account created">
+        <Alert tone="success" title={labels.createdTitle}>
           {state.message}
         </Alert>
       ) : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="The account was not created">
+        <Alert tone="error" title={labels.notCreatedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Full name" htmlFor="cl-fullName" required error={state?.fieldErrors?.fullName}>
+        <Field label={labels.fullName} htmlFor="cl-fullName" required error={state?.fieldErrors?.fullName}>
           <Input
             id="cl-fullName"
             name="fullName"
@@ -165,11 +215,11 @@ export function CreateLawyerForm() {
         </Field>
 
         <Field
-          label="Email address"
+          label={labels.emailAddress}
           htmlFor="cl-email"
           required
           error={state?.fieldErrors?.email}
-          hint="They will use this to sign in."
+          hint={labels.emailHint}
         >
           <Input
             id="cl-email"
@@ -182,11 +232,11 @@ export function CreateLawyerForm() {
         </Field>
 
         <Field
-          label="Temporary password"
+          label={labels.tempPassword}
           htmlFor="cl-password"
           required
           error={state?.fieldErrors?.password}
-          hint={`At least ${MIN_PASSWORD_LENGTH} characters with a letter and a number. Shown once on creation.`}
+          hint={labels.tempPasswordHint}
         >
           <Input
             id="cl-password"
@@ -200,7 +250,7 @@ export function CreateLawyerForm() {
           />
         </Field>
 
-        <Field label="Phone" htmlFor="cl-phone" error={state?.fieldErrors?.phone}>
+        <Field label={labels.phone} htmlFor="cl-phone" error={state?.fieldErrors?.phone}>
           <Input
             id="cl-phone"
             name="phone"
@@ -211,7 +261,7 @@ export function CreateLawyerForm() {
         </Field>
 
         <Field
-          label="Licence number"
+          label={labels.licenceNumber}
           htmlFor="cl-licence"
           required
           error={state?.fieldErrors?.licenseNumber}
@@ -227,7 +277,7 @@ export function CreateLawyerForm() {
         </Field>
 
         <Field
-          label="Licensing authority"
+          label={labels.licensingAuthority}
           htmlFor="cl-authority"
           required
           error={state?.fieldErrors?.licensingAuthority}
@@ -242,7 +292,7 @@ export function CreateLawyerForm() {
           />
         </Field>
 
-        <Field label="Licence expires" htmlFor="cl-expiry" error={state?.fieldErrors?.licenseExpiresOn}>
+        <Field label={labels.licenceExpires} htmlFor="cl-expiry" error={state?.fieldErrors?.licenseExpiresOn}>
           <Input
             id="cl-expiry"
             name="licenseExpiresOn"
@@ -253,7 +303,7 @@ export function CreateLawyerForm() {
         </Field>
 
         <Field
-          label="Years of experience"
+          label={labels.yearsOfExperience}
           htmlFor="cl-years"
           error={state?.fieldErrors?.yearsOfExperience}
         >
@@ -269,20 +319,17 @@ export function CreateLawyerForm() {
         </Field>
       </div>
 
-      <Alert tone="info" title="Where this lawyer will appear">
-        Under <strong>Lawyers at this firm</strong> on your firm&rsquo;s public profile, alongside
-        your other lawyers — not as a separate entry in the directory. Only lawyers who register
-        themselves through the public signup form are listed on their own.
+      <Alert tone="info" title={labels.whereAppearsTitle}>
+        {labels.whereAppearsBefore}
+        <strong>{labels.lawyersAtThisFirm}</strong>
+        {labels.whereAppearsAfter}
       </Alert>
 
-      <SubmitButton size="lg" pendingLabel="Creating account…">
-        Create lawyer account
+      <SubmitButton size="lg" pendingLabel={labels.creatingAccount}>
+        {labels.createLawyerAccount}
       </SubmitButton>
 
-      <p className="text-xs text-slate-500">
-        The account is created active and affiliated to your firm immediately. Verification is
-        separate: a reviewer must still examine the lawyer&rsquo;s own Emirates ID and licence.
-      </p>
+      <p className="text-xs text-slate-500">{labels.createLawyerNote}</p>
     </form>
   );
 }

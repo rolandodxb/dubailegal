@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireProfessional } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
 import {
   countOpenEnquiries,
   listClaimedEnquiries,
   listOpenEnquiries,
 } from '@/server/services/enquiry-service';
-import { LEGAL_AREA_LABEL } from '@/lib/constants';
-import { minutesLabel } from '@/lib/time';
 import { formatDateTime } from '@/lib/format';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import {
@@ -15,6 +15,7 @@ import {
   CloseEnquiryForm,
   ContactLinks,
 } from '@/components/forms/EnquiryPoolForms';
+import { relativeTime } from '@/lib/i18n/format';
 
 export const metadata: Metadata = { title: 'Enquiry pool' };
 
@@ -30,7 +31,8 @@ export default async function EnquiryPoolPage() {
   // The pool is worked by lawyers and firms. An individual has no business
   // reading other people's enquiries — and their contact details, which the pool
   // shows — so this turns them away rather than offering a softened version.
-  const user = await requireProfessional();
+  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
+  const labels = t.memberCases.enquiries;
 
   const [open, claimed, openCount] = await Promise.all([
     listOpenEnquiries(),
@@ -41,26 +43,20 @@ export default async function EnquiryPoolPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Enquiry pool</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          General enquiries sent by members of the public who do not have an account. Every registered
-          lawyer and firm sees the same pool; claiming one takes it out and makes it yours to answer.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{labels.intro}</p>
       </header>
 
-      <Alert tone="info" title="These are enquiries, not cases">
-        An enquiry has no documents, no conversation and no record, which is why the form tells people
-        an account is the better route. When you contact somebody, suggest they create one — then the
-        work can be run properly as a case.
+      <Alert tone="info" title={labels.notCasesTitle}>
+        {labels.notCasesBody}
       </Alert>
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Open in the pool ({openCount})</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {labels.openInPool.replace('{count}', String(openCount))}
+        </h2>
         {open.length === 0 ? (
-          <EmptyState
-            title="The pool is empty"
-            description="General enquiries from the public appear here. Nobody has asked anything yet."
-          />
+          <EmptyState title={labels.poolEmpty} description={labels.poolEmptyBody} />
         ) : (
           <ul className="space-y-3">
             {open.map((enquiry) => (
@@ -69,10 +65,8 @@ export default async function EnquiryPoolPage() {
                   <div className="min-w-0 flex-1">
                     <h3 className="font-medium text-slate-900">{enquiry.subject}</h3>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {enquiry.caseType
-                        ? `${LEGAL_AREA_LABEL[enquiry.caseType] ?? enquiry.caseType} · `
-                        : ''}
-                      {minutesLabel(enquiry.createdAt)}
+                      {enquiry.caseType ? `${legalAreaLabel(t, enquiry.caseType)} · ` : ''}
+                      {relativeTime(t, enquiry.createdAt)}
                     </p>
                     <p className="mt-2 whitespace-pre-line text-sm text-slate-700">
                       {enquiry.message}
@@ -82,7 +76,7 @@ export default async function EnquiryPoolPage() {
                     </p>
                   </div>
                   <div className="shrink-0">
-                    <ClaimEnquiryForm enquiryId={enquiry.id} />
+                    <ClaimEnquiryForm enquiryId={enquiry.id} labels={t.memberCases.enquiryForms} />
                   </div>
                 </div>
               </Card>
@@ -94,7 +88,7 @@ export default async function EnquiryPoolPage() {
       {claimed.length > 0 ? (
         <section>
           <h2 className="mb-3 font-semibold text-slate-900">
-            Enquiries I claimed ({claimed.length})
+            {labels.claimedHeading.replace('{count}', String(claimed.length))}
           </h2>
           <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
             {claimed.map((enquiry) => (
@@ -103,16 +97,27 @@ export default async function EnquiryPoolPage() {
                   <div className="min-w-0">
                     <p className="font-medium text-slate-900">{enquiry.subject}</p>
                     <p className="text-xs text-slate-500">
-                      {enquiry.name} · claimed {formatDateTime(enquiry.claimedAt)}
-                      {enquiry.status === 'CLOSED' ? ' · closed' : ''}
+                      {labels.claimed
+                        .replace('{name}', enquiry.name)
+                        .replace('{date}', formatDateTime(enquiry.claimedAt))}
+                      {enquiry.status === 'CLOSED' ? labels.closed : ''}
                     </p>
                     <p className="mt-1 text-sm text-slate-700">{enquiry.message}</p>
                     <div className="mt-3">
-                      <ContactLinks email={enquiry.email} phone={enquiry.phone} />
+                      <ContactLinks
+                        email={enquiry.email}
+                        phone={enquiry.phone}
+                        labels={t.memberCases.enquiryForms}
+                      />
                     </div>
                   </div>
                   <div className="shrink-0">
-                    {enquiry.status === 'CLAIMED' ? <CloseEnquiryForm enquiryId={enquiry.id} /> : null}
+                    {enquiry.status === 'CLAIMED' ? (
+                      <CloseEnquiryForm
+                        enquiryId={enquiry.id}
+                        labels={t.memberCases.enquiryForms}
+                      />
+                    ) : null}
                   </div>
                 </div>
               </li>

@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
+import { LEGAL_AREAS } from '@/lib/constants';
 import { PublicEmergencyForm } from '@/components/forms/PublicEmergencyForm';
 import { CancelEmergencyForm, EmergencyRequestForm } from '@/components/forms/EmergencyForms';
 import { listMyEmergencies } from '@/server/services/emergency-service';
@@ -11,11 +14,13 @@ import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 import { BrandLockup } from '@/components/layout/Logo';
 import { Icon } from '@/components/icons';
 
-export const metadata: Metadata = {
-  title: 'Urgent legal help',
-  description:
-    'Reach a lawyer on emergency call right now. No account, no password — go straight into a video call.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: t.publicPages.emergency.metaTitle,
+    description: t.publicPages.emergency.metaDescription,
+  };
+}
 
 /**
  * Emergency help, available to anyone who needs it.
@@ -30,7 +35,9 @@ export const metadata: Metadata = {
  * for it. The two sides are kept apart on purpose.
  */
 export default async function PublicEmergencyPage() {
-  const user = await getSessionUser();
+  const [{ t }, user] = await Promise.all([getI18n(), getSessionUser()]);
+  const emergency = t.publicPages.emergency;
+  const form = t.publicPages.emergencyForm;
 
   if (user?.accountType === 'LAWYER' || user?.accountType === 'FIRM') {
     redirect('/emergency/desk');
@@ -55,20 +62,16 @@ export default async function PublicEmergencyPage() {
       <header className="mb-8 text-center">
         <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-red-800 ring-1 ring-inset ring-red-200">
           <Icon name="alert" size={14} />
-          Urgent
+          {emergency.pill}
         </span>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-          Get a lawyer on video now
+          {t.landing.emergencyPageTitle}
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-slate-600">
-          No account. No password. Tell us who you are and what is happening, and you go straight into
-          a call with a lawyer on emergency duty.
-        </p>
+        <p className="mx-auto mt-3 max-w-xl text-slate-600">{emergency.intro}</p>
       </header>
 
-      <Alert tone="error" title="If somebody is in danger, call 999 first">
-        Dubai Legal connects you to a lawyer. It is not the police, an ambulance or the fire service,
-        and it cannot send help to you.
+      <Alert tone="error" title={emergency.dangerTitle}>
+        {emergency.dangerBody}
       </Alert>
 
       <Card className="mt-6">
@@ -78,15 +81,41 @@ export default async function PublicEmergencyPage() {
             emergency is the worst possible moment to ask somebody to sign in. */}
         {user ? (
           <>
-            <h2 className="font-semibold text-slate-900">Your urgent request</h2>
-            <p className="mt-1 mb-4 text-sm text-slate-600">
-              Raised from your account, so you can follow it and the professional who takes it sees
-              your history.
-            </p>
-            <EmergencyRequestForm defaultPhone={user.profile?.phone ?? ''} />
+            <h2 className="font-semibold text-slate-900">{emergency.yourRequest}</h2>
+            <p className="mt-1 mb-4 text-sm text-slate-600">{emergency.yourRequestBody}</p>
+            <EmergencyRequestForm
+              defaultPhone={user.profile?.phone ?? ''}
+              labels={{
+                ...t.emergency.request,
+                areaOptions: LEGAL_AREAS.map((area) => ({
+                  value: area.value,
+                  label: legalAreaLabel(t, area.value),
+                })),
+              }}
+            />
           </>
         ) : (
-          <PublicEmergencyForm />
+          <PublicEmergencyForm
+            labels={{
+              failedTitle: form.failedTitle,
+              name: form.name,
+              nameHint: form.nameHint,
+              phone: form.phone,
+              phoneHint: form.phoneHint,
+              description: form.description,
+              descriptionHint: form.descriptionHint,
+              areaOfLaw: form.areaOfLaw,
+              areaOptions: LEGAL_AREAS.map((area) => ({
+                value: area.value,
+                label: legalAreaLabel(t, area.value),
+              })),
+              email: t.common.email,
+              emailHint: form.emailHint,
+              pending: form.pending,
+              submit: t.landing.emergencyPageTitle,
+              note: form.note,
+            }}
+          />
         )}
       </Card>
 
@@ -94,7 +123,7 @@ export default async function PublicEmergencyPage() {
       {user && mine.length > 0 ? (
         <section className="mt-10">
           <h2 className="mb-3 text-lg font-semibold text-slate-900">
-            Your urgent requests ({mine.length})
+            {emergency.yourRequestsCount.replace('{count}', String(mine.length))}
           </h2>
           <ul className="space-y-3">
             {mine.map((item) => (
@@ -103,26 +132,29 @@ export default async function PublicEmergencyPage() {
                   <div className="min-w-0">
                     <h3 className="font-medium text-slate-900">{item.title}</h3>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      Raised {formatDateTime(item.createdAt)} · call-back number {item.contactPhone}
+                      {emergency.raised
+                        .replace('{date}', formatDateTime(item.createdAt))
+                        .replace('{phone}', item.contactPhone)}
                     </p>
                     {item.acceptedBy ? (
                       <p className="mt-2 text-sm text-green-800">
-                        Taken by{' '}
-                        {item.acceptedBy.profile?.fullName?.trim() || item.acceptedBy.email}
-                        {item.legalCase ? ` · case ${item.legalCase.reference}` : ''}
+                        {emergency.takenBy.replace(
+                          '{name}',
+                          item.acceptedBy.profile?.fullName?.trim() || item.acceptedBy.email,
+                        )}
+                        {item.legalCase
+                          ? emergency.caseReference.replace('{reference}', item.legalCase.reference)
+                          : ''}
                       </p>
                     ) : (
-                      <p className="mt-2 text-sm text-slate-600">
-                        Offered to every professional on emergency call. The first to take it has a
-                        case opened and assigned.
-                      </p>
+                      <p className="mt-2 text-sm text-slate-600">{emergency.offered}</p>
                     )}
                     {item.roomCode ? (
                       <Link
                         href={`/emergency/room/${item.roomCode}`}
                         className={buttonClasses('primary', 'sm', 'mt-3')}
                       >
-                        Join the video room
+                        {emergency.joinRoom}
                       </Link>
                     ) : null}
                   </div>
@@ -135,12 +167,16 @@ export default async function PublicEmergencyPage() {
                           : 'bg-slate-100 text-slate-600 ring-slate-200'
                     }`}
                   >
-                    {item.status === 'OPEN' ? 'Open' : item.status === 'ACCEPTED' ? 'Taken' : 'Closed'}
+                    {item.status === 'OPEN'
+                      ? emergency.statusOpen
+                      : item.status === 'ACCEPTED'
+                        ? emergency.statusTaken
+                        : emergency.statusClosed}
                   </span>
                 </div>
                 {item.status === 'OPEN' ? (
                   <div className="mt-3 border-t border-slate-100 pt-3">
-                    <CancelEmergencyForm requestId={item.id} />
+                    <CancelEmergencyForm requestId={item.id} labels={t.emergency.cancel} />
                   </div>
                 ) : null}
               </Card>
@@ -151,18 +187,15 @@ export default async function PublicEmergencyPage() {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         {[
+          { title: emergency.noSignUp, body: emergency.noSignUpBody },
           {
-            title: 'No sign-up',
-            body: 'Nothing to verify, nothing to remember. You are in a room in seconds.',
+            title: emergency.realLawyer,
+            body: (onCall === 1 ? emergency.realLawyerOne : emergency.realLawyerOther).replace(
+              '{count}',
+              String(onCall),
+            ),
           },
-          {
-            title: 'A real lawyer',
-            body: `${onCall} lawyer${onCall === 1 ? '' : 's'} ${onCall === 1 ? 'is' : 'are'} on emergency duty right now. The first to answer joins you.`,
-          },
-          {
-            title: 'Video and voice',
-            body: 'The call is direct between you and the lawyer. Nothing is recorded.',
-          },
+          { title: emergency.videoAndVoice, body: emergency.videoAndVoiceBody },
         ].map((item) => (
           <div key={item.title}>
             <h2 className="text-sm font-semibold text-slate-900">{item.title}</h2>
@@ -172,29 +205,25 @@ export default async function PublicEmergencyPage() {
       </div>
 
       <Card className="mt-8">
-        <h2 className="font-semibold text-slate-900">Not an emergency?</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          For anything that can wait, an account gives you a much better experience: you can send the
-          full details, attach documents, follow the case and message your lawyer. A general enquiry
-          works too, but it goes into a shared pool and is answered more slowly.
-        </p>
+        <h2 className="font-semibold text-slate-900">{emergency.notEmergency}</h2>
+        <p className="mt-1 text-sm text-slate-600">{emergency.notEmergencyBody}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           {user ? (
             <Link href="/dashboard" className={buttonClasses('secondary', 'md')}>
-              Back to my dashboard
+              {emergency.backToDashboard}
             </Link>
           ) : (
             <>
               <Link href="/register" className={buttonClasses('primary', 'md')}>
-                Create an account
+                {t.nav.createAccount}
               </Link>
               <Link href="/enquiry" className={buttonClasses('secondary', 'md')}>
-                Send a general enquiry
+                {t.publicPages.enquiry.title}
               </Link>
             </>
           )}
           <Link href="/directory" className={buttonClasses('ghost', 'md')}>
-            Browse the directory
+            {t.publicPages.shell.browseDirectory}
           </Link>
         </div>
       </Card>

@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { postCaseMessageAction } from '@/app/actions/case-actions';
 import { initialFormState } from '@/lib/form-state';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { formatUaeDateTime } from '@/lib/time';
 import { Avatar } from '@/components/Avatar';
 import { SubmitButton } from '@/components/ui/SubmitButton';
@@ -64,6 +65,7 @@ export function CaseChat({
   payments = [],
   disabled,
   disabledReason,
+  labels,
 }: {
   caseId: string;
   initialMessages: ChatMessage[];
@@ -75,6 +77,11 @@ export function CaseChat({
   payments?: ChatPayment[];
   disabled?: boolean;
   disabledReason?: string;
+  /** The conversation's words, in the reader's language. */
+  labels: MemberCasesDict['caseChat'] & {
+    you: string;
+    payment: MemberCasesDict['feeBubble'];
+  };
 }) {
   const [state, formAction] = useActionState(postCaseMessageAction, initialFormState);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -226,15 +233,13 @@ export function CaseChat({
         <div className="flex items-center gap-2.5">
           <LogoMark size={26} />
           <div>
-            <p className="text-xs font-semibold text-slate-900">Dubai Legal</p>
-            <p className="text-[11px] text-slate-500">
-              Case conversation · private to the two parties on this case
-            </p>
+            <p className="text-xs font-semibold text-slate-900">Legal Dash</p>
+            <p className="text-[11px] text-slate-500">{labels.headerSubtitle}</p>
           </div>
         </div>
         <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
           <Icon name="lock" size={12} />
-          Messages and files are encrypted
+          {labels.encrypted}
         </p>
       </div>
 
@@ -246,33 +251,35 @@ export function CaseChat({
         <div ref={topSentinelRef} aria-hidden="true" className="h-px w-full" />
 
         {loadingOlder ? (
-          <p className="py-3 text-center text-xs text-slate-500">Loading earlier messages…</p>
+          <p className="py-3 text-center text-xs text-slate-500">{labels.loadingEarlier}</p>
         ) : hasMore ? (
-          <p className="py-3 text-center text-xs text-slate-400">
-            Scroll up for earlier messages
-          </p>
+          <p className="py-3 text-center text-xs text-slate-400">{labels.scrollUp}</p>
         ) : timeline.length > 0 ? (
-          <p className="py-3 text-center text-xs text-slate-400">This is the start of the case.</p>
+          <p className="py-3 text-center text-xs text-slate-400">{labels.startOfCase}</p>
         ) : null}
 
         {/* The empty state depends on the whole thread, not just the messages:
             a fee request on a case nobody has written in yet must still show. */}
         {timeline.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-500">
-            No messages yet. Anything you write here is visible to the other party on this case.
-          </p>
+          <p className="py-10 text-center text-sm text-slate-500">{labels.empty}</p>
         ) : (
           <ul className="space-y-1">
             {timeline.map((item) => {
               if (item.kind === 'payment') {
                 return (
-                  <PaymentBubble key={`pay-${item.payment.id}`} payment={item.payment} isClient={isClient} />
+                  <PaymentBubble
+                    key={`pay-${item.payment.id}`}
+                    payment={item.payment}
+                    isClient={isClient}
+                    labels={labels.payment}
+                  />
                 );
               }
 
               const { message, index } = item;
               const mine = message.authorId === viewerId;
-              const name = message.author.profile?.fullName?.trim() || message.author.email || 'Member';
+              const name =
+                message.author.profile?.fullName?.trim() || message.author.email || labels.member;
               const previous = index > 0 ? messages[index - 1] : undefined;
               const grouped = previous ? isSameSpeaker(previous, message) : false;
 
@@ -290,7 +297,7 @@ export function CaseChat({
                   <div className={cx('max-w-[75%] min-w-0', mine && 'text-right')}>
                     {!grouped ? (
                       <p className="mb-1 px-1 text-[11px] text-slate-500">
-                        {mine ? 'You' : name} ·{' '}
+                        {mine ? labels.you : name} ·{' '}
                         {formatUaeDateTime(new Date(message.createdAt))}
                       </p>
                     ) : null}
@@ -327,7 +334,7 @@ export function CaseChat({
                                 </span>
                                 <span className="block text-[11px] text-slate-500">
                                   {formatFileSize(attachment.sizeBytes)} ·{' '}
-                                  {attachment.fileName.split('.').pop()?.toUpperCase() ?? 'FILE'}
+                                  {attachment.fileName.split('.').pop()?.toUpperCase() ?? labels.file}
                                 </span>
                               </span>
                               <Icon name="download" size={14} />
@@ -350,7 +357,7 @@ export function CaseChat({
       {disabled ? (
         <div className="border-t border-slate-200 bg-white p-4">
           <Alert tone="neutral">
-            {disabledReason ?? 'The conversation is closed on this case.'}
+            {disabledReason ?? labels.closedFallback}
           </Alert>
         </div>
       ) : (
@@ -379,7 +386,7 @@ export function CaseChat({
                     type="button"
                     onClick={() => removeFile(index)}
                     className="text-slate-400 hover:text-red-600"
-                    aria-label={`Remove ${entry.name}`}
+                    aria-label={labels.removeFile.replace('{name}', entry.name)}
                   >
                     <Icon name="x" size={13} />
                   </button>
@@ -407,14 +414,14 @@ export function CaseChat({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className={buttonClasses('secondary', 'md', 'shrink-0')}
-              aria-label="Attach files"
-              title="Attach files — documents, images, spreadsheets or archives"
+              aria-label={labels.attachFiles}
+              title={labels.attachFilesTitle}
             >
               <Icon name="paperclip" size={18} />
             </button>
 
             <label htmlFor="case-message" className="sr-only">
-              Message
+              {labels.message}
             </label>
             <textarea
               id="case-message"
@@ -430,19 +437,16 @@ export function CaseChat({
                   event.currentTarget.form?.requestSubmit();
                 }
               }}
-              placeholder="Write a message…"
+              placeholder={labels.placeholder}
               className="min-h-[4.5rem] flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm leading-relaxed text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand-500"
             />
-            <SubmitButton className="shrink-0" pendingLabel="Sending…">
-              Send
+            <SubmitButton className="shrink-0" pendingLabel={labels.sending}>
+              {labels.send}
               <Icon name="send" size={16} />
             </SubmitButton>
           </div>
 
-          <p className="text-[11px] text-slate-400">
-            Enter posts the message, Shift + Enter starts a new line. Attach up to 5 files — documents,
-            images, spreadsheets and archives up to 25 MB each.
-          </p>
+          <p className="text-[11px] text-slate-400">{labels.composerHint}</p>
         </form>
       )}
     </div>

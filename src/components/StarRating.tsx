@@ -1,4 +1,5 @@
 import type { ReviewSummary } from '@/server/services/review-service';
+import { getI18n } from '@/lib/i18n';
 import { cx } from './ui/primitives';
 
 /**
@@ -7,7 +8,7 @@ import { cx } from './ui/primitives';
  * The numeric value is always rendered alongside the stars, so the rating is
  * never conveyed by shape or colour alone.
  */
-export function StarRating({
+export async function StarRating({
   value,
   size = 14,
   className,
@@ -16,13 +17,14 @@ export function StarRating({
   size?: number;
   className?: string;
 }) {
+  const { t } = await getI18n();
   const rounded = Math.round(value * 2) / 2;
 
   return (
     <span
       className={cx('inline-flex items-center gap-0.5', className)}
       role="img"
-      aria-label={`${value} out of 5`}
+      aria-label={t.memberCases.starRating.outOfFive.replace('{value}', String(value))}
     >
       {[1, 2, 3, 4, 5].map((star) => {
         const fill = rounded >= star ? 1 : rounded >= star - 0.5 ? 0.5 : 0;
@@ -46,11 +48,12 @@ export function StarRating({
 }
 
 /** Compact rating line for a card: stars, value and how many reviews. */
-export function RatingLine({ summary }: { summary: ReviewSummary | undefined }) {
+export async function RatingLine({ summary }: { summary: ReviewSummary | undefined }) {
+  const { t } = await getI18n();
+  const labels = t.memberCases.starRating;
+
   if (!summary || summary.count === 0 || summary.average === null) {
-    return (
-      <span className="text-xs text-slate-500">No reviews yet</span>
-    );
+    return <span className="text-xs text-slate-500">{t.directory.noReviewsYet}</span>;
   }
 
   return (
@@ -58,21 +61,22 @@ export function RatingLine({ summary }: { summary: ReviewSummary | undefined }) 
       <StarRating value={summary.average} size={13} />
       <span className="text-xs font-semibold text-slate-800">{summary.average.toFixed(1)}</span>
       <span className="text-xs text-slate-500">
-        ({summary.count} review{summary.count === 1 ? '' : 's'})
+        {(summary.count === 1 ? labels.count : labels.countPlural).replace(
+          '{count}',
+          String(summary.count),
+        )}
       </span>
     </span>
   );
 }
 
 /** The full breakdown shown on a professional's profile. */
-export function RatingBreakdown({ summary }: { summary: ReviewSummary }) {
+export async function RatingBreakdown({ summary }: { summary: ReviewSummary }) {
+  const { t } = await getI18n();
+  const labels = t.memberCases.starRating;
+
   if (summary.count === 0 || summary.average === null) {
-    return (
-      <p className="text-sm text-slate-600">
-        No reviews yet. A review can only be written by a client whose case this professional
-        accepted.
-      </p>
-    );
+    return <p className="text-sm text-slate-600">{labels.breakdownEmpty}</p>;
   }
 
   return (
@@ -81,7 +85,10 @@ export function RatingBreakdown({ summary }: { summary: ReviewSummary }) {
         <p className="text-3xl font-semibold text-slate-900">{summary.average.toFixed(1)}</p>
         <StarRating value={summary.average} size={16} className="mt-1" />
         <p className="mt-1 text-xs text-slate-500">
-          {summary.count} review{summary.count === 1 ? '' : 's'}
+          {(summary.count === 1 ? labels.reviewCount : labels.reviewCountPlural).replace(
+            '{count}',
+            String(summary.count),
+          )}
         </p>
       </div>
 
@@ -91,7 +98,9 @@ export function RatingBreakdown({ summary }: { summary: ReviewSummary }) {
           const percent = summary.count === 0 ? 0 : Math.round((count / summary.count) * 100);
           return (
             <li key={star} className="flex items-center gap-2 text-xs text-slate-600">
-              <span className="w-8 shrink-0">{star} star</span>
+              <span className="w-8 shrink-0">
+                {labels.star.replace('{count}', String(star))}
+              </span>
               <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
                 <span
                   className="block h-full rounded-full bg-amber-400"

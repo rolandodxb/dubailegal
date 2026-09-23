@@ -27,11 +27,11 @@ function Counter({ count }: { count: number }) {
  * over and carries the same entries — grouped, because a phone menu is a list
  * rather than a column.
  */
-export function SideNav({ items }: { items: NavItem[] }) {
+export function SideNav({ items, sectionsLabel }: { items: NavItem[]; sectionsLabel: string }) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Sections" className="hidden sm:block">
+    <nav aria-label={sectionsLabel} className="hidden sm:block">
       <ul className="space-y-0.5">
         {items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);

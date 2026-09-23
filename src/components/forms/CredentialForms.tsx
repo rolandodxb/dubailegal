@@ -28,10 +28,52 @@ type LawyerValues = {
 };
 
 /**
+ * The bank fields, which the two forms below show identically. The field names
+ * are the shared bank vocabulary from the dictionary, resolved on the server.
+ */
+export type BankLabels = {
+  title: string;
+  intro: string;
+  accountHolder: string;
+  bankName: string;
+  iban: string;
+  accountNumber: string;
+  accountNumberHint: string;
+  swift: string;
+  branch: string;
+  instructions: string;
+  instructionsHint: string;
+};
+
+/** The words the lawyer credential form shows, in the reader's language. */
+export type LawyerCredentialFormLabels = {
+  notSavedTitle: string;
+  licenceNumber: string;
+  licenceNumberHint: string;
+  licensingAuthority: string;
+  licensingAuthorityHint: string;
+  issuedOn: string;
+  validUntil: string;
+  validUntilHint: string;
+  yearsOfExperience: string;
+  barAssociationNumber: string;
+  uploadNote: string;
+  save: string;
+  saving: string;
+  bank: BankLabels;
+};
+
+/**
  * The legal information a lawyer account must supply. Required before the
  * account can be submitted for verification.
  */
-export function LawyerCredentialForm({ credential }: { credential: LawyerValues | null }) {
+export function LawyerCredentialForm({
+  credential,
+  labels,
+}: {
+  credential: LawyerValues | null;
+  labels: LawyerCredentialFormLabels;
+}) {
   const [state, formAction] = useActionState(saveLawyerCredentialAction, initialFormState);
 
   const text = (key: 'licenseNumber' | 'licensingAuthority' | 'barAssociationNumber', fallback = '') =>
@@ -41,17 +83,17 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
     <form action={formAction} className="space-y-5" noValidate>
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="Your licence details were not saved">
+        <Alert tone="error" title={labels.notSavedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <Field
-        label="Licence number"
+        label={labels.licenceNumber}
         htmlFor="licenseNumber"
         required
         error={state?.fieldErrors?.licenseNumber}
-        hint="The number on your permit or licence to provide legal representation in the UAE."
+        hint={labels.licenceNumberHint}
       >
         <Input
           id="licenseNumber"
@@ -64,11 +106,11 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
       </Field>
 
       <Field
-        label="Licensing authority"
+        label={labels.licensingAuthority}
         htmlFor="licensingAuthority"
         required
         error={state?.fieldErrors?.licensingAuthority}
-        hint="For example the Dubai Legal Affairs Department, or the UAE Ministry of Justice."
+        hint={labels.licensingAuthorityHint}
       >
         <Input
           id="licensingAuthority"
@@ -81,7 +123,7 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Issued on" htmlFor="licenseIssuedOn" error={state?.fieldErrors?.licenseIssuedOn}>
+        <Field label={labels.issuedOn} htmlFor="licenseIssuedOn" error={state?.fieldErrors?.licenseIssuedOn}>
           <Input
             id="licenseIssuedOn"
             name="licenseIssuedOn"
@@ -92,10 +134,10 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
         </Field>
 
         <Field
-          label="Valid until"
+          label={labels.validUntil}
           htmlFor="licenseExpiresOn"
           error={state?.fieldErrors?.licenseExpiresOn}
-          hint="Shown on your public profile once verified."
+          hint={labels.validUntilHint}
         >
           <Input
             id="licenseExpiresOn"
@@ -107,7 +149,7 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
         </Field>
 
         <Field
-          label="Years of experience"
+          label={labels.yearsOfExperience}
           htmlFor="yearsOfExperience"
           error={state?.fieldErrors?.yearsOfExperience}
         >
@@ -123,7 +165,7 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
         </Field>
 
         <Field
-          label="Bar association number"
+          label={labels.barAssociationNumber}
           htmlFor="barAssociationNumber"
           error={state?.fieldErrors?.barAssociationNumber}
         >
@@ -137,13 +179,10 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
         </Field>
       </div>
 
-      <p className="text-xs text-slate-500">
-        You must also upload the licence itself under Documents. Changing the licence number after
-        approval withdraws your verified badge.
-      </p>
+      <p className="text-xs text-slate-500">{labels.uploadNote}</p>
 
-      <SubmitButton size="lg" pendingLabel="Saving…">
-        Save licence details
+      <SubmitButton size="lg" pendingLabel={labels.saving}>
+        {labels.save}
       </SubmitButton>
 
       {/* ── Where a client sends a fee ──────────────────────────────────────
@@ -152,14 +191,11 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
           money. Optional here so the rest of the form can be saved without them;
           a fee cannot be raised until they are filled in. */}
       <fieldset className="space-y-5 border-t border-slate-100 pt-5">
-        <legend className="text-sm font-semibold text-slate-900">Bank details for fee requests</legend>
-        <p className="text-xs text-slate-500">
-          Shown to a client on a fee request, and printed on the receipt. Nothing here is published in
-          the directory.
-        </p>
+        <legend className="text-sm font-semibold text-slate-900">{labels.bank.title}</legend>
+        <p className="text-xs text-slate-500">{labels.bank.intro}</p>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Account holder name" htmlFor="bankAccountName" error={state?.fieldErrors?.bankAccountName}>
+          <Field label={labels.bank.accountHolder} htmlFor="bankAccountName" error={state?.fieldErrors?.bankAccountName}>
             <Input
               id="bankAccountName"
               name="bankAccountName"
@@ -169,7 +205,7 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
             />
           </Field>
 
-          <Field label="Bank" htmlFor="bankName" error={state?.fieldErrors?.bankName}>
+          <Field label={labels.bank.bankName} htmlFor="bankName" error={state?.fieldErrors?.bankName}>
             <Input
               id="bankName"
               name="bankName"
@@ -179,7 +215,7 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
             />
           </Field>
 
-          <Field label="IBAN" htmlFor="bankIban" error={state?.fieldErrors?.bankIban}>
+          <Field label={labels.bank.iban} htmlFor="bankIban" error={state?.fieldErrors?.bankIban}>
             <Input
               id="bankIban"
               name="bankIban"
@@ -192,10 +228,10 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
           </Field>
 
           <Field
-            label="Account number"
+            label={labels.bank.accountNumber}
             htmlFor="bankAccountNumber"
             error={state?.fieldErrors?.bankAccountNumber}
-            hint="Only if the client should use this instead of the IBAN."
+            hint={labels.bank.accountNumberHint}
           >
             <Input
               id="bankAccountNumber"
@@ -207,7 +243,7 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
             />
           </Field>
 
-          <Field label="SWIFT / BIC" htmlFor="bankSwift" error={state?.fieldErrors?.bankSwift}>
+          <Field label={labels.bank.swift} htmlFor="bankSwift" error={state?.fieldErrors?.bankSwift}>
             <Input
               id="bankSwift"
               name="bankSwift"
@@ -218,7 +254,7 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
             />
           </Field>
 
-          <Field label="Branch" htmlFor="bankBranch" error={state?.fieldErrors?.bankBranch}>
+          <Field label={labels.bank.branch} htmlFor="bankBranch" error={state?.fieldErrors?.bankBranch}>
             <Input
               id="bankBranch"
               name="bankBranch"
@@ -230,10 +266,10 @@ export function LawyerCredentialForm({ credential }: { credential: LawyerValues 
         </div>
 
         <Field
-          label="Transfer instructions"
+          label={labels.bank.instructions}
           htmlFor="bankInstructions"
           error={state?.fieldErrors?.bankInstructions}
-          hint="Anything the client should quote or know, such as the reference to use."
+          hint={labels.bank.instructionsHint}
         >
           <Input
             id="bankInstructions"
@@ -269,8 +305,41 @@ type FirmValues = {
   bankInstructions: string | null;
 };
 
+/** The words the firm credential form shows, in the reader's language. */
+export type FirmCredentialFormLabels = {
+  notSavedTitle: string;
+  legalName: string;
+  legalNameHint: string;
+  tradeLicenceNumber: string;
+  licensingAuthority: string;
+  licensingAuthorityHint: string;
+  issuedOn: string;
+  validUntil: string;
+  legalStructure: string;
+  legalStructureHint: string;
+  registeredEmirate: string;
+  notStated: string;
+  numberOfLawyers: string;
+  authorisedSignatory: string;
+  authorisedSignatoryHint: string;
+  registeredAddress: string;
+  website: string;
+  websiteHint: string;
+  uploadNote: string;
+  save: string;
+  saving: string;
+  emirateLabels: Record<string, string>;
+  bank: BankLabels;
+};
+
 /** The legal information a legal-firm account must supply. */
-export function FirmCredentialForm({ credential }: { credential: FirmValues | null }) {
+export function FirmCredentialForm({
+  credential,
+  labels,
+}: {
+  credential: FirmValues | null;
+  labels: FirmCredentialFormLabels;
+}) {
   const [state, formAction] = useActionState(saveFirmCredentialAction, initialFormState);
 
   const text = (
@@ -282,17 +351,17 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
     <form action={formAction} className="space-y-5" noValidate>
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="Your firm details were not saved">
+        <Alert tone="error" title={labels.notSavedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <Field
-        label="Registered legal name"
+        label={labels.legalName}
         htmlFor="legalName"
         required
         error={state?.fieldErrors?.legalName}
-        hint="Exactly as it appears on the trade licence."
+        hint={labels.legalNameHint}
       >
         <Input
           id="legalName"
@@ -306,7 +375,7 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
-          label="Trade licence number"
+          label={labels.tradeLicenceNumber}
           htmlFor="tradeLicenseNumber"
           required
           error={state?.fieldErrors?.tradeLicenseNumber}
@@ -322,11 +391,11 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
         </Field>
 
         <Field
-          label="Licensing authority"
+          label={labels.licensingAuthority}
           htmlFor="tradeLicenseAuthority"
           required
           error={state?.fieldErrors?.tradeLicenseAuthority}
-          hint="For example Dubai Economy and Tourism, or a free-zone authority."
+          hint={labels.licensingAuthorityHint}
         >
           <Input
             id="tradeLicenseAuthority"
@@ -338,7 +407,7 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
           />
         </Field>
 
-        <Field label="Issued on" htmlFor="tradeLicenseIssuedOn" error={state?.fieldErrors?.tradeLicenseIssuedOn}>
+        <Field label={labels.issuedOn} htmlFor="tradeLicenseIssuedOn" error={state?.fieldErrors?.tradeLicenseIssuedOn}>
           <Input
             id="tradeLicenseIssuedOn"
             name="tradeLicenseIssuedOn"
@@ -350,7 +419,7 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
           />
         </Field>
 
-        <Field label="Valid until" htmlFor="tradeLicenseExpiresOn" error={state?.fieldErrors?.tradeLicenseExpiresOn}>
+        <Field label={labels.validUntil} htmlFor="tradeLicenseExpiresOn" error={state?.fieldErrors?.tradeLicenseExpiresOn}>
           <Input
             id="tradeLicenseExpiresOn"
             name="tradeLicenseExpiresOn"
@@ -363,10 +432,10 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
         </Field>
 
         <Field
-          label="Legal structure"
+          label={labels.legalStructure}
           htmlFor="legalStructure"
           error={state?.fieldErrors?.legalStructure}
-          hint="For example LLC, Sole Establishment, Civil Company."
+          hint={labels.legalStructureHint}
         >
           <Input
             id="legalStructure"
@@ -377,23 +446,23 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
           />
         </Field>
 
-        <Field label="Registered emirate" htmlFor="registeredEmirate" error={state?.fieldErrors?.registeredEmirate}>
+        <Field label={labels.registeredEmirate} htmlFor="registeredEmirate" error={state?.fieldErrors?.registeredEmirate}>
           <Select
             id="registeredEmirate"
             name="registeredEmirate"
             defaultValue={state?.values?.registeredEmirate ?? credential?.registeredEmirate ?? ''}
             error={state?.fieldErrors?.registeredEmirate}
           >
-            <option value="">Not stated</option>
+            <option value="">{labels.notStated}</option>
             {EMIRATES.map((emirate) => (
               <option key={emirate.value} value={emirate.value}>
-                {emirate.label}
+                {labels.emirateLabels[emirate.value]}
               </option>
             ))}
           </Select>
         </Field>
 
-        <Field label="Number of lawyers" htmlFor="firmSize" error={state?.fieldErrors?.firmSize}>
+        <Field label={labels.numberOfLawyers} htmlFor="firmSize" error={state?.fieldErrors?.firmSize}>
           <Input
             id="firmSize"
             name="firmSize"
@@ -406,10 +475,10 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
         </Field>
 
         <Field
-          label="Authorised signatory"
+          label={labels.authorisedSignatory}
           htmlFor="authorisedSignatory"
           error={state?.fieldErrors?.authorisedSignatory}
-          hint="The person named on the licence who may act for the firm."
+          hint={labels.authorisedSignatoryHint}
         >
           <Input
             id="authorisedSignatory"
@@ -422,7 +491,7 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
       </div>
 
       <Field
-        label="Registered address"
+        label={labels.registeredAddress}
         htmlFor="registeredAddress"
         error={state?.fieldErrors?.registeredAddress}
       >
@@ -436,10 +505,10 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
       </Field>
 
       <Field
-        label="Website"
+        label={labels.website}
         htmlFor="firmWebsite"
         error={state?.fieldErrors?.website}
-        hint="Optional. Shown on your public profile once verified."
+        hint={labels.websiteHint}
       >
         <Input
           id="firmWebsite"
@@ -451,14 +520,10 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
         />
       </Field>
 
-      <p className="text-xs text-slate-500">
-        You must also upload the trade licence and the licence of the legal professional through
-        whom the firm provides representation. Changing the trade licence number after approval
-        withdraws your verified badge.
-      </p>
+      <p className="text-xs text-slate-500">{labels.uploadNote}</p>
 
-      <SubmitButton size="lg" pendingLabel="Saving…">
-        Save firm details
+      <SubmitButton size="lg" pendingLabel={labels.saving}>
+        {labels.save}
       </SubmitButton>
 
       {/* ── Where a client sends a fee ──────────────────────────────────────
@@ -467,14 +532,11 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
           money. Optional here so the rest of the form can be saved without them;
           a fee cannot be raised until they are filled in. */}
       <fieldset className="space-y-5 border-t border-slate-100 pt-5">
-        <legend className="text-sm font-semibold text-slate-900">Bank details for fee requests</legend>
-        <p className="text-xs text-slate-500">
-          Shown to a client on a fee request, and printed on the receipt. Nothing here is published in
-          the directory.
-        </p>
+        <legend className="text-sm font-semibold text-slate-900">{labels.bank.title}</legend>
+        <p className="text-xs text-slate-500">{labels.bank.intro}</p>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Account holder name" htmlFor="bankAccountName" error={state?.fieldErrors?.bankAccountName}>
+          <Field label={labels.bank.accountHolder} htmlFor="bankAccountName" error={state?.fieldErrors?.bankAccountName}>
             <Input
               id="bankAccountName"
               name="bankAccountName"
@@ -484,7 +546,7 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
             />
           </Field>
 
-          <Field label="Bank" htmlFor="bankName" error={state?.fieldErrors?.bankName}>
+          <Field label={labels.bank.bankName} htmlFor="bankName" error={state?.fieldErrors?.bankName}>
             <Input
               id="bankName"
               name="bankName"
@@ -494,7 +556,7 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
             />
           </Field>
 
-          <Field label="IBAN" htmlFor="bankIban" error={state?.fieldErrors?.bankIban}>
+          <Field label={labels.bank.iban} htmlFor="bankIban" error={state?.fieldErrors?.bankIban}>
             <Input
               id="bankIban"
               name="bankIban"
@@ -507,10 +569,10 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
           </Field>
 
           <Field
-            label="Account number"
+            label={labels.bank.accountNumber}
             htmlFor="bankAccountNumber"
             error={state?.fieldErrors?.bankAccountNumber}
-            hint="Only if the client should use this instead of the IBAN."
+            hint={labels.bank.accountNumberHint}
           >
             <Input
               id="bankAccountNumber"
@@ -522,7 +584,7 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
             />
           </Field>
 
-          <Field label="SWIFT / BIC" htmlFor="bankSwift" error={state?.fieldErrors?.bankSwift}>
+          <Field label={labels.bank.swift} htmlFor="bankSwift" error={state?.fieldErrors?.bankSwift}>
             <Input
               id="bankSwift"
               name="bankSwift"
@@ -533,7 +595,7 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
             />
           </Field>
 
-          <Field label="Branch" htmlFor="bankBranch" error={state?.fieldErrors?.bankBranch}>
+          <Field label={labels.bank.branch} htmlFor="bankBranch" error={state?.fieldErrors?.bankBranch}>
             <Input
               id="bankBranch"
               name="bankBranch"
@@ -545,10 +607,10 @@ export function FirmCredentialForm({ credential }: { credential: FirmValues | nu
         </div>
 
         <Field
-          label="Transfer instructions"
+          label={labels.bank.instructions}
           htmlFor="bankInstructions"
           error={state?.fieldErrors?.bankInstructions}
-          hint="Anything the client should quote or know, such as the reference to use."
+          hint={labels.bank.instructionsHint}
         >
           <Input
             id="bankInstructions"

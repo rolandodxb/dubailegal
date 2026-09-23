@@ -4,6 +4,7 @@ import { PostForm } from '@/components/forms/BlogForms';
 import { Alert, Card, buttonClasses } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 import type { Dictionary } from '@/lib/i18n';
+import { composerLabels } from '@/lib/i18n/dict/feed';
 
 type Post = {
   id: string;
@@ -82,7 +83,13 @@ export function CommunityPanel({
               <Icon name="chevronDown" size={18} />
             </summary>
             <p className="mt-2 mb-4 text-sm text-slate-600">{t.community.writePostHelp}</p>
-            <PostForm listings={listings} t={t} />
+            <PostForm
+              listings={listings}
+              labels={composerLabels(t, {
+                label: t.community.writePost,
+                pending: `${t.community.writePost}…`,
+              })}
+            />
           </details>
         </Card>
       ) : (

@@ -165,7 +165,7 @@ async function main(): Promise<void> {
       lawyer.userId,
       {
         licenseNumber: `FLW-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2032-01-01',
         yearsOfExperience: '9',
       },

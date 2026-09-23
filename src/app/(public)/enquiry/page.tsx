@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
+import { LEGAL_AREAS } from '@/lib/constants';
 import { PublicEnquiryForm } from '@/components/forms/PublicEnquiryForm';
 import { Alert, Card } from '@/components/ui/primitives';
 
-export const metadata: Metadata = {
-  title: 'Send an enquiry',
-  description:
-    'Send a general legal enquiry to lawyers and legal firms in the UAE. No account needed — but an account is faster.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.landing.enquirySend, description: t.publicPages.enquiry.metaDescription };
+}
 
 /**
  * The general enquiry form, reachable without an account.
@@ -17,44 +19,60 @@ export const metadata: Metadata = {
  * record attached. Saying so plainly is better than letting somebody pick the
  * slower route by accident.
  */
-export default function EnquiryPage() {
+export default async function EnquiryPage() {
+  const { t } = await getI18n();
+  const enquiry = t.publicPages.enquiry;
+
   return (
     <div className="dl-container max-w-3xl py-12">
       <header className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-          Send a general enquiry
-        </h1>
-        <p className="mt-3 text-slate-600">
-          No account needed. Your enquiry goes into a shared pool that every registered lawyer and
-          firm can see, and the first to pick it up contacts you directly — your phone and email are
-          shared with them.
-        </p>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{enquiry.title}</h1>
+        <p className="mt-3 text-slate-600">{enquiry.intro}</p>
       </header>
 
-      <Alert tone="info" title="An account is usually faster">
-        A general enquiry is answered by whoever picks it up, and can take longer to be reviewed. With
-        a free account you choose the lawyer or firm yourself, send the full details with your
-        documents attached, follow the progress and keep every message and fee in one place.{' '}
+      <Alert tone="info" title={enquiry.alertTitle}>
+        {enquiry.alertBody}{' '}
         <Link href="/register" className="font-medium underline">
-          Create an account
+          {t.nav.createAccount}
         </Link>{' '}
-        or{' '}
+        {t.publicPages.shell.or}{' '}
         <Link href="/directory" className="font-medium underline">
-          browse the directory
+          {enquiry.browseDirectoryLink}
         </Link>{' '}
-        instead.
+        {enquiry.instead}
       </Alert>
 
       <Card className="mt-6">
-        <PublicEnquiryForm />
+        <PublicEnquiryForm
+          labels={{
+            sentTitle: t.publicPages.enquiryForm.sentTitle,
+            failedTitle: t.publicPages.enquiryForm.failedTitle,
+            name: t.publicPages.enquiryForm.name,
+            email: t.common.email,
+            phone: t.common.phone,
+            areaOfLaw: t.publicPages.enquiryForm.areaOfLaw,
+            areaOptions: LEGAL_AREAS.map((area) => ({
+              value: area.value,
+              label: legalAreaLabel(t, area.value),
+            })),
+            notSure: t.publicPages.enquiryForm.notSure,
+            subject: t.publicPages.enquiryForm.subject,
+            subjectPlaceholder: t.publicPages.enquiryForm.subjectPlaceholder,
+            question: t.publicPages.enquiryForm.question,
+            questionHint: t.publicPages.enquiryForm.questionHint,
+            pending: t.publicPages.enquiryForm.pending,
+            submit: t.landing.enquirySubmit,
+            poolNote: t.landing.enquiryPoolNote,
+          }}
+        />
       </Card>
 
       <p className="mt-6 text-sm text-slate-500">
-        In an emergency, do not send an enquiry —{' '}
+        {t.landing.enquiryEmergencyLead}{' '}
         <Link href="/emergency" className="font-medium text-red-700 hover:underline">
-          get a lawyer on video now
+          {t.landing.enquiryEmergencyLink}
         </Link>
-        , no account needed.
+        {enquiry.emergencyTail}
       </p>
     </div>
   );

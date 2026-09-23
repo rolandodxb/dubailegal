@@ -3,6 +3,7 @@ import { requireReviewer } from '@/lib/auth';
 import { pushOverview } from '@/server/services/push-service';
 import { env } from '@/lib/env';
 import { formatDateTime } from '@/lib/format';
+import { getI18n } from '@/lib/i18n';
 import { Alert, Card } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'Notifications' };
@@ -15,40 +16,40 @@ export const metadata: Metadata = { title: 'Notifications' };
  * not appear here; their in-app alerts still work.
  */
 export default async function AdminNotificationsPage() {
-  await requireReviewer();
+  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
   const overview = await pushOverview();
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Notifications</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Browser push delivery. Every in-app alert is also pushed to any browser a member has
-          enabled it in, so a case update or an urgent request reaches them with the tab closed.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.admin.notifications.title}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{t.admin.notifications.intro}</p>
       </header>
 
-      <Alert tone={overview.configured ? 'success' : 'warning'} title={overview.configured ? 'Push is configured' : 'Push is not configured'}>
+      <Alert
+        tone={overview.configured ? 'success' : 'warning'}
+        title={
+          overview.configured
+            ? t.admin.notifications.configuredTitle
+            : t.admin.notifications.notConfiguredTitle
+        }
+      >
         {overview.configured ? (
           <>
-            A VAPID key pair is loaded and signed messages are being sent. VAPID subject:{' '}
+            {t.admin.notifications.configuredBody}{' '}
             <code>{env.vapidSubject}</code>.
           </>
         ) : (
-          <>
-            No usable VAPID key pair is loaded, so no push can be sent. Members are told this on
-            their account page rather than being offered a button that cannot work. In-app alerts
-            continue regardless.
-          </>
+          <>{t.admin.notifications.notConfiguredBody}</>
         )}
       </Alert>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Subscribed browsers', value: overview.total },
-          { label: 'Members with push on', value: overview.members },
+          { label: t.admin.notifications.stats.subscribedBrowsers, value: overview.total },
+          { label: t.admin.notifications.stats.membersWithPush, value: overview.members },
           {
-            label: 'Failing subscriptions',
+            label: t.admin.notifications.stats.failingSubscriptions,
             value: overview.recent.filter((row) => row.failureCount > 0).length,
           },
         ].map((stat) => (
@@ -61,12 +62,10 @@ export default async function AdminNotificationsPage() {
 
       <section>
         <h2 className="mb-3 font-semibold text-slate-900">
-          Subscriptions ({overview.recent.length})
+          {t.admin.notifications.subscriptionsHeading} ({overview.recent.length})
         </h2>
         {overview.recent.length === 0 ? (
-          <p className="text-sm text-slate-600">
-            No browser has subscribed yet. Members turn notifications on from Account and security.
-          </p>
+          <p className="text-sm text-slate-600">{t.admin.notifications.emptyBody}</p>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
             {overview.recent.map((row) => (
@@ -74,12 +73,15 @@ export default async function AdminNotificationsPage() {
                 <div className="min-w-0">
                   <p className="text-sm text-slate-900">{row.user.email}</p>
                   <p className="truncate text-xs text-slate-500">
-                    {row.userAgent ?? 'Unknown browser'} · subscribed {formatDateTime(row.createdAt)}
-                    {row.lastUsedAt ? ` · last delivered ${formatDateTime(row.lastUsedAt)}` : ''}
+                    {row.userAgent ?? t.admin.notifications.unknownBrowser} ·{' '}
+                    {t.admin.notifications.subscribed} {formatDateTime(row.createdAt)}
+                    {row.lastUsedAt
+                      ? ` · ${t.admin.notifications.lastDelivered} ${formatDateTime(row.lastUsedAt)}`
+                      : ''}
                   </p>
                   {row.lastError ? (
                     <p className="mt-1 text-xs text-red-700">
-                      {row.failureCount} failure(s): {row.lastError}
+                      {row.failureCount} {t.admin.notifications.failures}: {row.lastError}
                     </p>
                   ) : null}
                 </div>
@@ -90,16 +92,15 @@ export default async function AdminNotificationsPage() {
                       : 'bg-amber-50 text-amber-900 ring-amber-200'
                   }`}
                 >
-                  {row.failureCount === 0 ? 'Healthy' : `${row.failureCount} failure(s)`}
+                  {row.failureCount === 0
+                    ? t.admin.notifications.healthy
+                    : `${row.failureCount} ${t.admin.notifications.failures}`}
                 </span>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-2 text-xs text-slate-500">
-          Subscriptions are removed automatically when a push service reports them gone, or after
-          five consecutive failures.
-        </p>
+        <p className="mt-2 text-xs text-slate-500">{t.admin.notifications.note}</p>
       </section>
     </div>
   );

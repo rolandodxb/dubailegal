@@ -34,9 +34,9 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       </main>
 
       <footer className="dl-container py-6 text-center text-xs text-slate-500">
-        Dubai Legal is not a law firm and does not give legal advice.{' '}
+        {t.publicPages.authLayout.disclaimer}{' '}
         <Link href="/directory" className="text-brand-700 hover:underline">
-          Browse the directory
+          {t.publicPages.shell.browseDirectory}
         </Link>
       </footer>
     </div>

@@ -3,17 +3,15 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { requireMember } from '@/lib/auth';
-import { ACCOUNT_TYPE_LABEL, BADGE } from '@/lib/constants';
+import { getI18n } from '@/lib/i18n';
+import { accountTypeLabel, emirateLabel, legalAreaLabel } from '@/lib/i18n/labels';
+import { EMIRATES, LEGAL_AREAS } from '@/lib/constants';
 import { getListingForEdit } from '@/server/services/listing-service';
 import { ListingForm } from '@/components/forms/ListingForm';
 import { unpublishListingAction } from '@/app/actions/profile-actions';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'Directory listing' };
-
-const NOTICES: Record<string, string> = {
-  unpublished: 'Your listing has been removed from the public directory. It is still saved.',
-};
 
 export default async function ListingPage({
   searchParams,
@@ -23,7 +21,8 @@ export default async function ListingPage({
   const user = await requireMember();
   if (user.accountType === 'USER') redirect('/dashboard');
 
-  const [listing, params, lawyerProfile] = await Promise.all([
+  const [{ t }, listing, params, lawyerProfile] = await Promise.all([
+    getI18n(),
     getListingForEdit(user.id),
     searchParams,
     prisma.lawyerProfile.findUnique({
@@ -37,67 +36,79 @@ export default async function ListingPage({
   const representedByFirm = Boolean(
     lawyerProfile?.createdByFirmId && lawyerProfile.affiliatedFirm,
   );
-  const notice = params.notice ? NOTICES[params.notice] : undefined;
+  const notice =
+    params.notice === 'unpublished' ? t.memberPro.listing.noticeUnpublished : undefined;
+
+  const accountTypeNoun = accountTypeLabel(t, user.accountType).toLowerCase();
+  const emirateLabels = Object.fromEntries(
+    EMIRATES.map((emirate) => [emirate.value, emirateLabel(t, emirate.value)]),
+  );
+  const areaLabels = Object.fromEntries(
+    LEGAL_AREAS.map((area) => [area.value, legalAreaLabel(t, area.value)]),
+  );
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Directory listing</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          This is what people see when they search the directory. Your practice areas and emirates
-          are what the filters match on, so keep them accurate.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.listing}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.memberPro.listing.intro}</p>
       </header>
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
 
       {representedByFirm ? (
-        <Alert tone="info" title={`You are represented by ${lawyerProfile?.affiliatedFirm?.legalName}`}>
-          Your account was created by that firm, so you are shown under{' '}
-          <strong>Lawyers at this firm</strong> on the firm&rsquo;s profile rather than as a
-          separate entry in the directory. This listing is kept as a draft; if you leave the firm it
-          becomes your own and you can publish it.
+        <Alert
+          tone="info"
+          title={t.memberPro.listing.representedTitle.replace(
+            '{firm}',
+            lawyerProfile?.affiliatedFirm?.legalName ?? '',
+          )}
+        >
+          {t.memberPro.listing.representedBefore}
+          <strong>{t.memberPro.firm.lawyersAtThisFirm}</strong>
+          {t.memberPro.listing.representedAfter}
         </Alert>
       ) : null}
 
       {listing && !listing.addressLine ? (
-        <Alert tone="info" title="Add your practice address">
-          Clients check where a professional actually is. Adding a UAE address — and a phone number
-          and email — makes your profile far easier to trust.
+        <Alert tone="info" title={t.memberPro.listing.addAddressTitle}>
+          {t.memberPro.listing.addAddressBody}
         </Alert>
       ) : null}
 
       <Alert
         tone={listing?.published ? 'success' : 'neutral'}
-        title={listing?.published ? 'Published' : 'Not published yet'}
+        title={
+          listing?.published
+            ? t.memberPro.listing.published
+            : t.memberPro.listing.notPublishedYet
+        }
       >
         {listing?.published ? (
           <>
-            Your listing is live in the public directory.{' '}
+            {t.memberPro.listing.live}{' '}
             <Link href={`/directory/${listing.id}`} className="font-medium underline">
-              View your public profile
+              {t.memberPro.listing.viewPublicProfile}
             </Link>
             .
           </>
         ) : listing ? (
-          'Your listing is saved as a private draft. Tick "Publish this listing" below when you are ready for it to appear in the directory.'
+          t.memberPro.listing.draftBody
         ) : (
-          'You have not created a listing yet. Fill in the form below and publish it when you are ready.'
+          t.memberPro.listing.emptyBody
         )}
       </Alert>
 
       {!listing?.published && user.verificationStatus !== 'APPROVED' ? (
-        <Alert tone="warning" title="Your account is not verified yet">
-          You can publish your listing now, but it will be shown in the directory marked as not
-          verified, and it will appear below verified {ACCOUNT_TYPE_LABEL[user.accountType].toLowerCase()}{' '}
-          profiles until a reviewer approves your documents. Verified members show the{' '}
-          {BADGE[user.accountType].label.toLowerCase()} badge.
+        <Alert tone="warning" title={t.memberPro.listing.notVerifiedTitle}>
+          {t.memberPro.listing.notVerifiedBody
+            .replace('{type}', accountTypeNoun)
+            .replace('{badge}', t.badges[user.accountType].toLowerCase())}
         </Alert>
       ) : null}
 
       <Card>
         <ListingForm
-          accountType={user.accountType}
           defaultDisplayName={user.profile?.fullName ?? ''}
           listing={
             listing
@@ -119,19 +130,52 @@ export default async function ListingPage({
                 }
               : null
           }
+          labels={{
+            notSavedTitle: t.memberPro.listing.formNotSavedTitle,
+            displayName: t.memberPro.listing.displayName,
+            displayNameHint:
+              user.accountType === 'FIRM'
+                ? t.memberPro.listing.displayNameHintFirm
+                : t.memberPro.listing.displayNameHint,
+            headline: t.memberPro.listing.headline,
+            headlineHint: t.memberPro.listing.headlineHint,
+            about: t.memberPro.listing.about,
+            aboutHint: t.memberPro.listing.aboutHint.replace('{type}', accountTypeNoun),
+            mainEmirate: t.memberPro.listing.mainEmirate,
+            yearsOfExperience: t.memberPro.credentials.yearsOfExperience,
+            emiratesCovered: t.memberPro.listing.emiratesCovered,
+            emiratesHelp: t.memberPro.listing.emiratesHelp,
+            areasOfLaw: t.memberPro.listing.areasOfLaw,
+            areasHelp: t.memberPro.listing.areasHelp,
+            languages: t.memberPro.listing.languages,
+            languagesHint: t.memberPro.listing.languagesHint,
+            languagesDefault: t.memberPro.listing.languagesDefault,
+            contactEmail: t.memberPro.listing.contactEmail,
+            contactEmailHint: t.memberPro.listing.contactEmailHint,
+            contactPhone: t.memberPro.listing.contactPhone,
+            practiceAddress: t.memberPro.listing.practiceAddress,
+            practiceAddressHint: t.memberPro.listing.practiceAddressHint,
+            website: t.memberPro.credentials.website,
+            visibility: t.memberPro.listing.visibility,
+            acceptingClients: t.memberPro.listing.acceptingClients,
+            acceptingClientsHint: t.memberPro.listing.acceptingClientsHint,
+            publishListing: t.memberPro.listing.publishListing,
+            publishListingHint: t.memberPro.listing.publishListingHint,
+            saveListing: t.memberPro.listing.saveListing,
+            saving: t.memberPro.listing.saving,
+            emirateLabels,
+            areaLabels,
+          }}
         />
       </Card>
 
       {listing?.published ? (
         <Card>
-          <h2 className="font-semibold text-slate-900">Take my listing down</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Removes the listing from the public directory. Nothing is deleted — you can publish it
-            again at any time.
-          </p>
+          <h2 className="font-semibold text-slate-900">{t.memberPro.listing.takeDownTitle}</h2>
+          <p className="mt-1 text-sm text-slate-600">{t.memberPro.listing.takeDownBody}</p>
           <form action={unpublishListingAction} className="mt-4">
             <button type="submit" className={buttonClasses('danger', 'md')}>
-              Unpublish my listing
+              {t.memberPro.listing.takeDownButton}
             </button>
           </form>
         </Card>

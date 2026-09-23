@@ -29,6 +29,7 @@ export default async function ConferenceRoomPage({
   params: Promise<{ code: string }>;
 }) {
   const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
+  const labels = t.memberCases.roomPage;
   const { code } = await params;
 
   const access = await resolveRoomForUser(code, user.id);
@@ -41,9 +42,9 @@ export default async function ConferenceRoomPage({
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm" aria-label="Breadcrumb">
+      <nav className="text-sm" aria-label={t.memberCases.breadcrumb}>
         <Link href="/cases" className="text-brand-700 hover:underline">
-          ← Back to my cases
+          {labels.backToMyCases}
         </Link>
       </nav>
 
@@ -53,32 +54,41 @@ export default async function ConferenceRoomPage({
 
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">
-          {emergency ? 'Emergency call' : 'Conference room'}
+          {emergency ? labels.emergencyCall : labels.conferenceRoom}
         </h1>
         <p className="mt-1 text-sm text-slate-600">
-          Your {emergency ? 'urgent call with' : 'meeting with'}{' '}
+          {emergency ? labels.yourUrgentCallWith : labels.yourMeetingWith}{' '}
           <strong className="text-slate-900">{access.otherPartyName}</strong>
-          {appointment ? `, scheduled for ${formatUaeDateTime(appointment.startsAt)}` : ''}.
+          {appointment
+            ? labels.scheduledFor.replace('{date}', formatUaeDateTime(appointment.startsAt))
+            : ''}
+          .
         </p>
       </header>
 
       {emergency ? (
-        <Alert tone="warning" title="You are answering an emergency">
-          {emergency.guestName ?? 'A person needing urgent help'} raised this{' '}
-          {emergency.title ? `about “${emergency.title}”` : ''}. Joining the room records you as the
-          lawyer who answered.
+        <Alert tone="warning" title={labels.answeringEmergency}>
+          {emergency.guestName ?? labels.personNeedingHelp}
+          {labels.raisedThis}{' '}
+          {emergency.title ? labels.aboutTitle.replace('{title}', emergency.title) : ''}
+          {labels.answeringBody}
         </Alert>
       ) : null}
 
       {notYet && appointment ? (
-        <Alert tone="info" title="This meeting is not due yet">
-          It is scheduled for {formatUaeDateTime(appointment.startsAt)}. You can join the room early
-          — it stays open — but the other person may not be there yet.
+        <Alert tone="info" title={labels.notDueYet}>
+          {labels.notDueBody.replace('{date}', formatUaeDateTime(appointment.startsAt))}
         </Alert>
       ) : null}
 
       <ConferenceRoom
-        labels={{ you: t.room.you, recording: t.room.recording, recordingNow: t.room.recordingNow }}
+        labels={{
+          you: t.room.you,
+          recording: t.room.recording,
+          recordingNow: t.room.recordingNow,
+          ...t.memberCases.conference,
+          recorder: t.memberCases.recorder,
+        }}
         iceServers={iceServersForClient()}
         roomCode={code}
         role={access.role}
@@ -90,26 +100,22 @@ export default async function ConferenceRoomPage({
       {appointment?.source === 'CASE_REQUEST' ? (
         <Card>
           <h2 className="font-semibold text-slate-900">
-            {access.role === 'CLIENT' ? 'End this call' : 'Finish up'}
+            {access.role === 'CLIENT' ? labels.endThisCall : labels.finishUp}
           </h2>
-          <p className="mt-1 mb-3 text-sm text-slate-600">
-            Leaving the room keeps it open so the other person can join. Ending the call closes it
-            for both of you and tells them it is over — press this if the call was a mistake, or
-            once you have said what you needed to.
-          </p>
-          <CancelCallButton appointmentId={appointment.id} />
+          <p className="mt-1 mb-3 text-sm text-slate-600">{labels.endCallBody}</p>
+          <CancelCallButton
+            appointmentId={appointment.id}
+            labels={t.memberCases.appointment}
+          />
         </Card>
       ) : null}
 
       <Card>
         <h2 className="font-semibold text-slate-900">
-          Recordings of this call ({recordings.length})
+          {labels.recordingsHeading.replace('{count}', String(recordings.length))}
         </h2>
         {recordings.length === 0 ? (
-          <p className="mt-1 text-sm text-slate-600">
-            Nothing has been recorded in this room yet. A call is recorded from the moment either
-            person joins, and the recording is saved when they leave.
-          </p>
+          <p className="mt-1 text-sm text-slate-600">{labels.noRecordings}</p>
         ) : (
           <ul className="mt-3 divide-y divide-slate-100">
             {recordings.map((recording) => (
@@ -117,13 +123,18 @@ export default async function ConferenceRoomPage({
                 <p className="text-sm font-medium text-slate-900">
                   {recording.recordedBy.profile?.fullName?.trim() || recording.recordedBy.email}
                   <span className="ml-2 text-xs font-normal text-slate-500">
-                    {recording.recordedById === user.id ? 'your recording' : 'their recording'}
+                    {recording.recordedById === user.id
+                      ? labels.yourRecording
+                      : labels.theirRecording}
                   </span>
                 </p>
                 <p className="text-xs text-slate-500">
                   {formatUaeDateTime(recording.createdAt)} · {formatFileSize(recording.sizeBytes)}
                   {recording.durationMs
-                    ? ` · ${Math.max(1, Math.round(recording.durationMs / 1000))} seconds`
+                    ? ` · ${labels.seconds.replace(
+                        '{count}',
+                        String(Math.max(1, Math.round(recording.durationMs / 1000))),
+                      )}`
                     : ''}
                 </p>
                 <video
@@ -138,30 +149,26 @@ export default async function ConferenceRoomPage({
         )}
 
         <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          <strong className="font-medium text-slate-800">Private and encrypted.</strong> These
-          recordings are encrypted on disk, available to the two people on the call and to nobody
-          else. An administrator cannot play them. They are deleted with the meeting they belong to.
+          <strong className="font-medium text-slate-800">{labels.privateEncryptedTitle}</strong>
+          {labels.privateEncryptedBody}
         </p>
       </Card>
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Before you start</h2>
+        <h2 className="font-semibold text-slate-900">{labels.beforeYouStart}</h2>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-700">
-          <li>Allow camera and microphone access when the browser asks.</li>
-          <li>The call is direct between the two of you; nothing is recorded.</li>
-          <li>
-            If the connection fails, your network is likely blocking a direct link. Use the backup
-            room below, or continue in the case chat.
-          </li>
+          <li>{labels.allowMedia}</li>
+          <li>{labels.directCall}</li>
+          <li>{labels.connectionFails}</li>
         </ul>
         <div className="mt-4 flex flex-wrap gap-3">
           {access.caseId ? (
             <Link href={`/cases/${access.caseId}`} className={buttonClasses('secondary', 'md')}>
-              Open the case chat
+              {labels.openCaseChat}
             </Link>
           ) : null}
           <Link href="/cases" className={buttonClasses('ghost', 'md')}>
-            My meetings
+            {labels.myMeetings}
           </Link>
         </div>
       </Card>

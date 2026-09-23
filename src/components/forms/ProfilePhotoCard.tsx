@@ -21,11 +21,24 @@ export function ProfilePhotoCard({
   name,
   hasPhoto,
   documentId,
+  labels,
 }: {
   userId: string;
   name: string;
   hasPhoto: boolean;
   documentId: string | null;
+  labels: {
+    replaceYourPhoto: string;
+    addAPhoto: string;
+    hint: string;
+    uploading: string;
+    replacePhoto: string;
+    uploadPhoto: string;
+    removeConfirm: string;
+    removing: string;
+    removePhoto: string;
+    privacyNote: string;
+  };
 }) {
   const [uploadState, uploadAction] = useActionState(uploadDocumentAction, initialFormState);
   const [deleteState, deleteAction] = useActionState(deleteDocumentAction, initialFormState);
@@ -52,10 +65,10 @@ export function ProfilePhotoCard({
           <form action={uploadAction} className="space-y-3">
             <input type="hidden" name="kind" value="PROFILE_PHOTO" />
             <Field
-              label={hasPhoto ? 'Replace your photo' : 'Add a photo'}
+              label={hasPhoto ? labels.replaceYourPhoto : labels.addAPhoto}
               htmlFor="profile-photo"
               error={uploadState?.fieldErrors?.file}
-              hint="JPEG, PNG or WebP up to 10 MB. A square image works best. Your photo is saved and shown immediately — nothing reviews it."
+              hint={labels.hint}
             >
               <input
                 id="profile-photo"
@@ -66,8 +79,8 @@ export function ProfilePhotoCard({
                 className="block w-full cursor-pointer rounded-lg border border-slate-300 bg-white text-sm text-slate-700 file:mr-3 file:cursor-pointer file:rounded-l-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-brand-800 hover:file:bg-brand-100"
               />
             </Field>
-            <SubmitButton variant="secondary" pendingLabel="Uploading…">
-              {hasPhoto ? 'Replace photo' : 'Upload photo'}
+            <SubmitButton variant="secondary" pendingLabel={labels.uploading}>
+              {hasPhoto ? labels.replacePhoto : labels.uploadPhoto}
             </SubmitButton>
           </form>
 
@@ -78,20 +91,17 @@ export function ProfilePhotoCard({
                 variant="ghost"
                 size="sm"
                 className="text-red-700 hover:bg-red-50"
-                confirm="Remove your profile picture?"
-                pendingLabel="Removing…"
+                confirm={labels.removeConfirm}
+                pendingLabel={labels.removing}
               >
-                Remove photo
+                {labels.removePhoto}
               </SubmitButton>
             </form>
           ) : null}
         </div>
       </div>
 
-      <p className="text-xs text-slate-500">
-        Your photo is private until you publish a directory listing. It is also shown to a reviewer
-        checking your documents, and to anyone you have a case with.
-      </p>
+      <p className="text-xs text-slate-500">{labels.privacyNote}</p>
     </div>
   );
 }

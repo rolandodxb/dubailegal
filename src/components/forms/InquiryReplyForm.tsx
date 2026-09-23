@@ -10,7 +10,13 @@ import { initialFormState } from '@/lib/form-state';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Textarea } from '@/components/ui/primitives';
 
-export function InquiryReplyForm({ inquiryId }: { inquiryId: string }) {
+export function InquiryReplyForm({
+  inquiryId,
+  labels,
+}: {
+  inquiryId: string;
+  labels: { yourReply: string; sending: string; sendReply: string };
+}) {
   const [state, formAction] = useActionState(replyToInquiryAction, initialFormState);
 
   return (
@@ -21,7 +27,7 @@ export function InquiryReplyForm({ inquiryId }: { inquiryId: string }) {
       <input type="hidden" name="inquiryId" value={inquiryId} />
 
       <Field
-        label="Your reply"
+        label={labels.yourReply}
         htmlFor={`reply-${inquiryId}`}
         required
         error={state?.fieldErrors?.replyBody}
@@ -38,14 +44,20 @@ export function InquiryReplyForm({ inquiryId }: { inquiryId: string }) {
         />
       </Field>
 
-      <SubmitButton size="sm" pendingLabel="Sending…">
-        Send reply
+      <SubmitButton size="sm" pendingLabel={labels.sending}>
+        {labels.sendReply}
       </SubmitButton>
     </form>
   );
 }
 
-export function MarkInquiryReadButton({ inquiryId }: { inquiryId: string }) {
+export function MarkInquiryReadButton({
+  inquiryId,
+  labels,
+}: {
+  inquiryId: string;
+  labels: { markAsRead: string };
+}) {
   const [state, formAction] = useActionState(markInquiryReadAction, initialFormState);
   return (
     <form action={formAction} className="inline">
@@ -54,13 +66,19 @@ export function MarkInquiryReadButton({ inquiryId }: { inquiryId: string }) {
         <span className="mr-2 text-xs text-red-700">{state.message}</span>
       ) : null}
       <SubmitButton variant="ghost" size="sm" pendingLabel="…">
-        Mark as read
+        {labels.markAsRead}
       </SubmitButton>
     </form>
   );
 }
 
-export function CloseInquiryButton({ inquiryId }: { inquiryId: string }) {
+export function CloseInquiryButton({
+  inquiryId,
+  labels,
+}: {
+  inquiryId: string;
+  labels: { close: string; closeConfirm: string };
+}) {
   const [state, formAction] = useActionState(closeInquiryAction, initialFormState);
   return (
     <form action={formAction} className="inline">
@@ -68,8 +86,8 @@ export function CloseInquiryButton({ inquiryId }: { inquiryId: string }) {
       {state && !state.ok && state.message ? (
         <span className="mr-2 text-xs text-red-700">{state.message}</span>
       ) : null}
-      <SubmitButton variant="ghost" size="sm" confirm="Close this inquiry?" pendingLabel="…">
-        Close
+      <SubmitButton variant="ghost" size="sm" confirm={labels.closeConfirm} pendingLabel="…">
+        {labels.close}
       </SubmitButton>
     </form>
   );

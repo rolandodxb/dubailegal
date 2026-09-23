@@ -72,7 +72,7 @@ export default async function PublicLayout({ children }: { children: React.React
           {/* Sticky and independently scrollable: a long navigation must not
               drag the page with it. */}
           <aside className="dl-scroll-hidden sm:sticky sm:top-20 sm:max-h-[calc(100vh-6rem)] sm:self-start sm:overflow-y-auto sm:overscroll-contain sm:pr-1 sm:pb-4">
-            <SideNav items={navItems} />
+            <SideNav items={navItems} sectionsLabel={t.common.sections} />
             <div className="mt-4 border-t border-slate-200 pt-3">
               <LanguageSwitcher current={locale} label={t.language.change} variant="sidebar" />
             </div>

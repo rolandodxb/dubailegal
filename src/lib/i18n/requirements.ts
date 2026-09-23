@@ -3,6 +3,7 @@ import { countryByCode } from '@/lib/countries';
 import type { Dictionary } from './en';
 import type { Locale } from './locales';
 import { countryName } from './country-names';
+import { messageTranslator } from './messages';
 
 /**
  * The document requirements, said in the reader's language.
@@ -175,4 +176,43 @@ export function missingRequirementTexts(
     .filter((request) => !(request.mayBeDeclaredMissing && rules.declaredNoResidencePermit))
     .filter((request) => !request.kinds.some((kind) => present.has(kind)))
     .map((request) => ({ label: requirementText(t, locale, request, rules).label, kinds: request.kinds }));
+}
+
+/**
+ * One thing standing between a member and verification, in their language.
+ *
+ * Most blockers are a fixed sentence, which the message catalogue already knows.
+ * The one about documents is not: it names the documents this particular member
+ * still owes, and those names depend on where they were born, what nationality
+ * they hold and where they live. So it travels as a code with the requests
+ * attached, and is composed here.
+ */
+export type VerificationBlocker =
+  | { kind: 'text'; text: string }
+  | { kind: 'documents'; requests: DocumentRequest[] };
+
+/** Renders one blocker in the reader's language. */
+export function blockerText(
+  t: Dictionary,
+  locale: Locale,
+  blocker: VerificationBlocker,
+  rules: DocumentRules,
+): string {
+  if (blocker.kind === 'text') return messageTranslator(locale)(blocker.text);
+
+  const items = blocker.requests
+    .map((request) => requirementText(t, locale, request, rules).label)
+    .join('; ');
+
+  return fill(t.requirements.blockerDocuments.text, { items });
+}
+
+/** The whole list, in the reader's language. */
+export function blockerTexts(
+  t: Dictionary,
+  locale: Locale,
+  blockers: VerificationBlocker[],
+  rules: DocumentRules,
+): string[] {
+  return blockers.map((blocker) => blockerText(t, locale, blocker, rules));
 }

@@ -25,8 +25,9 @@ import { emailDeliveryNotice } from '@/lib/email';
 import { featureDisabledMessage, getAvailability, isEnabled } from '@/lib/availability';
 import { formDataToObject, type FormState } from '@/lib/form-state';
 import { safeNextPath } from '@/lib/redirect';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
-export async function registerAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function registerActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   // A disabled function must refuse the submission, not merely hide the form.
   const availability = await getAvailability();
   if (!isEnabled(availability.settings, 'feature.registration')) {
@@ -60,7 +61,7 @@ export async function registerAction(_prev: FormState, formData: FormData): Prom
   redirect(homePathFor({ roles: result.data.roles as Role[], accountType: '' }));
 }
 
-export async function loginAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function loginActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const meta = await requestMeta();
   const result = await signIn(
     { email: formData.get('email'), password: formData.get('password') },
@@ -94,7 +95,7 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
   redirect(next || homePathFor({ roles: result.data.roles as Role[], accountType: '' }));
 }
 
-export async function logoutAction(): Promise<void> {
+async function logoutActionImpl(): Promise<void> {
   const user = await requireSession();
   const meta = await requestMeta();
   const token = await currentSessionToken();
@@ -108,7 +109,7 @@ export async function logoutAction(): Promise<void> {
  * loading the page, so that a mail client or security scanner prefetching the
  * link cannot silently consume the one-time token.
  */
-export async function verifyEmailAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function verifyEmailActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const token = String(formData.get('token') ?? '');
   const meta = await requestMeta();
   const result = await confirmEmailAddress(token, meta);
@@ -118,7 +119,7 @@ export async function verifyEmailAction(_prev: FormState, formData: FormData): P
   redirect('/dashboard?notice=email-confirmed');
 }
 
-export async function resendVerificationAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function resendVerificationActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireSession();
   const result = await resendVerificationEmail(user.id);
   if (!result.ok) return { ok: false, message: result.message };
@@ -129,7 +130,7 @@ export async function resendVerificationAction(_prev: FormState, formData: FormD
   };
 }
 
-export async function forgotPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function forgotPasswordActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const meta = await requestMeta();
   const result = await requestPasswordReset({ email: formData.get('email') }, meta);
 
@@ -149,7 +150,7 @@ export async function forgotPasswordAction(_prev: FormState, formData: FormData)
   };
 }
 
-export async function resetPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function resetPasswordActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const meta = await requestMeta();
   const result = await resetPassword(
     {
@@ -165,7 +166,7 @@ export async function resetPasswordAction(_prev: FormState, formData: FormData):
   redirect('/login?notice=password-reset');
 }
 
-export async function changePasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function changePasswordActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireSession();
   const meta = await requestMeta();
   const token = await currentSessionToken();
@@ -189,9 +190,72 @@ export async function changePasswordAction(_prev: FormState, formData: FormData)
   };
 }
 
-export async function revokeOtherSessionsAction(): Promise<void> {
+async function revokeOtherSessionsActionImpl(): Promise<void> {
   const user = await requireSession();
   const token = await currentSessionToken();
   await revokeAllSessions(user.id, token);
   redirect('/account?notice=sessions-revoked');
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function registerAction(
+  ...args: Parameters<typeof registerActionImpl>
+): Promise<Awaited<ReturnType<typeof registerActionImpl>>> {
+  return localiseFormState(await registerActionImpl(...args));
+}
+
+export async function loginAction(
+  ...args: Parameters<typeof loginActionImpl>
+): Promise<Awaited<ReturnType<typeof loginActionImpl>>> {
+  return localiseFormState(await loginActionImpl(...args));
+}
+
+export async function logoutAction(
+  ...args: Parameters<typeof logoutActionImpl>
+): Promise<Awaited<ReturnType<typeof logoutActionImpl>>> {
+  return localiseFormState(await logoutActionImpl(...args));
+}
+
+export async function verifyEmailAction(
+  ...args: Parameters<typeof verifyEmailActionImpl>
+): Promise<Awaited<ReturnType<typeof verifyEmailActionImpl>>> {
+  return localiseFormState(await verifyEmailActionImpl(...args));
+}
+
+export async function resendVerificationAction(
+  ...args: Parameters<typeof resendVerificationActionImpl>
+): Promise<Awaited<ReturnType<typeof resendVerificationActionImpl>>> {
+  return localiseFormState(await resendVerificationActionImpl(...args));
+}
+
+export async function forgotPasswordAction(
+  ...args: Parameters<typeof forgotPasswordActionImpl>
+): Promise<Awaited<ReturnType<typeof forgotPasswordActionImpl>>> {
+  return localiseFormState(await forgotPasswordActionImpl(...args));
+}
+
+export async function resetPasswordAction(
+  ...args: Parameters<typeof resetPasswordActionImpl>
+): Promise<Awaited<ReturnType<typeof resetPasswordActionImpl>>> {
+  return localiseFormState(await resetPasswordActionImpl(...args));
+}
+
+export async function changePasswordAction(
+  ...args: Parameters<typeof changePasswordActionImpl>
+): Promise<Awaited<ReturnType<typeof changePasswordActionImpl>>> {
+  return localiseFormState(await changePasswordActionImpl(...args));
+}
+
+export async function revokeOtherSessionsAction(
+  ...args: Parameters<typeof revokeOtherSessionsActionImpl>
+): Promise<Awaited<ReturnType<typeof revokeOtherSessionsActionImpl>>> {
+  return localiseFormState(await revokeOtherSessionsActionImpl(...args));
 }

@@ -27,8 +27,8 @@ export type LandingContent = {
 
 const en: LandingContent = {
   clients: [
-      { title: 'Search by what matters', body: 'Filter by area of law and emirate — criminal, civil, commercial, family, labour, property and more — across all seven Emirates.' },
-      { title: 'See who has been checked', body: 'A coloured badge means a reviewer examined that professional\\u2019s Emirates ID and legal documents. Profiles without one say so plainly.' },
+      { title: 'Search by what matters', body: 'Filter by area of law and location — criminal, civil, commercial, family, labour, property and more — wherever you need representation.' },
+      { title: 'See who has been checked', body: 'A coloured badge means a reviewer examined that professional\\u2019s official identity document and legal credentials. Profiles without one say so plainly.' },
       { title: 'Send a case, not an email', body: 'Name the matter, describe it, attach your papers. Follow it from Submitted to Under review to Assigned without chasing anyone.' },
       { title: 'Talk inside the case', body: 'A proper conversation with your lawyer, with your documents and your fees in the same place. Nobody has to repeat themselves.' },
       { title: 'Ask for a call when it matters', body: 'Your own conference room, with the professional handling your case in it. Ask for an urgent call and you go straight in while they are alerted.' },
@@ -44,22 +44,22 @@ const en: LandingContent = {
       { title: 'Ask for your fee in the case', body: 'Raise a consultation or case fee where the conversation already is. The client pays by card, a receipt is issued, and the proof of payment lands in the case.' },
   ],
   badges: [
-      'An individual whose Emirates ID and profile have been reviewed.',
-      'A lawyer whose Emirates ID and permit to provide legal representation have been reviewed.',
-      'A firm whose Emirates ID, legal permit and trade licence have been reviewed.',
+      'An individual whose identity document and profile have been reviewed.',
+      'A lawyer whose identity document and permit to provide legal representation have been reviewed.',
+      'A firm whose identity document, legal permit and trade licence have been reviewed.',
   ],
   trust: [
-      { title: 'Emirates ID never public', body: 'Your profile shows that your Emirates ID was verified. The number is never published.' },
+      { title: 'Your ID is never public', body: 'Your profile shows that your identity document was verified. The number is never published.' },
       { title: 'Documents stay private', body: 'Evidence is stored away from anything public and served only to you and your reviewer.' },
-      { title: 'One identity, one account', body: 'An Emirates ID can verify a single account, which is what makes a badge worth something.' },
+      { title: 'One identity, one account', body: 'One identity document can verify a single account, which is what makes a badge worth something.' },
       { title: 'You are told what happens', body: 'Every status change, message and meeting request raises an alert you can act on.' },
   ],
 };
 
 const es: Localised<LandingContent> = {
   clients: [
-      { title: 'Busque por lo que importa', body: 'Filtre por área del derecho y emirato — penal, civil, mercantil, familia, laboral, inmobiliario y más — en los siete Emiratos.' },
-      { title: 'Vea quién ha sido comprobado', body: 'Una insignia de color significa que un revisor examinó el Emirates ID y los documentos legales de ese profesional. Los perfiles que no la tienen lo dicen con claridad.' },
+      { title: 'Busque por lo que importa', body: 'Filtre por área del derecho y ubicación — penal, civil, mercantil, familia, laboral, inmobiliario y más — allá donde necesite representación.' },
+      { title: 'Vea quién ha sido comprobado', body: 'Una insignia de color significa que un revisor examinó el documento de identidad oficial y las credenciales legales de ese profesional. Los perfiles que no la tienen lo dicen con claridad.' },
       { title: 'Envíe un caso, no un correo', body: 'Ponga nombre al asunto, descríbalo y adjunte sus documentos. Sígalo desde «Enviado» hasta «En revisión» y «Asignado».' },
       { title: 'Converse dentro del caso', body: 'Una conversación ordenada con su abogado, con los documentos y los honorarios en el mismo sitio. Nadie tiene que buscar en su bandeja de entrada.' },
       { title: 'Pida una llamada cuando importe', body: 'Su propia sala de videoconferencia, con el profesional que lleva su caso. Pida una llamada urgente y el teléfono suena.' },
@@ -75,14 +75,14 @@ const es: Localised<LandingContent> = {
       { title: 'Pida sus honorarios dentro del caso', body: 'Solicite una consulta o un honorario donde ya está la conversación. El cliente paga por transferencia y el recibo queda emitido.' }
   ],
   badges: [
-      'Una persona cuyo Emirates ID y cuyo perfil han sido revisados.',
-      'Un abogado cuyo Emirates ID y cuyo permiso para ejercer la representación legal han sido revisados.',
-      'Un despacho cuyo Emirates ID, permiso legal y licencia comercial han sido revisados.'
+      'Una persona cuyo documento de identidad y cuyo perfil han sido revisados.',
+      'Un abogado cuyo documento de identidad y cuyo permiso para ejercer la representación legal han sido revisados.',
+      'Un despacho cuyo documento de identidad, permiso legal y licencia comercial han sido revisados.'
   ],
   trust: [
-      { title: 'El Emirates ID nunca es público', body: 'Su perfil muestra que su Emirates ID fue verificado. El número nunca se publica.' },
+      { title: 'Su identidad nunca es pública', body: 'Su perfil muestra que su documento de identidad fue verificado. El número nunca se publica.' },
       { title: 'Los documentos siguen siendo privados', body: 'Las pruebas se guardan lejos de todo lo público y solo se muestran a usted y a su revisor.' },
-      { title: 'Una identidad, una cuenta', body: 'Un Emirates ID solo puede verificar una cuenta, y eso es lo que da valor a una insignia.' },
+      { title: 'Una identidad, una cuenta', body: 'Un documento de identidad solo puede verificar una cuenta, y eso es lo que da valor a una insignia.' },
       { title: 'Le avisamos de todo lo que ocurre', body: 'Cada cambio de estado, mensaje y solicitud de reunión genera un aviso sobre el que puede actuar.' },
   ],
 };

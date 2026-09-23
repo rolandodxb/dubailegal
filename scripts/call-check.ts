@@ -206,7 +206,7 @@ async function main(): Promise<void> {
     lawyer.id,
     {
       licenseNumber: 'CALL-CHECK-1',
-      licensingAuthority: 'Dubai Legal Affairs Department',
+      licensingAuthority: 'Legal Dash Affairs Department',
       licenseIssuedOn: '2020-01-01',
       licenseExpiresOn: '2030-01-01',
       yearsOfExperience: '10',

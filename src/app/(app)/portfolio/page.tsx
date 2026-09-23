@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireProfessional } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { listCasesForFirm, listCasesForLawyer, unreadMessageCountsByCase } from '@/server/services/case-service';
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { CaseCard } from '@/components/cases/CaseCard';
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: 'My portfolio' };
  * pending review instead.
  */
 export default async function PortfolioPage() {
-  const user = await requireProfessional();
+  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
   const isFirm = user.accountType === 'FIRM';
 
   const [items, unread] = await Promise.all([
@@ -29,19 +30,17 @@ export default async function PortfolioPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">My portfolio</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.portfolio}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          {isFirm
-            ? 'Cases that one of your registered lawyers has accepted and is working on.'
-            : 'Every case you have accepted and are responsible for.'}
+          {isFirm ? t.memberCore.portfolio.introFirm : t.memberCore.portfolio.introLawyer}
         </p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Ongoing', value: ongoing.length },
-          { label: 'Completed', value: completed.length },
-          { label: 'Total accepted', value: items.length },
+          { label: t.memberCore.portfolio.ongoing, value: ongoing.length },
+          { label: t.memberCore.portfolio.completed, value: completed.length },
+          { label: t.memberCore.portfolio.totalAccepted, value: items.length },
         ].map((stat) => (
           <Card key={stat.label}>
             <p className="text-sm text-slate-600">{stat.label}</p>
@@ -51,14 +50,16 @@ export default async function PortfolioPage() {
       </div>
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Ongoing ({ongoing.length})</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {t.memberCore.portfolio.ongoing} ({ongoing.length})
+        </h2>
         {ongoing.length === 0 ? (
           <EmptyState
-            title="No ongoing cases"
-            description="Cases you accept from the pending queue appear here."
+            title={t.memberCore.portfolio.emptyTitle}
+            description={t.memberCore.portfolio.emptyBody}
             action={
               <Link href="/pending" className={buttonClasses('primary', 'md')}>
-                Cases pending review
+                {t.items.pending}
               </Link>
             }
           />
@@ -73,7 +74,9 @@ export default async function PortfolioPage() {
 
       {completed.length > 0 ? (
         <section>
-          <h2 className="mb-3 font-semibold text-slate-900">Completed ({completed.length})</h2>
+          <h2 className="mb-3 font-semibold text-slate-900">
+            {t.memberCore.portfolio.completed} ({completed.length})
+          </h2>
           <ul className="grid gap-4 sm:grid-cols-2">
             {completed.map((item) => (
               <CaseCard key={item.id} item={item} perspective="professional" unreadCount={unread.get(item.id) ?? 0} />

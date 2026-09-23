@@ -8,11 +8,11 @@ export function buildInquiryReplyEmail(params: {
   dashboardUrl: string;
 }): { subject: string; body: string } {
   return {
-    subject: `Dubai Legal — ${params.subject}`,
+    subject: `Legal Dash — ${params.subject}`,
     body: [
       `Hello ${params.recipientName},`,
       '',
-      `${params.senderName} sent you a message through Dubai Legal:`,
+      `${params.senderName} sent you a message through Legal Dash:`,
       '',
       params.subject,
       '----------------------------------------',
@@ -21,7 +21,7 @@ export function buildInquiryReplyEmail(params: {
       '',
       `Open it and reply from your dashboard: ${params.dashboardUrl}`,
       '',
-      '— Dubai Legal',
+      '— Legal Dash',
     ].join('\n'),
   };
 }

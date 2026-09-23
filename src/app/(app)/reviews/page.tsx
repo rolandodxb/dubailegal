@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
 import { getAvailability, isEnabled } from '@/lib/availability';
 import {
   listReviewableCases,
@@ -8,7 +10,6 @@ import {
   listReviewsForProfessional,
   summariseReviews,
 } from '@/server/services/review-service';
-import { LEGAL_AREA_LABEL } from '@/lib/constants';
 import { formatDate } from '@/lib/format';
 import { Avatar } from '@/components/Avatar';
 import { RatingBreakdown, StarRating } from '@/components/StarRating';
@@ -16,10 +17,6 @@ import { ReviewForm } from '@/components/forms/ReviewForm';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'Reviews' };
-
-const NOTICES: Record<string, string> = {
-  published: 'Your review has been published.',
-};
 
 /**
  * Reviews, from both sides.
@@ -33,7 +30,9 @@ export default async function ReviewsPage({
 }: {
   searchParams: Promise<{ listing?: string; notice?: string }>;
 }) {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const labels = t.memberCases.reviews;
+  const notices: Record<string, string> = { published: labels.published };
   const [{ listing: listingFilter, notice }, availability] = await Promise.all([
     searchParams,
     getAvailability(),
@@ -58,18 +57,15 @@ export default async function ReviewsPage({
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Reviews</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          A review can only be written by the client on a case that professional actually accepted,
-          and each case carries one review. That is what makes the rating worth reading.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{labels.intro}</p>
       </header>
 
-      {notice && NOTICES[notice] ? <Alert tone="success">{NOTICES[notice]}</Alert> : null}
+      {notice && notices[notice] ? <Alert tone="success">{notices[notice]}</Alert> : null}
 
       {!reviewsEnabled ? (
-        <Alert tone="warning" title="Reviews are switched off">
-          An administrator has disabled reviews. Existing reviews are hidden while it is off.
+        <Alert tone="warning" title={labels.switchedOff}>
+          {labels.switchedOffBody}
         </Alert>
       ) : null}
 
@@ -77,13 +73,10 @@ export default async function ReviewsPage({
       {isProfessional ? (
         <section>
           <h2 className="mb-3 font-semibold text-slate-900">
-            What clients say about you ({publishedReceived.length})
+            {labels.whatClientsSay.replace('{count}', String(publishedReceived.length))}
           </h2>
           {received.length === 0 ? (
-            <EmptyState
-              title="No reviews yet"
-              description="When a client reviews a case you accepted, it appears here."
-            />
+            <EmptyState title={t.directory.noReviewsYet} description={labels.noReceived} />
           ) : (
             <Card>
               <RatingBreakdown summary={receivedSummary} />
@@ -94,12 +87,12 @@ export default async function ReviewsPage({
                       <StarRating value={review.rating} size={14} />
                       <span className="text-sm font-semibold text-slate-900">{review.rating}.0</span>
                       <span className="text-xs text-slate-500">
-                        {review.author.profile?.fullName?.trim() || 'A client'} ·{' '}
+                        {review.author.profile?.fullName?.trim() || labels.aClient} ·{' '}
                         {formatDate(review.createdAt)}
                       </span>
                       {review.status === 'HIDDEN' ? (
                         <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-800 ring-1 ring-inset ring-red-200">
-                          Hidden by an administrator
+                          {labels.hiddenByAdmin}
                         </span>
                       ) : null}
                     </div>
@@ -108,8 +101,12 @@ export default async function ReviewsPage({
                     ) : null}
                     <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{review.body}</p>
                     <p className="mt-2 text-xs text-slate-500">
-                      Case {review.case.reference} · {review.case.title}
-                      {review.hiddenReason ? ` · reason: ${review.hiddenReason}` : ''}
+                      {labels.caseRef
+                        .replace('{reference}', review.case.reference)
+                        .replace('{title}', review.case.title)}
+                      {review.hiddenReason
+                        ? labels.reason.replace('{reason}', review.hiddenReason)
+                        : ''}
                     </p>
                   </li>
                 ))}
@@ -122,13 +119,13 @@ export default async function ReviewsPage({
       {/* ── Write a review ──────────────────────────────────────────────── */}
       {reviewsEnabled ? (
         <section>
-          <h2 className="mb-3 font-semibold text-slate-900">Leave a review</h2>
+          <h2 className="mb-3 font-semibold text-slate-900">{labels.leaveReview}</h2>
           <Card>
             {candidates.length === 0 && reviewable.length > 0 && listingFilter ? (
               <Alert tone="neutral" className="mb-5">
-                You have no unreviewed case with that professional.{' '}
+                {labels.noUnreviewedBefore}
                 <Link href="/reviews" className="font-medium underline">
-                  See all the cases you can review
+                  {labels.seeAllReviewable}
                 </Link>
                 .
               </Alert>
@@ -141,8 +138,9 @@ export default async function ReviewsPage({
                 professional:
                   item.firm?.legalName ??
                   item.lawyer?.user.profile?.fullName?.trim() ??
-                  'Professional',
+                  labels.professional,
               }))}
+              labels={t.memberCases.reviewForm}
             />
           </Card>
         </section>
@@ -151,7 +149,9 @@ export default async function ReviewsPage({
       {/* ── Reviews I wrote ─────────────────────────────────────────────── */}
       {written.length > 0 ? (
         <section>
-          <h2 className="mb-3 font-semibold text-slate-900">Reviews I wrote ({written.length})</h2>
+          <h2 className="mb-3 font-semibold text-slate-900">
+            {labels.reviewsIWrote.replace('{count}', String(written.length))}
+          </h2>
           <ul className="space-y-3">
             {written.map((review) => (
               <Card as="li" key={review.id}>
@@ -177,11 +177,14 @@ export default async function ReviewsPage({
                   </div>
                   {review.status === 'HIDDEN' ? (
                     <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-800 ring-1 ring-inset ring-red-200">
-                      Hidden{review.hiddenReason ? `: ${review.hiddenReason}` : ''}
+                      {labels.hidden}
+                      {review.hiddenReason
+                        ? labels.hiddenReason.replace('{reason}', review.hiddenReason)
+                        : ''}
                     </span>
                   ) : (
                     <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-800 ring-1 ring-inset ring-green-200">
-                      Published
+                      {labels.publishedBadge}
                     </span>
                   )}
                 </div>
@@ -190,9 +193,14 @@ export default async function ReviewsPage({
                 ) : null}
                 <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{review.body}</p>
                 <p className="mt-2 text-xs text-slate-500">
-                  Case {review.case.reference} · {review.case.title} ·{' '}
-                  {LEGAL_AREA_LABEL[review.case.caseType as keyof typeof LEGAL_AREA_LABEL] ?? ''} ·{' '}
-                  {formatDate(review.createdAt)}
+                  {labels.caseArea
+                    .replace('{reference}', review.case.reference)
+                    .replace('{title}', review.case.title)
+                    .replace(
+                      '{area}',
+                      legalAreaLabel(t, review.case.caseType as keyof typeof t.labels.legalArea) ?? '',
+                    )
+                    .replace('{date}', formatDate(review.createdAt))}
                 </p>
               </Card>
             ))}
@@ -202,15 +210,15 @@ export default async function ReviewsPage({
 
       <div className="flex flex-wrap gap-3">
         <Link href="/cases" className={buttonClasses('secondary', 'md')}>
-          My cases
+          {t.items.myCases}
         </Link>
         {isProfessional ? (
           <Link href="/portfolio" className={buttonClasses('secondary', 'md')}>
-            My portfolio
+            {t.items.portfolio}
           </Link>
         ) : (
           <Link href="/directory" className={buttonClasses('secondary', 'md')}>
-            Browse the directory
+            {t.dashboard.browseDirectory}
           </Link>
         )}
       </div>

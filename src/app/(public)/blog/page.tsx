@@ -2,25 +2,20 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getSessionUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getI18n } from '@/lib/i18n';
+import { communityTopicHint, communityTopicLabel } from '@/lib/i18n/labels';
 import { listPosts, listTopicCounts } from '@/server/services/blog-service';
-import { COMMUNITY_TOPICS, COMMUNITY_TOPIC_LABEL } from '@/lib/community';
-import { minutesLabel } from '@/lib/time';
+import { COMMUNITY_TOPICS } from '@/lib/community';
 import { PostForm } from '@/components/forms/BlogForms';
 import { CommunityPostCard } from '@/components/community/CommunityPostCard';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 import { Icon, type IconName } from '@/components/icons';
+import { relativeTime } from '@/lib/i18n/format';
 
-export const metadata: Metadata = {
-  title: 'Community',
-  description:
-    'Ask what a process really involves, recommend the lawyer or firm you used, and read what other people were told — by topic.',
-};
-
-const KIND_LABEL: Record<string, string> = {
-  RECOMMENDATION: 'Recommendation',
-  QUESTION: 'Question',
-  NOTE: 'Experience',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.nav.community, description: t.publicPages.blog.metaDescription };
+}
 
 /**
  * The community.
@@ -36,7 +31,8 @@ export default async function CommunityPage({
 }: {
   searchParams: Promise<{ sort?: string; topic?: string; recommend?: string }>;
 }) {
-  const [user, params] = await Promise.all([getSessionUser(), searchParams]);
+  const [{ t }, user, params] = await Promise.all([getI18n(), getSessionUser(), searchParams]);
+  const blog = t.publicPages.blog;
   const sort = params.sort === 'new' ? 'new' : 'hot';
   const topic = COMMUNITY_TOPICS.some((entry) => entry.value === params.topic) ? params.topic! : null;
   const recommend = params.recommend ?? '';
@@ -85,38 +81,41 @@ export default async function CommunityPage({
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-800">
               <Icon name="community" size={18} />
             </span>
-            <h1 className="text-2xl font-semibold text-slate-900">Community</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">{t.nav.community}</h1>
           </div>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Real answers from people who have been through it: what a process involves, what it cost,
-            who helped. Pick a board, or write something of your own.
-          </p>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">{blog.intro}</p>
           <p className="mt-2 text-xs text-slate-500">
-            {totalPosts} post{totalPosts === 1 ? '' : 's'} · {totalComments} comment
-            {totalComments === 1 ? '' : 's'} · nothing here is legal advice
+            {totalPosts === 1
+              ? blog.postOne.replace('{count}', String(totalPosts))
+              : blog.postOther.replace('{count}', String(totalPosts))}{' '}
+            ·{' '}
+            {totalComments === 1
+              ? blog.commentOne.replace('{count}', String(totalComments))
+              : blog.commentOther.replace('{count}', String(totalComments))}{' '}
+            · {blog.neverAdvice}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Sort">
+        <div className="flex flex-wrap gap-2" role="group" aria-label={blog.sortNav}>
           <Link
             href={href({ sort: 'hot' })}
             aria-current={sort === 'hot' ? 'page' : undefined}
             className={buttonClasses(sort === 'hot' ? 'primary' : 'secondary', 'sm')}
           >
-            Most useful
+            {blog.mostUseful}
           </Link>
           <Link
             href={href({ sort: 'new' })}
             aria-current={sort === 'new' ? 'page' : undefined}
             className={buttonClasses(sort === 'new' ? 'primary' : 'secondary', 'sm')}
           >
-            Newest
+            {blog.newest}
           </Link>
         </div>
       </header>
 
       {user && waiting.length > 0 ? (
-        <Alert tone="info" className="mt-6" title="Waiting for a moderator">
+        <Alert tone="info" className="mt-6" title={blog.waitingTitle}>
           <ul className="mt-1 space-y-1 text-sm">
             {waiting.map((post) => (
               <li key={post.id}>
@@ -124,23 +123,20 @@ export default async function CommunityPage({
                   {post.title}
                 </Link>{' '}
                 <span className="text-xs text-slate-500">
-                  · {COMMUNITY_TOPIC_LABEL[post.topic] ?? post.topic} · written{' '}
-                  {minutesLabel(post.createdAt)}
+                  · {communityTopicLabel(t, post.topic)} ·{' '}
+                  {blog.written.replace('{time}', relativeTime(t, post.createdAt))}
                 </span>
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs">
-            A moderator checks whether the question has been asked already before it goes up. Nothing
-            is lost in the meantime.
-          </p>
+          <p className="mt-2 text-xs">{blog.waitingBody}</p>
         </Alert>
       ) : null}
 
       {/* ── The boards ───────────────────────────────────────────────────── */}
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-          {topic ? 'Boards' : 'Choose a board'}
+          {topic ? blog.boards : blog.chooseBoard}
         </h2>
         <ul className="mt-3 flex flex-wrap gap-2">
           <li>
@@ -155,7 +151,7 @@ export default async function CommunityPage({
               )}
             >
               <Icon name="inbox" size={15} />
-              All boards
+              {t.tabs.allBoards}
               <span className="text-xs text-slate-500">{totalPosts}</span>
             </Link>
           </li>
@@ -172,7 +168,7 @@ export default async function CommunityPage({
                 )}
               >
                 <Icon name={entry.icon as IconName} size={15} />
-                {entry.label}
+                {communityTopicLabel(t, entry.value)}
                 <span className="text-xs text-slate-500">{entry.posts}</span>
               </Link>
             </li>
@@ -182,7 +178,8 @@ export default async function CommunityPage({
 
       {topicMeta ? (
         <p className="mt-4 text-sm text-slate-600">
-          <strong className="text-slate-900">{topicMeta.label}</strong> — {topicMeta.hint}
+          <strong className="text-slate-900">{communityTopicLabel(t, topicMeta.value)}</strong> —{' '}
+          {communityTopicHint(t, topicMeta.value)}
         </p>
       ) : null}
 
@@ -190,43 +187,43 @@ export default async function CommunityPage({
       {user ? (
         <Card className="mt-6">
           <details open={Boolean(recommend)}>
-            <summary className="cursor-pointer font-semibold text-slate-900">Write a post</summary>
-            <p className="mt-1 mb-4 text-sm text-slate-600">
-              Ask something, recommend a professional you used, or write down what happened. A
-              moderator reads it first — mostly to check that the question has not been asked and
-              answered already, in which case they will point you at that thread.
-            </p>
+            <summary className="cursor-pointer font-semibold text-slate-900">
+              {t.community.writePost}
+            </summary>
+            <p className="mt-1 mb-4 text-sm text-slate-600">{blog.writeHelp}</p>
             <PostForm listings={listings} defaultListingId={recommend} defaultTopic={topic ?? ''} />
           </details>
         </Card>
       ) : (
-        <Alert tone="info" className="mt-6" title="Sign in to post or vote">
-          Reading is open to everyone. To ask a question, recommend a lawyer or vote,{' '}
+        <Alert tone="info" className="mt-6" title={blog.signInTitle}>
+          {blog.signInBodyLead}
           <Link href="/login?next=%2Fblog" className="font-medium underline">
-            sign in
+            {t.nav.signIn}
           </Link>{' '}
-          or{' '}
+          {t.publicPages.shell.or}{' '}
           <Link href="/register?next=%2Fblog" className="font-medium underline">
-            create an account
+            {t.nav.createAccount}
           </Link>
-          .
+          {blog.signInBodyTail}
         </Alert>
       )}
 
       {/* ── The posts ────────────────────────────────────────────────────── */}
       <section className="mt-8">
         <h2 className="mb-3 font-semibold text-slate-900">
-          {topicMeta ? `${topicMeta.label} (${posts.length})` : `Everything (${posts.length})`}
+          {topicMeta
+            ? `${communityTopicLabel(t, topicMeta.value)} (${posts.length})`
+            : blog.everything.replace('{count}', String(posts.length))}
         </h2>
 
         {posts.length === 0 ? (
           <EmptyState
-            title={topicMeta ? `Nothing on ${topicMeta.label} yet` : 'Nothing has been posted yet'}
-            description={
-              user
-                ? 'This is a new board, so it is empty rather than filled with examples. The first post here will be a real one.'
-                : 'Sign in to write the first post on this board.'
+            title={
+              topicMeta
+                ? blog.nothingOnTopic.replace('{topic}', communityTopicLabel(t, topicMeta.value))
+                : blog.nothingPosted
             }
+            description={user ? blog.emptyNewBoard : blog.emptySignIn}
           />
         ) : (
           <ul className="space-y-4">

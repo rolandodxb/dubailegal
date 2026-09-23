@@ -3,7 +3,6 @@
 import { useActionState } from 'react';
 import { createEnquiryAction } from '@/app/actions/enquiry-actions';
 import { initialFormState } from '@/lib/form-state';
-import { LEGAL_AREAS } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Select, Textarea } from '@/components/ui/primitives';
 
@@ -14,8 +13,33 @@ import { Alert, Field, Input, Select, Textarea } from '@/components/ui/primitive
  * enquiry goes into a shared pool and is answered by whoever picks it up, while
  * an account sends the matter directly to a chosen professional with documents,
  * a conversation and a record attached.
+ *
+ * The words come from the page that renders it: this is a client component, so
+ * it cannot read the dictionary itself.
  */
-export function PublicEnquiryForm({ compact = false }: { compact?: boolean }) {
+export function PublicEnquiryForm({
+  compact = false,
+  labels,
+}: {
+  compact?: boolean;
+  labels: {
+    sentTitle: string;
+    failedTitle: string;
+    name: string;
+    email: string;
+    phone: string;
+    areaOfLaw: string;
+    areaOptions: { value: string; label: string }[];
+    notSure: string;
+    subject: string;
+    subjectPlaceholder: string;
+    question: string;
+    questionHint: string;
+    pending: string;
+    submit: string;
+    poolNote: string;
+  };
+}) {
   const [state, formAction] = useActionState(createEnquiryAction, initialFormState);
 
   const value = (key: string) => state?.values?.[key] ?? '';
@@ -23,18 +47,18 @@ export function PublicEnquiryForm({ compact = false }: { compact?: boolean }) {
   return (
     <form action={formAction} className="space-y-5" noValidate>
       {state?.ok && state.message ? (
-        <Alert tone="success" title="Enquiry sent">
+        <Alert tone="success" title={labels.sentTitle}>
           {state.message}
         </Alert>
       ) : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="The enquiry was not sent">
+        <Alert tone="error" title={labels.failedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Your name" htmlFor="en-name" required error={state?.fieldErrors?.name}>
+        <Field label={labels.name} htmlFor="en-name" required error={state?.fieldErrors?.name}>
           <Input
             id="en-name"
             name="name"
@@ -46,7 +70,7 @@ export function PublicEnquiryForm({ compact = false }: { compact?: boolean }) {
           />
         </Field>
 
-        <Field label="Email" htmlFor="en-email" required error={state?.fieldErrors?.email}>
+        <Field label={labels.email} htmlFor="en-email" required error={state?.fieldErrors?.email}>
           <Input
             id="en-email"
             name="email"
@@ -58,7 +82,7 @@ export function PublicEnquiryForm({ compact = false }: { compact?: boolean }) {
           />
         </Field>
 
-        <Field label="Phone" htmlFor="en-phone" required error={state?.fieldErrors?.phone}>
+        <Field label={labels.phone} htmlFor="en-phone" required error={state?.fieldErrors?.phone}>
           <Input
             id="en-phone"
             name="phone"
@@ -71,15 +95,15 @@ export function PublicEnquiryForm({ compact = false }: { compact?: boolean }) {
           />
         </Field>
 
-        <Field label="Area of law" htmlFor="en-type" error={state?.fieldErrors?.caseType}>
+        <Field label={labels.areaOfLaw} htmlFor="en-type" error={state?.fieldErrors?.caseType}>
           <Select
             id="en-type"
             name="caseType"
             defaultValue={value('caseType')}
             error={state?.fieldErrors?.caseType}
           >
-            <option value="">Not sure / other</option>
-            {LEGAL_AREAS.map((area) => (
+            <option value="">{labels.notSure}</option>
+            {labels.areaOptions.map((area) => (
               <option key={area.value} value={area.value}>
                 {area.label}
               </option>
@@ -88,24 +112,24 @@ export function PublicEnquiryForm({ compact = false }: { compact?: boolean }) {
         </Field>
       </div>
 
-      <Field label="Subject" htmlFor="en-subject" required error={state?.fieldErrors?.subject}>
+      <Field label={labels.subject} htmlFor="en-subject" required error={state?.fieldErrors?.subject}>
         <Input
           id="en-subject"
           name="subject"
           required
           maxLength={160}
-          placeholder="e.g. Question about a tenancy deposit"
+          placeholder={labels.subjectPlaceholder}
           defaultValue={value('subject')}
           error={state?.fieldErrors?.subject}
         />
       </Field>
 
       <Field
-        label="Your question"
+        label={labels.question}
         htmlFor="en-message"
         required
         error={state?.fieldErrors?.message}
-        hint={compact ? undefined : 'At least 20 characters. A lawyer reads this before replying.'}
+        hint={compact ? undefined : labels.questionHint}
       >
         <Textarea
           id="en-message"
@@ -119,14 +143,11 @@ export function PublicEnquiryForm({ compact = false }: { compact?: boolean }) {
         />
       </Field>
 
-      <SubmitButton size={compact ? 'md' : 'lg'} pendingLabel="Sending…">
-        Send my enquiry
+      <SubmitButton size={compact ? 'md' : 'lg'} pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
 
-      <p className="text-xs text-slate-500">
-        Your enquiry goes into a shared pool that every registered lawyer and firm can see, and the
-        first to pick it up contacts you directly.
-      </p>
+      <p className="text-xs text-slate-500">{labels.poolNote}</p>
     </form>
   );
 }

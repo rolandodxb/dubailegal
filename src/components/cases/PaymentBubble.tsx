@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 import { cancelPaymentAction, submitPaymentProofAction } from '@/app/actions/payment-actions';
 import { initialFormState } from '@/lib/form-state';
-import { formatMoney, formatAed, maskCard } from '@/lib/payment-format';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
+import { formatMoney, maskCard } from '@/lib/payment-format';
 import { formatUaeDateTime } from '@/lib/time';
 import { Alert, buttonClasses, Field, Input, cx } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
@@ -17,6 +18,8 @@ export type ChatPayment = {
   /** The money the fee was quoted in, from the client's country. */
   currency: string;
   purpose: string;
+  /** The reason, already in the reader's language. */
+  purposeLabel: string;
   details: string | null;
   status: 'REQUESTED' | 'PAID' | 'CANCELLED';
   method: 'CARD' | 'BANK_TRANSFER' | null;
@@ -34,24 +37,10 @@ export type ChatPayment = {
   requestedByName: string;
 };
 
-const PURPOSE_LABEL: Record<string, string> = {
-  CONSULTATION: 'Consultation fee',
-  CASE_ASSISTANCE: 'Case assistance fee',
-  COURT_FEES: 'Court and filing fees',
-  OTHER: 'Fee',
-};
-
 const STATUS_STYLE: Record<string, string> = {
   REQUESTED: 'bg-amber-50 text-amber-900 ring-amber-200',
   PAID: 'bg-green-50 text-green-800 ring-green-200',
   CANCELLED: 'bg-slate-100 text-slate-600 ring-slate-200',
-};
-
-/** The three states a fee passes through, in the words the client and the lawyer both see. */
-const STATUS_LABEL: Record<string, string> = {
-  REQUESTED: 'Payment pending',
-  PAID: 'Payment completed',
-  CANCELLED: 'Withdrawn',
 };
 
 /**
@@ -69,9 +58,11 @@ const STATUS_LABEL: Record<string, string> = {
 export function PaymentBubble({
   payment,
   isClient,
+  labels,
 }: {
   payment: ChatPayment;
   isClient: boolean;
+  labels: MemberCasesDict['feeBubble'];
 }) {
   const [proofState, proofAction] = useActionState(submitPaymentProofAction, initialFormState);
   const [cancelState, cancelAction] = useActionState(cancelPaymentAction, initialFormState);
@@ -80,6 +71,13 @@ export function PaymentBubble({
   const proofDone = payment.hasProof;
   // Only asked for once the money step is done, and only of the client.
   const needsProof = isClient && payment.status === 'PAID' && !proofDone;
+
+  const statusLabel =
+    payment.status === 'PAID'
+      ? labels.paymentCompleted
+      : payment.status === 'CANCELLED'
+        ? labels.withdrawn
+        : labels.paymentPending;
 
   return (
     <li className="flex justify-center py-2">
@@ -111,7 +109,7 @@ export function PaymentBubble({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {PURPOSE_LABEL[payment.purpose] ?? payment.purpose}
+                {payment.purposeLabel}
               </p>
               <span
                 className={cx(
@@ -119,7 +117,7 @@ export function PaymentBubble({
                   STATUS_STYLE[payment.status],
                 )}
               >
-                {STATUS_LABEL[payment.status]}
+                {statusLabel}
               </span>
             </div>
 
@@ -132,25 +130,26 @@ export function PaymentBubble({
             ) : null}
 
             <p className="mt-1.5 text-xs text-slate-500">
-              Requested by {payment.requestedByName} ·{' '}
-              {formatUaeDateTime(new Date(payment.createdAt))}
+              {labels.requestedBy
+                .replace('{name}', payment.requestedByName)
+                .replace('{date}', formatUaeDateTime(new Date(payment.createdAt)))}
             </p>
 
             {payment.status === 'PAID' ? (
               <dl className="mt-3 space-y-1 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
                 <div className="flex justify-between gap-3">
-                  <dt>Paid by</dt>
+                  <dt>{labels.paidBy}</dt>
                   <dd className="font-medium text-slate-800">
                     {payment.method === 'CARD'
                       ? maskCard(payment.cardBrand, payment.cardLast4)
                       : payment.method === 'BANK_TRANSFER'
-                        ? 'Bank transfer'
-                        : 'Card'}
+                        ? labels.bankTransfer
+                        : labels.card}
                   </dd>
                 </div>
                 {payment.paidAt ? (
                   <div className="flex justify-between gap-3">
-                    <dt>Paid on</dt>
+                    <dt>{labels.paidOn}</dt>
                     <dd className="font-medium text-slate-800">
                       {formatUaeDateTime(new Date(payment.paidAt))}
                     </dd>
@@ -158,7 +157,7 @@ export function PaymentBubble({
                 ) : null}
                 {payment.receiptNumber ? (
                   <div className="flex justify-between gap-3">
-                    <dt>Receipt</dt>
+                    <dt>{labels.receipt}</dt>
                     <dd className="font-mono font-medium text-slate-800">{payment.receiptNumber}</dd>
                   </div>
                 ) : null}
@@ -169,7 +168,7 @@ export function PaymentBubble({
                       href={`/payments/${payment.id}/receipt`}
                       className="font-medium text-brand-700 hover:underline"
                     >
-                      View or print the receipt
+                      {labels.viewReceipt}
                     </Link>
                   </dd>
                 </div>
@@ -177,8 +176,7 @@ export function PaymentBubble({
             ) : null}
 
             <p className="mt-2 rounded-md bg-slate-50 px-2 py-1 text-[11px] text-slate-500">
-              Simulated payment. Dubai Legal has no payment provider connected: no card is charged and
-              no money moves.
+              {labels.simulated}
             </p>
           </div>
         </div>
@@ -190,7 +188,7 @@ export function PaymentBubble({
         {!settled && payment.bankLines.length > 0 ? (
           <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Pay by bank transfer to
+              {labels.payByTransferTo}
             </p>
             <dl className="mt-2 space-y-1 text-xs">
               {payment.bankLines.map((line) => (
@@ -215,11 +213,12 @@ export function PaymentBubble({
               className={buttonClasses('primary', 'lg', 'w-full')}
             >
               <Icon name="building" size={18} />
-              Pay {formatMoney(payment.amountFils, payment.currency)} by transfer
+              {labels.payByTransfer.replace(
+                '{amount}',
+                formatMoney(payment.amountFils, payment.currency),
+              )}
             </Link>
-            <p className="mt-2 text-center text-[11px] text-slate-500">
-              Record the transfer and a receipt is issued. Card payment is being developed.
-            </p>
+            <p className="mt-2 text-center text-[11px] text-slate-500">{labels.recordTransferNote}</p>
           </div>
         ) : null}
 
@@ -235,24 +234,19 @@ export function PaymentBubble({
 
             {proofState?.ok ? null : (
               <>
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Send the proof of payment
-                </h3>
-                <p className="mt-1 text-xs text-slate-600">
-                  Payment is complete. Attach the receipt, transfer advice or screenshot so it sits in
-                  the case file with the fee.
-                </p>
+                <h3 className="text-sm font-semibold text-slate-900">{labels.sendProof}</h3>
+                <p className="mt-1 text-xs text-slate-600">{labels.proofBody}</p>
 
                 <form action={proofAction} className="mt-3 space-y-3">
                   <input type="hidden" name="paymentId" value={payment.id} />
                   <input type="hidden" name="caseId" value={payment.caseId} />
 
                   <Field
-                    label="Proof of payment"
+                    label={labels.proofLabel}
                     htmlFor={`proof-${payment.id}`}
                     required
                     error={proofState?.fieldErrors?.proof}
-                    hint="PDF, JPEG, PNG or WebP."
+                    hint={labels.proofHint}
                   >
                     <input
                       id={`proof-${payment.id}`}
@@ -264,17 +258,21 @@ export function PaymentBubble({
                     />
                   </Field>
 
-                  <Field label="Note" htmlFor={`note-${payment.id}`} error={proofState?.fieldErrors?.note}>
+                  <Field
+                    label={labels.noteLabel}
+                    htmlFor={`note-${payment.id}`}
+                    error={proofState?.fieldErrors?.note}
+                  >
                     <Input
                       id={`note-${payment.id}`}
                       name="note"
                       maxLength={500}
-                      placeholder="Anything the professional should know about this payment"
+                      placeholder={labels.notePlaceholder}
                     />
                   </Field>
 
-                  <SubmitButton size="sm" pendingLabel="Sending…">
-                    Send proof of payment
+                  <SubmitButton size="sm" pendingLabel={labels.sending}>
+                    {labels.sendProofButton}
                   </SubmitButton>
                 </form>
               </>
@@ -288,16 +286,14 @@ export function PaymentBubble({
             {proofDone ? (
               <p className="flex items-center gap-2 text-xs font-medium text-green-800">
                 <Icon name="checkCircle" size={15} />
-                Proof of payment attached
+                {labels.proofAttached}
                 {payment.proofNote ? (
                   <span className="font-normal text-slate-600">· {payment.proofNote}</span>
                 ) : null}
               </p>
             ) : (
               <p className="text-xs text-slate-500">
-                {isClient
-                  ? 'Waiting for you to send the proof of payment.'
-                  : 'The client has been asked for proof of payment.'}
+                {isClient ? labels.waitingForProofClient : labels.waitingForProofProfessional}
               </p>
             )}
           </div>
@@ -314,8 +310,13 @@ export function PaymentBubble({
             ) : null}
             <input type="hidden" name="paymentId" value={payment.id} />
             <input type="hidden" name="caseId" value={payment.caseId} />
-            <SubmitButton variant="ghost" size="sm" confirm="Withdraw this fee request?" pendingLabel="…">
-              Withdraw request
+            <SubmitButton
+              variant="ghost"
+              size="sm"
+              confirm={labels.withdrawConfirm}
+              pendingLabel="…"
+            >
+              {labels.withdrawRequest}
             </SubmitButton>
           </form>
         ) : null}

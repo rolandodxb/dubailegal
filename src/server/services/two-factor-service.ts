@@ -21,7 +21,7 @@ import { failure, success, type ServiceResult } from './result';
  * breaks for the accounts that do not.
  */
 
-const ISSUER = 'Dubai Legal';
+const ISSUER = 'Legal Dash';
 const RECOVERY_CODE_COUNT = 8;
 
 /** One step of drift either side, which covers a slightly wrong device clock. */

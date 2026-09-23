@@ -10,6 +10,7 @@ import {
   reviewCaseAction,
 } from '@/app/actions/case-actions';
 import { initialFormState } from '@/lib/form-state';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Textarea } from '@/components/ui/primitives';
 
@@ -26,6 +27,7 @@ export function CaseActionPanel({
   canProgress,
   canDecline,
   canDistribute,
+  labels,
 }: {
   caseId: string;
   status: string;
@@ -35,6 +37,7 @@ export function CaseActionPanel({
   canDecline: boolean;
   /** A firm holding the case may release it to its registered lawyers. */
   canDistribute?: boolean;
+  labels: MemberCasesDict['caseActions'];
 }) {
   const [reviewState, reviewAction] = useActionState(reviewCaseAction, initialFormState);
   const [acceptState, acceptAction] = useActionState(acceptCaseAction, initialFormState);
@@ -67,40 +70,33 @@ export function CaseActionPanel({
           <input type="hidden" name="caseId" value={caseId} />
           <SubmitButton
             size="lg"
-            pendingLabel="Releasing…"
-            confirm="Release this case to every lawyer registered with your firm?"
+            pendingLabel={labels.releasing}
+            confirm={labels.releaseConfirm}
           >
-            Accept and send to our lawyers
+            {labels.acceptAndSend}
           </SubmitButton>
-          <p className="text-xs text-slate-500">
-            Every registered lawyer is offered it. The first to take it is assigned, and the rest are
-            stood down automatically.
-          </p>
+          <p className="text-xs text-slate-500">{labels.releaseBody}</p>
         </form>
       ) : null}
 
       {canReview ? (
         <form action={reviewAction} className="space-y-2">
           <input type="hidden" name="caseId" value={caseId} />
-          <SubmitButton size="lg" pendingLabel="Opening…">
-            Review the case
+          <SubmitButton size="lg" pendingLabel={labels.opening}>
+            {labels.reviewCase}
           </SubmitButton>
-          <p className="text-xs text-slate-500">
-            Opening the case tells the client it is under review. It does not commit you to taking it.
-          </p>
+          <p className="text-xs text-slate-500">{labels.reviewBody}</p>
         </form>
       ) : null}
 
       {canAccept ? (
         <form action={acceptAction} className="space-y-2">
           <input type="hidden" name="caseId" value={caseId} />
-          <SubmitButton size="lg" pendingLabel={offered ? 'Taking…' : 'Accepting…'}>
-            {offered ? 'Take this case' : 'Accept the case'}
+          <SubmitButton size="lg" pendingLabel={offered ? labels.taking : labels.accepting}>
+            {offered ? labels.takeCase : labels.acceptCase}
           </SubmitButton>
           <p className="text-xs text-slate-500">
-            {offered
-              ? 'Taking it assigns the case to you and stands the other offers down.'
-              : 'Accepting assigns the case to you and tells the client it has been assigned.'}
+            {offered ? labels.takeBody : labels.acceptBody}
           </p>
         </form>
       ) : null}
@@ -108,19 +104,15 @@ export function CaseActionPanel({
       {offered && canAccept ? (
         <details className="rounded-lg border border-slate-200 p-4">
           <summary className="cursor-pointer text-sm font-medium text-slate-700">
-            Pass — let a colleague take it
+            {labels.passSummary}
           </summary>
           <form action={passAction} className="mt-3 space-y-3">
             <input type="hidden" name="caseId" value={caseId} />
-            <Field
-              label="Note for the firm"
-              htmlFor="pass-note"
-              hint="Optional. The client is not told you passed."
-            >
+            <Field label={labels.noteForFirm} htmlFor="pass-note" hint={labels.passHint}>
               <Input id="pass-note" name="note" maxLength={400} />
             </Field>
-            <SubmitButton variant="secondary" pendingLabel="Passing…">
-              Pass on this case
+            <SubmitButton variant="secondary" pendingLabel={labels.passing}>
+              {labels.passOnCase}
             </SubmitButton>
           </form>
         </details>
@@ -130,8 +122,8 @@ export function CaseActionPanel({
         <form action={advanceAction} className="space-y-2">
           <input type="hidden" name="caseId" value={caseId} />
           <input type="hidden" name="toStatus" value="IN_PROGRESS" />
-          <SubmitButton variant="secondary" size="lg" pendingLabel="Updating…">
-            Mark work as started
+          <SubmitButton variant="secondary" size="lg" pendingLabel={labels.updating}>
+            {labels.markStarted}
           </SubmitButton>
         </form>
       ) : null}
@@ -143,10 +135,10 @@ export function CaseActionPanel({
           <SubmitButton
             variant="secondary"
             size="lg"
-            confirm="Mark this case as completed?"
-            pendingLabel="Updating…"
+            confirm={labels.markCompletedConfirm}
+            pendingLabel={labels.updating}
           >
-            Mark case completed
+            {labels.markCompleted}
           </SubmitButton>
         </form>
       ) : null}
@@ -154,16 +146,16 @@ export function CaseActionPanel({
       {canDecline ? (
         <details className="rounded-lg border border-slate-200 p-4">
           <summary className="cursor-pointer text-sm font-medium text-red-700">
-            Decline this case
+            {labels.declineSummary}
           </summary>
           <form action={declineAction} className="mt-3 space-y-3">
             <input type="hidden" name="caseId" value={caseId} />
             <Field
-              label="Reason"
+              label={labels.reason}
               htmlFor="decline-reason"
               required
               error={declineState?.fieldErrors?.reason}
-              hint="The client sees this. Be specific so they know what to do next."
+              hint={labels.declineHint}
             >
               <Textarea
                 id="decline-reason"
@@ -176,8 +168,8 @@ export function CaseActionPanel({
                 error={declineState?.fieldErrors?.reason}
               />
             </Field>
-            <SubmitButton variant="danger" pendingLabel="Declining…">
-              Decline and tell the client why
+            <SubmitButton variant="danger" pendingLabel={labels.declining}>
+              {labels.declineAndTell}
             </SubmitButton>
           </form>
         </details>

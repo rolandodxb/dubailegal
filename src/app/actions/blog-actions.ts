@@ -15,6 +15,7 @@ import {
   voteOnComment,
   voteOnPost,
 } from '@/server/services/blog-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 /**
  * The community section.
@@ -31,7 +32,7 @@ function revalidateCommunity(postId?: string): void {
   if (postId) revalidatePath(`/blog/${postId}`);
 }
 
-export async function createPostAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function createPostActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
 
@@ -72,7 +73,7 @@ export async function createPostAction(_prev: FormState, formData: FormData): Pr
  * Nothing here decides anything itself: the automatic check has already been run
  * and shown, and this records what a person chose to do about it.
  */
-export async function decidePostAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function decidePostActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
   const postId = String(formData.get('postId') ?? '');
@@ -110,7 +111,7 @@ export async function decidePostAction(_prev: FormState, formData: FormData): Pr
   };
 }
 
-export async function addCommentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function addCommentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const postId = String(formData.get('postId') ?? '');
@@ -127,7 +128,7 @@ export async function addCommentAction(_prev: FormState, formData: FormData): Pr
   return { ok: true, message: 'Posted.' };
 }
 
-export async function voteOnPostAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function voteOnPostActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const id = String(formData.get('id') ?? '');
   const result = await voteOnPost(user.id, { id, value: formData.get('value') });
@@ -141,7 +142,7 @@ export async function voteOnPostAction(_prev: FormState, formData: FormData): Pr
   };
 }
 
-export async function voteOnCommentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function voteOnCommentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const id = String(formData.get('id') ?? '');
   const result = await voteOnComment(user.id, { id, value: formData.get('value') });
@@ -155,7 +156,7 @@ export async function voteOnCommentAction(_prev: FormState, formData: FormData):
   };
 }
 
-export async function deletePostAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function deletePostActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const result = await deleteOwnPost(user.id, String(formData.get('postId') ?? ''), meta);
@@ -166,7 +167,7 @@ export async function deletePostAction(_prev: FormState, formData: FormData): Pr
 }
 
 /** Hides, removes or restores a post. Reviewers only. */
-export async function moderatePostAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function moderatePostActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
   const postId = String(formData.get('postId') ?? '');
@@ -229,13 +230,76 @@ async function react(
   };
 }
 
-export async function reactToPostAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function reactToPostActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   return react('post', formData);
 }
 
-export async function reactToCommentAction(
+async function reactToCommentActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   return react('comment', formData);
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function createPostAction(
+  ...args: Parameters<typeof createPostActionImpl>
+): Promise<Awaited<ReturnType<typeof createPostActionImpl>>> {
+  return localiseFormState(await createPostActionImpl(...args));
+}
+
+export async function decidePostAction(
+  ...args: Parameters<typeof decidePostActionImpl>
+): Promise<Awaited<ReturnType<typeof decidePostActionImpl>>> {
+  return localiseFormState(await decidePostActionImpl(...args));
+}
+
+export async function addCommentAction(
+  ...args: Parameters<typeof addCommentActionImpl>
+): Promise<Awaited<ReturnType<typeof addCommentActionImpl>>> {
+  return localiseFormState(await addCommentActionImpl(...args));
+}
+
+export async function voteOnPostAction(
+  ...args: Parameters<typeof voteOnPostActionImpl>
+): Promise<Awaited<ReturnType<typeof voteOnPostActionImpl>>> {
+  return localiseFormState(await voteOnPostActionImpl(...args));
+}
+
+export async function voteOnCommentAction(
+  ...args: Parameters<typeof voteOnCommentActionImpl>
+): Promise<Awaited<ReturnType<typeof voteOnCommentActionImpl>>> {
+  return localiseFormState(await voteOnCommentActionImpl(...args));
+}
+
+export async function deletePostAction(
+  ...args: Parameters<typeof deletePostActionImpl>
+): Promise<Awaited<ReturnType<typeof deletePostActionImpl>>> {
+  return localiseFormState(await deletePostActionImpl(...args));
+}
+
+export async function moderatePostAction(
+  ...args: Parameters<typeof moderatePostActionImpl>
+): Promise<Awaited<ReturnType<typeof moderatePostActionImpl>>> {
+  return localiseFormState(await moderatePostActionImpl(...args));
+}
+
+export async function reactToPostAction(
+  ...args: Parameters<typeof reactToPostActionImpl>
+): Promise<Awaited<ReturnType<typeof reactToPostActionImpl>>> {
+  return localiseFormState(await reactToPostActionImpl(...args));
+}
+
+export async function reactToCommentAction(
+  ...args: Parameters<typeof reactToCommentActionImpl>
+): Promise<Awaited<ReturnType<typeof reactToCommentActionImpl>>> {
+  return localiseFormState(await reactToCommentActionImpl(...args));
 }

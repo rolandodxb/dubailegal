@@ -15,6 +15,7 @@ import {
   postCaseMessage,
   reviewCase,
 } from '@/server/services/case-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 function revalidateCase(caseId?: string): void {
   for (const path of ['/dashboard', '/cases', '/portfolio', '/pending', '/clients']) {
@@ -30,7 +31,7 @@ function echoValues(formData: FormData, keys: string[]): Record<string, string> 
 }
 
 /** "Get in touch" → the client writes the case and attaches papers. */
-export async function createCaseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function createCaseActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
 
   if (isAdministrator(user)) {
@@ -72,7 +73,7 @@ export async function createCaseAction(_prev: FormState, formData: FormData): Pr
   redirect(`/cases/${result.data.caseId}?notice=case-submitted`);
 }
 
-export async function reviewCaseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function reviewCaseActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const caseId = String(formData.get('caseId') ?? '');
@@ -84,7 +85,7 @@ export async function reviewCaseAction(_prev: FormState, formData: FormData): Pr
   redirect(`/cases/${caseId}?notice=case-under-review`);
 }
 
-export async function acceptCaseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function acceptCaseActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const caseId = String(formData.get('caseId') ?? '');
@@ -96,7 +97,7 @@ export async function acceptCaseAction(_prev: FormState, formData: FormData): Pr
   redirect(`/cases/${caseId}?notice=case-assigned`);
 }
 
-export async function declineCaseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function declineCaseActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const caseId = String(formData.get('caseId') ?? '');
@@ -115,7 +116,7 @@ export async function declineCaseAction(_prev: FormState, formData: FormData): P
   redirect(`/cases/${caseId}?notice=case-declined`);
 }
 
-export async function advanceCaseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function advanceCaseActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const caseId = String(formData.get('caseId') ?? '');
@@ -132,7 +133,7 @@ export async function advanceCaseAction(_prev: FormState, formData: FormData): P
   redirect(`/cases/${caseId}?notice=${target === 'COMPLETED' ? 'case-completed' : 'case-in-progress'}`);
 }
 
-export async function postCaseMessageAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function postCaseMessageActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const caseId = String(formData.get('caseId') ?? '');
 
@@ -169,7 +170,7 @@ export async function postCaseMessageAction(_prev: FormState, formData: FormData
  * The firm reviews first and decides the work is a fit; only then does it go out.
  * Each lawyer then answers it themselves.
  */
-export async function distributeCaseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function distributeCaseActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const caseId = String(formData.get('caseId') ?? '');
@@ -197,7 +198,7 @@ export async function distributeCaseAction(_prev: FormState, formData: FormData)
  * This is not a refusal of the client: the case stays with the firm and goes to
  * whichever colleague takes it.
  */
-export async function passCaseOfferAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function passCaseOfferActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const caseId = String(formData.get('caseId') ?? '');
 
@@ -208,4 +209,61 @@ export async function passCaseOfferAction(_prev: FormState, formData: FormData):
   revalidatePath('/pending');
 
   return { ok: true, message: 'Passed. Your colleagues can still take it.' };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function createCaseAction(
+  ...args: Parameters<typeof createCaseActionImpl>
+): Promise<Awaited<ReturnType<typeof createCaseActionImpl>>> {
+  return localiseFormState(await createCaseActionImpl(...args));
+}
+
+export async function reviewCaseAction(
+  ...args: Parameters<typeof reviewCaseActionImpl>
+): Promise<Awaited<ReturnType<typeof reviewCaseActionImpl>>> {
+  return localiseFormState(await reviewCaseActionImpl(...args));
+}
+
+export async function acceptCaseAction(
+  ...args: Parameters<typeof acceptCaseActionImpl>
+): Promise<Awaited<ReturnType<typeof acceptCaseActionImpl>>> {
+  return localiseFormState(await acceptCaseActionImpl(...args));
+}
+
+export async function declineCaseAction(
+  ...args: Parameters<typeof declineCaseActionImpl>
+): Promise<Awaited<ReturnType<typeof declineCaseActionImpl>>> {
+  return localiseFormState(await declineCaseActionImpl(...args));
+}
+
+export async function advanceCaseAction(
+  ...args: Parameters<typeof advanceCaseActionImpl>
+): Promise<Awaited<ReturnType<typeof advanceCaseActionImpl>>> {
+  return localiseFormState(await advanceCaseActionImpl(...args));
+}
+
+export async function postCaseMessageAction(
+  ...args: Parameters<typeof postCaseMessageActionImpl>
+): Promise<Awaited<ReturnType<typeof postCaseMessageActionImpl>>> {
+  return localiseFormState(await postCaseMessageActionImpl(...args));
+}
+
+export async function distributeCaseAction(
+  ...args: Parameters<typeof distributeCaseActionImpl>
+): Promise<Awaited<ReturnType<typeof distributeCaseActionImpl>>> {
+  return localiseFormState(await distributeCaseActionImpl(...args));
+}
+
+export async function passCaseOfferAction(
+  ...args: Parameters<typeof passCaseOfferActionImpl>
+): Promise<Awaited<ReturnType<typeof passCaseOfferActionImpl>>> {
+  return localiseFormState(await passCaseOfferActionImpl(...args));
 }

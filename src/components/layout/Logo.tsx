@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { getI18n } from '@/lib/i18n';
 
 /**
- * The Dubai Legal mark.
+ * The Legal Dash mark.
  *
  * The artwork is used exactly as supplied: navy and gold on a transparent
  * ground, with no plate, badge or circle behind it, so it sits on white, on a
@@ -41,7 +42,7 @@ export function LogoMark({
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={className ?? 'text-base font-semibold tracking-tight text-slate-900'}>
-      Dubai<span className="text-brand-700">Legal</span>
+      Legal<span className="text-brand-700">Dash</span>
     </span>
   );
 }
@@ -60,7 +61,7 @@ export function Logo({
     <Link
       href={href}
       className="inline-flex items-center gap-2.5"
-      aria-label="Dubai Legal — home"
+      aria-label="Legal Dash — home"
     >
       <LogoMark size={size} />
       {!compact ? <Wordmark /> : null}
@@ -73,7 +74,7 @@ export function Logo({
  * the line that says what this is. Used on receipts and on anything the browser
  * prints.
  */
-export function BrandLockup({
+export async function BrandLockup({
   className,
   markSize = 44,
   invert = false,
@@ -83,15 +84,19 @@ export function BrandLockup({
   /** White text, for a dark surface. The mark itself is unchanged. */
   invert?: boolean;
 }) {
+  // The line under the name is copy, not a logo: it says what the platform is,
+  // so it is read from the dictionary like any other sentence.
+  const { t } = await getI18n();
+
   return (
     <div className={className ?? 'flex items-center gap-3'}>
       <LogoMark size={markSize} />
       <div className="min-w-0">
         <p className={invert ? 'font-semibold text-white' : 'font-semibold text-slate-900'}>
-          Dubai Legal
+          Legal Dash
         </p>
         <p className={invert ? 'text-xs text-brand-100' : 'text-xs text-slate-500'}>
-          Lawyers and legal firms of the United Arab Emirates
+          {t.brand.tagline}
         </p>
       </div>
     </div>

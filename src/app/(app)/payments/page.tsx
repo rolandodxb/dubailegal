@@ -1,30 +1,21 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { paymentPurposeLabel } from '@/lib/i18n/labels';
 import { listPaymentsForUser } from '@/server/services/payment-service';
 import { getReceiptTemplate } from '@/server/services/receipt-template-service';
-import { PAYMENT_PURPOSES } from '@/lib/payment-purposes';
-import { formatMoney, formatAed } from '@/lib/payment-format';
+import { formatMoney } from '@/lib/payment-format';
 import { formatUaeDateTime } from '@/lib/time';
 import { LogoMark } from '@/components/layout/Logo';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'Fees and receipts' };
 
-const PURPOSE_LABEL: Map<string, string> = new Map(
-  PAYMENT_PURPOSES.map((entry) => [entry.value, entry.label]),
-);
-
 const STATUS_STYLE: Record<string, string> = {
   REQUESTED: 'bg-amber-50 text-amber-900 ring-amber-200',
   PAID: 'bg-green-50 text-green-800 ring-green-200',
   CANCELLED: 'bg-slate-100 text-slate-600 ring-slate-200',
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  REQUESTED: 'Payment pending',
-  PAID: 'Payment completed',
-  CANCELLED: 'Withdrawn',
 };
 
 /**
@@ -36,7 +27,8 @@ const STATUS_LABEL: Record<string, string> = {
  * layout produces.
  */
 export default async function PaymentsPage() {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const labels = t.memberCases.fees;
   const isProfessional = user.accountType === 'LAWYER' || user.accountType === 'FIRM';
 
   const [payments, template] = await Promise.all([
@@ -49,55 +41,58 @@ export default async function PaymentsPage() {
   );
   const paid = payments.filter((payment) => payment.status === 'PAID');
 
+  const statusLabel = (status: string) =>
+    status === 'PAID'
+      ? labels.statusPaid
+      : status === 'CANCELLED'
+        ? labels.statusCancelled
+        : labels.statusRequested;
+
   return (
     <div className="space-y-6">
       <header>
         <div className="flex items-center gap-3">
           <LogoMark size={38} />
-          <h1 className="text-2xl font-semibold text-slate-900">Fees and receipts</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
         </div>
-        <p className="mt-2 max-w-3xl text-sm text-slate-600">
-          Every fee raised on a case you are part of. Paying one issues a receipt you can print or
-          save; the receipt carries the professional&rsquo;s letterhead, with the Dubai Legal mark on
-          it either way.
-        </p>
+        <p className="mt-2 max-w-3xl text-sm text-slate-600">{labels.intro}</p>
       </header>
 
       {isProfessional ? (
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="font-semibold text-slate-900">Your receipt layout</h2>
+              <h2 className="font-semibold text-slate-900">{labels.yourReceiptLayout}</h2>
               <p className="mt-1 text-sm text-slate-600">
-                {template?.layout === 'CUSTOM'
-                  ? 'Your own letterhead is used on the receipts you raise.'
-                  : 'The standard Dubai Legal layout is used on the receipts you raise.'}
+                {template?.layout === 'CUSTOM' ? labels.customLayout : labels.standardLayout}
               </p>
             </div>
             <Link href="/receipt-template" className={buttonClasses('secondary', 'md')}>
-              Change the layout
+              {labels.changeLayout}
             </Link>
           </div>
         </Card>
       ) : null}
 
       {awaiting.length > 0 ? (
-        <Alert tone="warning" title={`${awaiting.length} fee${awaiting.length === 1 ? '' : 's'} waiting for you`}>
-          Open the case to pay by card. A receipt is issued as soon as the payment is confirmed.
+        <Alert
+          tone="warning"
+          title={(awaiting.length === 1 ? labels.waitingOne : labels.waitingMany).replace(
+            '{count}',
+            String(awaiting.length),
+          )}
+        >
+          {labels.waitingBody}
         </Alert>
       ) : null}
 
       {payments.length === 0 ? (
         <EmptyState
-          title="No fees yet"
-          description={
-            isProfessional
-              ? 'Raise a fee from inside a case you have accepted; it appears here with its receipt.'
-              : 'When a professional asks you for a fee, it appears here and inside the case conversation.'
-          }
+          title={labels.noFees}
+          description={isProfessional ? labels.noFeesProfessional : labels.noFeesClient}
           action={
             <Link href={isProfessional ? '/portfolio' : '/cases'} className={buttonClasses('primary', 'md')}>
-              {isProfessional ? 'Open my portfolio' : 'Open my cases'}
+              {isProfessional ? labels.openMyPortfolio : labels.openMyCases}
             </Link>
           }
         />
@@ -120,17 +115,19 @@ export default async function PaymentsPage() {
                           STATUS_STYLE[payment.status] ?? 'bg-slate-100 text-slate-600 ring-slate-200',
                         )}
                       >
-                        {STATUS_LABEL[payment.status] ?? payment.status}
+                        {statusLabel(payment.status)}
                       </span>
                     </div>
                     <p className="mt-1 text-sm text-slate-700">
-                      {PURPOSE_LABEL.get(payment.purpose) ?? payment.purpose} ·{' '}
+                      {paymentPurposeLabel(t, payment.purpose)} ·{' '}
                       {payment.case.reference} — {payment.case.title}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      Raised {formatUaeDateTime(payment.createdAt)}
-                      {payment.receiptNumber ? ` · receipt ${payment.receiptNumber}` : ''}
-                      {payer ? ` · paid by ${payer}` : ''}
+                      {labels.raised.replace('{date}', formatUaeDateTime(payment.createdAt))}
+                      {payment.receiptNumber
+                        ? labels.receiptRef.replace('{number}', payment.receiptNumber)
+                        : ''}
+                      {payer ? labels.paidBy.replace('{name}', payer) : ''}
                     </p>
                   </div>
 
@@ -140,7 +137,7 @@ export default async function PaymentsPage() {
                         href={`/payments/${payment.id}/receipt`}
                         className={buttonClasses('secondary', 'sm')}
                       >
-                        Receipt
+                        {labels.receipt}
                       </Link>
                     ) : null}
                     {payment.status === 'REQUESTED' && isClient ? (
@@ -148,11 +145,14 @@ export default async function PaymentsPage() {
                         href={`/payments/${payment.id}/pay`}
                         className={buttonClasses('primary', 'sm')}
                       >
-                        Pay {formatMoney(payment.amountFils, payment.currency)}
+                        {labels.payAmount.replace(
+                          '{amount}',
+                          formatMoney(payment.amountFils, payment.currency),
+                        )}
                       </Link>
                     ) : null}
                     <Link href={`/cases/${payment.case.id}`} className={buttonClasses('ghost', 'sm')}>
-                      Open the case
+                      {labels.openCase}
                     </Link>
                   </div>
                 </div>
@@ -164,8 +164,10 @@ export default async function PaymentsPage() {
 
       {paid.length > 0 ? (
         <p className="text-xs text-slate-500">
-          {paid.length} receipt{paid.length === 1 ? '' : 's'} issued. Payments on this installation are
-          simulated: no card is charged and no money moves.
+          {(paid.length === 1 ? labels.issuedOne : labels.issuedMany).replace(
+            '{count}',
+            String(paid.length),
+          )}
         </p>
       ) : null}
     </div>

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { AccountType, Role, VerificationStatus } from '@prisma/client';
 import { logoutAction } from '@/app/actions/auth-actions';
-import { ACCOUNT_TYPE_LABEL } from '@/lib/constants';
+import { accountTypeLabel } from '@/lib/i18n/labels';
 import { Avatar } from '@/components/Avatar';
 import { VerificationBadge } from '@/components/VerificationBadge';
 import { buttonClasses } from '@/components/ui/primitives';
@@ -66,7 +66,7 @@ export function SiteHeader({
             // On a phone these live behind the menu button instead: three inline
             // links do not fit beside the logo, and half-visible navigation is
             // worse than one clear button.
-            <nav className="hidden items-center gap-1 sm:flex" aria-label="Main">
+            <nav className="hidden items-center gap-1 sm:flex" aria-label={t.publicPages.siteHeader.mainNav}>
               <Link href="/directory" className={buttonClasses('ghost', 'sm')}>
                 {t.nav.directory}
               </Link>
@@ -90,7 +90,9 @@ export function SiteHeader({
               href="/notifications"
               className="relative rounded-lg px-2 py-1.5 text-slate-600 hover:bg-slate-100"
               aria-label={
-                alertCount > 0 ? `Alerts, ${alertCount} unread` : 'Alerts, none unread'
+                alertCount > 0
+                  ? t.publicPages.siteHeader.alertsUnread.replace('{count}', String(alertCount))
+                  : t.publicPages.siteHeader.alertsNone
               }
             >
               <Icon name="bell" size={20} />
@@ -117,7 +119,10 @@ export function SiteHeader({
                 <VerificationBadge accountType={user.accountType} size="sm" />
               ) : null}
               <span className="sr-only">
-                {ACCOUNT_TYPE_LABEL[user.accountType]} account
+                {t.publicPages.siteHeader.accountLabel.replace(
+                  '{kind}',
+                  accountTypeLabel(t, user.accountType),
+                )}
               </span>
             </Link>
             <form action={logoutAction} className="hidden sm:block">
@@ -217,7 +222,7 @@ export function SiteFooter({
             </p>
           </div>
           {signedIn ? null : (
-            <nav className="flex flex-col gap-2" aria-label="Footer">
+            <nav className="flex flex-col gap-2" aria-label={t.publicPages.siteHeader.footerNav}>
               <Link href="/directory" className="hover:text-brand-700">
                 {t.nav.directory}
               </Link>

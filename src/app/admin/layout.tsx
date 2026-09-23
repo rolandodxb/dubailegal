@@ -12,25 +12,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await logLayoutView('/admin', user.id);
 
   const navItems: NavItem[] = [
-    { href: '/admin/verifications', label: 'Verification queue', icon: 'shieldCheck' },
-    { href: '/admin/cases', label: 'Cases (oversight)', icon: 'folder' },
-    { href: '/admin/emergency', label: 'Emergencies', icon: 'alert' },
-    { href: '/admin/meetings', label: 'Meetings and rooms', icon: 'video' },
-    { href: '/admin/recordings', label: 'Call recordings', icon: 'record' },
-    { href: '/admin/payments', label: 'Payments', icon: 'creditCard' },
-    { href: '/admin/enquiries', label: 'Enquiry pool', icon: 'inbox' },
-    { href: '/admin/users', label: 'Accounts', icon: 'users' },
-    { href: '/admin/reviews', label: 'Reviews', icon: 'star' },
-    { href: '/admin/blog', label: 'Community', icon: 'community' },
-    { href: '/admin/notifications', label: 'Push notifications', icon: 'bell' },
-    { href: '/admin/traffic', label: 'Activity register', icon: 'activity' },
-    { href: '/admin/settings', label: 'Settings', icon: 'sliders' },
-    { href: '/admin/outbox', label: 'Outbox', icon: 'send' },
+    { href: '/admin/verifications', label: t.items.verificationQueue, icon: 'shieldCheck' },
+    { href: '/admin/cases', label: t.items.casesOversight, icon: 'folder' },
+    { href: '/admin/emergency', label: t.items.emergencies, icon: 'alert' },
+    { href: '/admin/meetings', label: t.items.meetings, icon: 'video' },
+    { href: '/admin/recordings', label: t.admin.layout.callRecordings, icon: 'record' },
+    { href: '/admin/payments', label: t.items.payments, icon: 'creditCard' },
+    { href: '/admin/enquiries', label: t.items.enquiryPool, icon: 'inbox' },
+    { href: '/admin/users', label: t.items.accounts, icon: 'users' },
+    { href: '/admin/reviews', label: t.items.reviews, icon: 'star' },
+    { href: '/admin/blog', label: t.nav.community, icon: 'community' },
+    { href: '/admin/notifications', label: t.items.pushNotifications, icon: 'bell' },
+    { href: '/admin/traffic', label: t.items.activityRegister, icon: 'activity' },
+    { href: '/admin/settings', label: t.items.settings, icon: 'sliders' },
+    { href: '/admin/outbox', label: t.admin.layout.outbox, icon: 'send' },
     // An operator's own account is theirs: profile, password, two-factor and
     // alerts all work here exactly as they do for any other member.
-    { href: '/profile', label: 'My details', icon: 'user' },
-    { href: '/account', label: 'Account & security', icon: 'lock' },
-    { href: '/notifications', label: 'My alerts', icon: 'bell' },
+    { href: '/profile', label: t.items.myDetails, icon: 'user' },
+    { href: '/account', label: t.items.accountSecurity, icon: 'lock' },
+    { href: '/notifications', label: t.items.myAlerts, icon: 'bell' },
   ];
 
   return (
@@ -38,7 +38,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <SiteHeader
         t={t}
         locale={locale}
-        menuGroups={[{ title: 'Console', items: navItems }]}
+        menuGroups={[{ title: t.groups.console, items: navItems }]}
         user={{
           id: user.id,
           email: user.email,
@@ -53,17 +53,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <div className="border-b border-slate-200 bg-slate-900">
         <div className="dl-container flex h-11 items-center gap-3 text-sm text-white">
-          <span className="font-medium">Reviewer console</span>
-          <span className="text-slate-400">
-            Administration only — you are not a client or a professional on this platform.
-          </span>
+          <span className="font-medium">{t.admin.layout.reviewerConsole}</span>
+          <span className="text-slate-400">{t.admin.layout.adminOnlyNotice}</span>
         </div>
       </div>
 
       <div className="dl-container flex-1 py-6 pb-24 sm:pb-10">
         <div className="grid gap-8 sm:grid-cols-[13rem_1fr]">
           <aside className="sm:sticky sm:top-24 sm:self-start">
-            <SideNav items={navItems} />
+            <SideNav items={navItems} sectionsLabel={t.common.sections} />
           </aside>
           <main className="min-w-0">{children}</main>
         </div>

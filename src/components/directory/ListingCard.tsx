@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { DirectoryListing } from '@/server/services/directory-service';
 import type { ReviewSummary } from '@/server/services/review-service';
-import { ACCOUNT_TYPE_LABEL, EMIRATE_LABEL, LEGAL_AREA_LABEL } from '@/lib/constants';
 import { Avatar } from '@/components/Avatar';
 import { VerificationStatusPill } from '@/components/VerificationBadge';
 import { StarRating } from '@/components/StarRating';
@@ -39,19 +38,23 @@ function ContactChannel({
   icon,
   label,
   present,
+  published,
+  notPublished,
 }: {
   icon: IconName;
   label: string;
   present: boolean;
+  published: string;
+  notPublished: string;
 }) {
   return (
     <span
       className={cx('inline-flex items-center gap-1.5', present ? 'text-slate-700' : 'text-slate-300')}
-      title={present ? `${label} published` : `${label} not published`}
+      title={`${label} ${present ? published : notPublished}`}
     >
       <Icon name={icon} size={15} />
       <span className="sr-only">
-        {label} {present ? 'published' : 'not published'}
+        {label} {present ? published : notPublished}
       </span>
     </span>
   );
@@ -80,6 +83,29 @@ export function ListingCard({
     experience: string;
     years: string;
     noReviewsYet: string;
+    phone: string;
+    email: string;
+    address: string;
+    published: string;
+    notPublished: string;
+    areasOfLaw: string;
+    moreCount: string;
+    notAcceptingNewClients: string;
+    viewProfile: string;
+    getInTouch: string;
+    notReviewed: string;
+    badges: { USER: string; LAWYER: string; FIRM: string };
+    verificationStatus: {
+      UNVERIFIED: string;
+      PENDING: string;
+      UNDER_REVIEW: string;
+      APPROVED: string;
+      REJECTED: string;
+    };
+    /** The stored code, resolved to the word this reader uses for it. */
+    accountType: (code: string) => string;
+    emirate: (code: string) => string;
+    legalArea: (code: string) => string;
   };
 }) {
   const owner = listing.user;
@@ -105,9 +131,9 @@ export function ListingCard({
             {listing.displayName}
           </h3>
           <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            {ACCOUNT_TYPE_LABEL[owner.accountType]}
+            {labels.accountType(owner.accountType)}
             <span className="mx-1.5 font-normal text-slate-300">|</span>
-            {EMIRATE_LABEL[listing.primaryEmirate]}
+            {labels.emirate(listing.primaryEmirate)}
           </p>
           {listing.headline ? (
             <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-600">{listing.headline}</p>
@@ -120,6 +146,8 @@ export function ListingCard({
         <VerificationStatusPill
           accountType={owner.accountType}
           status={owner.verificationStatus}
+          label={labels.badges[owner.accountType]}
+          statusLabel={labels.verificationStatus[owner.verificationStatus]}
         />
 
         {reviewSummary && reviewSummary.count > 0 && reviewSummary.average !== null ? (
@@ -142,16 +170,32 @@ export function ListingCard({
             <span className="tabular-nums">{labels.years.replace('{count}', String(listing.yearsOfExperience))}</span>
           </Fact>
         ) : null}
-        <Fact label={labels.emirates}>{listWithOverflow(listing.emirates.map((e) => EMIRATE_LABEL[e]))}</Fact>
+        <Fact label={labels.emirates}>
+          {listWithOverflow(listing.emirates.map((e) => labels.emirate(e)))}
+        </Fact>
         <Fact label={labels.languages}>{listWithOverflow(listing.languages)}</Fact>
         <Fact label={labels.contact}>
           <span className="inline-flex items-center gap-3">
-            <ContactChannel icon="phone" label="Phone" present={Boolean(listing.contactPhone)} />
-            <ContactChannel icon="mail" label="Email" present={Boolean(listing.contactEmail)} />
+            <ContactChannel
+              icon="phone"
+              label={labels.phone}
+              present={Boolean(listing.contactPhone)}
+              published={labels.published}
+              notPublished={labels.notPublished}
+            />
+            <ContactChannel
+              icon="mail"
+              label={labels.email}
+              present={Boolean(listing.contactEmail)}
+              published={labels.published}
+              notPublished={labels.notPublished}
+            />
             <ContactChannel
               icon={isFirm ? 'building' : 'mapPin'}
-              label="Address"
+              label={labels.address}
               present={Boolean(listing.addressLine)}
+              published={labels.published}
+              notPublished={labels.notPublished}
             />
           </span>
         </Fact>
@@ -161,7 +205,7 @@ export function ListingCard({
       {listing.areas.length > 0 ? (
         <div className="border-t border-slate-100 px-5 py-4">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            Areas of law
+            {labels.areasOfLaw}
           </p>
           <ul className="flex flex-wrap gap-1.5">
             {listing.areas.slice(0, MAX_AREAS_SHOWN).map((area) => (
@@ -169,12 +213,12 @@ export function ListingCard({
                 key={area}
                 className="rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200"
               >
-                {LEGAL_AREA_LABEL[area]}
+                {labels.legalArea(area)}
               </li>
             ))}
             {extraAreas > 0 ? (
               <li className="rounded-md px-2 py-1 text-xs font-medium text-slate-500">
-                +{extraAreas} more
+                {labels.moreCount.replace('{count}', String(extraAreas))}
               </li>
             ) : null}
           </ul>
@@ -183,7 +227,7 @@ export function ListingCard({
 
       {!listing.acceptsNewClients ? (
         <p className="border-t border-slate-100 px-5 py-2.5 text-xs font-medium text-amber-700">
-          Not currently accepting new clients
+          {labels.notAcceptingNewClients}
         </p>
       ) : null}
 
@@ -193,22 +237,18 @@ export function ListingCard({
           href={`/directory/${listing.id}`}
           className={buttonClasses('primary', 'sm', 'flex-1 justify-center')}
         >
-          View profile
+          {labels.viewProfile}
         </Link>
         <Link
           href={`/directory/${listing.id}#contact`}
           className={buttonClasses('secondary', 'sm', 'flex-1 justify-center')}
         >
-          Get in touch
+          {labels.getInTouch}
           <Icon name="arrowRight" size={15} />
         </Link>
       </div>
 
-      {!isVerified ? (
-        <span className="sr-only">
-          This profile has not had its documents reviewed by a reviewer.
-        </span>
-      ) : null}
+      {!isVerified ? <span className="sr-only">{labels.notReviewed}</span> : null}
     </li>
   );
 }

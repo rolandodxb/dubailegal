@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { listCasesForClient, listCasesForLawyer, unreadMessageCountsByCase } from '@/server/services/case-service';
 import { listAppointmentsForClient } from '@/server/services/appointment-service';
 import { formatUaeDateTime } from '@/lib/time';
@@ -16,7 +17,8 @@ export const metadata: Metadata = { title: 'My cases' };
  * meetings booked with them.
  */
 export default async function CasesPage() {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const labels = t.memberCases.cases;
 
   const isProfessional = user.accountType === 'LAWYER' || user.accountType === 'FIRM';
 
@@ -34,16 +36,13 @@ export default async function CasesPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">My cases</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Every case you have sent through the directory, with its current status. Open one to read
-          the description you sent, share files and message the professional.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{labels.intro}</p>
       </header>
 
       {upcoming.length > 0 ? (
         <Card>
-          <h2 className="font-semibold text-slate-900">Meetings and requests</h2>
+          <h2 className="font-semibold text-slate-900">{labels.meetingsAndRequests}</h2>
           <ul className="mt-3 divide-y divide-slate-100">
             {upcoming.map((appointment) => {
               const professional =
@@ -61,18 +60,23 @@ export default async function CasesPage() {
                         {formatUaeDateTime(appointment.startsAt)}
                       </p>
                       <p className="text-xs text-slate-600">
-                        With {professional}
-                        {appointment.case ? ` · case ${appointment.case.reference}` : ''}
+                        {labels.withProfessional.replace('{name}', professional)}
+                        {appointment.case
+                          ? labels.caseReference.replace('{reference}', appointment.case.reference)
+                          : ''}
                       </p>
 
                       {appointment.mode === 'OFFICE_VISIT' ? (
                         <p className="mt-1 text-xs text-slate-600">
-                          At the office: {appointment.officeAddress ?? 'address not given'}
+                          {labels.atTheOffice.replace(
+                            '{address}',
+                            appointment.officeAddress ?? labels.addressNotGiven,
+                          )}
                         </p>
                       ) : appointment.mode === 'VIDEO_CALL' ? (
-                        <p className="mt-1 text-xs text-slate-600">Video call</p>
+                        <p className="mt-1 text-xs text-slate-600">{labels.videoCall}</p>
                       ) : (
-                        <p className="mt-1 text-xs text-slate-600">Phone call</p>
+                        <p className="mt-1 text-xs text-slate-600">{labels.phoneCall}</p>
                       )}
 
                       {appointment.note ? (
@@ -82,18 +86,18 @@ export default async function CasesPage() {
 
                     <div className="shrink-0">
                       {appointment.status === 'CANCELLED' ? (
-                        <span className="text-xs text-slate-500">Cancelled</span>
+                        <span className="text-xs text-slate-500">{labels.cancelled}</span>
                       ) : awaitingAnswer ? (
                         <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200">
-                          Awaiting your answer
+                          {labels.awaitingYourAnswer}
                         </span>
                       ) : appointment.confirmation === 'DECLINED' ? (
                         <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-800 ring-1 ring-inset ring-red-200">
-                          You declined
+                          {labels.youDeclined}
                         </span>
                       ) : appointment.confirmation === 'ACCEPTED' ? (
                         <span className="inline-flex rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-800 ring-1 ring-inset ring-green-200">
-                          You confirmed
+                          {labels.youConfirmed}
                         </span>
                       ) : null}
                     </div>
@@ -105,21 +109,26 @@ export default async function CasesPage() {
                         href={`/rooms/${appointment.roomCode}`}
                         className={buttonClasses('primary', 'sm')}
                       >
-                        Join the conference room
+                        {labels.joinConferenceRoom}
                       </Link>
                     ) : null}
                     {appointment.status === 'BOOKED' ? (
-                      <CancelAppointmentButton appointmentId={appointment.id} />
+                      <CancelAppointmentButton
+                        appointmentId={appointment.id}
+                        labels={t.memberCases.appointment}
+                      />
                     ) : null}
                   </div>
 
                   {awaitingAnswer ? (
                     <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
                       <p className="text-xs text-amber-900">
-                        {professional} has asked you to come to the office. Let them know whether you
-                        can attend.
+                        {labels.officeRequest.replace('{name}', professional)}
                       </p>
-                      <OfficeRequestActions appointmentId={appointment.id} />
+                      <OfficeRequestActions
+                        appointmentId={appointment.id}
+                        labels={t.memberCore.officeRequest}
+                      />
                     </div>
                   ) : null}
                 </li>
@@ -130,14 +139,16 @@ export default async function CasesPage() {
       ) : null}
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Cases I submitted ({cases.length})</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {labels.submittedHeading.replace('{count}', String(cases.length))}
+        </h2>
         {cases.length === 0 ? (
           <EmptyState
-            title="You have not sent a case yet"
-            description="Find a lawyer or legal firm in the directory, open their profile and choose “Get in touch” to send your first case."
+            title={t.dashboard.noCasesYet}
+            description={labels.emptyDescription}
             action={
               <Link href="/directory" className={buttonClasses('primary', 'md')}>
-                Browse the directory
+                {t.dashboard.browseDirectory}
               </Link>
             }
           />
@@ -152,14 +163,14 @@ export default async function CasesPage() {
 
       {isProfessional && lawyerCases ? (
         <section>
-          <h2 className="mb-3 font-semibold text-slate-900">Cases sent to me</h2>
+          <h2 className="mb-3 font-semibold text-slate-900">{labels.sentToMe}</h2>
           {lawyerCases.pending.length + lawyerCases.reviewing.length + lawyerCases.portfolio.length === 0 ? (
             <p className="text-sm text-slate-600">
-              No cases have been sent to you yet.{' '}
+              {labels.noCasesSent}{' '}
               <Link href="/pending" className="font-medium text-brand-700 hover:underline">
-                Cases pending review
+                {t.items.pending}
               </Link>{' '}
-              will list them as they arrive.
+              {labels.pendingWillList}
             </p>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">

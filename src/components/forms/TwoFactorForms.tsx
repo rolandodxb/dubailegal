@@ -13,15 +13,46 @@ import { initialFormState } from '@/lib/form-state';
 import { Alert, Field, Input, buttonClasses } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 
+/** The words the two-factor forms show, threaded down from the server page. */
+export type TwoFactorLabels = {
+  codeLabel: string;
+  codeHint: string;
+  verifyPending: string;
+  verifySubmit: string;
+  cancelSignOut: string;
+  settingsTitle: string;
+  on: string;
+  off: string;
+  enabledOne: string;
+  enabledOther: string;
+  disabledBody: string;
+  turnOn: string;
+  preparing: string;
+  setUpHeading: string;
+  qrAlt: string;
+  scanHint: string;
+  confirmCodeLabel: string;
+  confirmCodeHint: string;
+  verifying: string;
+  recoveryHeading: string;
+  recoveryBody: string;
+  issueHeading: string;
+  issueHint: string;
+  issuing: string;
+  issueSubmit: string;
+  disableHeading: string;
+  disableHint: string;
+  disableConfirm: string;
+  turningOff: string;
+  disableSubmit: string;
+};
+
 /** The single-use codes issued when two-factor is turned on. */
-function RecoveryCodes({ codes }: { codes: string[] }) {
+function RecoveryCodes({ codes, labels }: { codes: string[]; labels: TwoFactorLabels }) {
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-      <p className="text-sm font-semibold text-amber-900">Save these recovery codes</p>
-      <p className="mt-1 text-xs text-amber-900">
-        Each works once, if you lose your phone. They are shown only now and cannot be retrieved
-        later — store them somewhere safe and offline.
-      </p>
+      <p className="text-sm font-semibold text-amber-900">{labels.recoveryHeading}</p>
+      <p className="mt-1 text-xs text-amber-900">{labels.recoveryBody}</p>
       <ul className="mt-3 grid grid-cols-2 gap-2">
         {codes.map((code) => (
           <li
@@ -37,7 +68,7 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
 }
 
 /** The second step of signing in. */
-export function TwoFactorLoginForm() {
+export function TwoFactorLoginForm({ labels }: { labels: TwoFactorLabels }) {
   const [state, formAction] = useActionState(verifyTwoFactorLoginAction, initialFormState);
 
   return (
@@ -46,11 +77,11 @@ export function TwoFactorLoginForm() {
         {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
         <Field
-          label="Authentication code"
+          label={labels.codeLabel}
           htmlFor="code"
           required
           error={state?.fieldErrors?.code}
-          hint="The six digits from your authenticator app, or one of your recovery codes."
+          hint={labels.codeHint}
         >
           <Input
             id="code"
@@ -64,14 +95,14 @@ export function TwoFactorLoginForm() {
           />
         </Field>
 
-        <SubmitButton className="w-full" size="lg" pendingLabel="Checking…">
-          Verify and sign in
+        <SubmitButton className="w-full" size="lg" pendingLabel={labels.verifyPending}>
+          {labels.verifySubmit}
         </SubmitButton>
       </form>
 
       <form action={abandonTwoFactorLoginAction}>
         <button type="submit" className={buttonClasses('ghost', 'sm', 'w-full')}>
-          Cancel and sign out
+          {labels.cancelSignOut}
         </button>
       </form>
     </div>
@@ -88,9 +119,11 @@ export function TwoFactorLoginForm() {
 export function TwoFactorSettings({
   enabled,
   recoveryCodesLeft,
+  labels,
 }: {
   enabled: boolean;
   recoveryCodesLeft: number;
+  labels: TwoFactorLabels;
 }) {
   const [beginState, beginAction] = useActionState(beginTwoFactorAction, initialFormState);
   const [confirmState, confirmAction] = useActionState(confirmTwoFactorAction, initialFormState);
@@ -110,7 +143,7 @@ export function TwoFactorSettings({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-64 flex-1">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-slate-900">Two-factor authentication</p>
+            <p className="text-sm font-medium text-slate-900">{labels.settingsTitle}</p>
             <span
               className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
                 enabled
@@ -118,19 +151,22 @@ export function TwoFactorSettings({
                   : 'bg-slate-100 text-slate-700 ring-slate-200'
               }`}
             >
-              {enabled ? 'On' : 'Off'}
+              {enabled ? labels.on : labels.off}
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-600">
             {enabled
-              ? `A code from your authenticator app is required every time you sign in. ${recoveryCodesLeft} recovery code${recoveryCodesLeft === 1 ? '' : 's'} left.`
-              : 'Add a second step to signing in. Any authenticator app works — Google Authenticator, Authy, 1Password.'}
+              ? (recoveryCodesLeft === 1 ? labels.enabledOne : labels.enabledOther).replace(
+                  '{count}',
+                  String(recoveryCodesLeft),
+                )
+              : labels.disabledBody}
           </p>
         </div>
 
         {!enabled && !showEnrolment ? (
           <form action={beginAction}>
-            <SubmitButton pendingLabel="Preparing…">Turn on two-factor</SubmitButton>
+            <SubmitButton pendingLabel={labels.preparing}>{labels.turnOn}</SubmitButton>
           </form>
         ) : null}
       </div>
@@ -142,22 +178,20 @@ export function TwoFactorSettings({
       {/* ── Enrolment ─────────────────────────────────────────────────── */}
       {!enabled && showEnrolment ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Set up your authenticator app</h3>
+          <h3 className="text-sm font-semibold text-slate-900">{labels.setUpHeading}</h3>
           <div className="mt-3 flex flex-wrap gap-6">
             {qrDataUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={qrDataUrl}
-                alt="Two-factor setup QR code"
+                alt={labels.qrAlt}
                 width={180}
                 height={180}
                 className="rounded-lg bg-white p-2 ring-1 ring-slate-200"
               />
             ) : null}
             <div className="min-w-56 flex-1">
-              <p className="text-xs text-slate-600">
-                Scan the code, or type this key into your app if you cannot scan:
-              </p>
+              <p className="text-xs text-slate-600">{labels.scanHint}</p>
               <p className="mt-2 rounded bg-white px-3 py-2 font-mono text-sm tracking-wider text-slate-900 ring-1 ring-slate-200">
                 {secret}
               </p>
@@ -173,11 +207,11 @@ export function TwoFactorSettings({
             <input type="hidden" name="qrDataUrl" value={qrDataUrl} />
 
             <Field
-              label="Enter the six-digit code from your app"
+              label={labels.confirmCodeLabel}
               htmlFor="confirm-code"
               required
               error={confirmState?.fieldErrors?.code}
-              hint="This proves the app is set up before two-factor is switched on."
+              hint={labels.confirmCodeHint}
             >
               <Input
                 id="confirm-code"
@@ -189,18 +223,18 @@ export function TwoFactorSettings({
               />
             </Field>
 
-            <SubmitButton pendingLabel="Verifying…">Turn on two-factor</SubmitButton>
+            <SubmitButton pendingLabel={labels.verifying}>{labels.turnOn}</SubmitButton>
           </form>
         </div>
       ) : null}
 
-      {justEnabled && codes.length > 0 ? <RecoveryCodes codes={codes} /> : null}
+      {justEnabled && codes.length > 0 ? <RecoveryCodes codes={codes} labels={labels} /> : null}
 
       {/* ── Managing it once on ───────────────────────────────────────── */}
       {enabled ? (
         <div className="space-y-5 border-t border-slate-100 pt-5">
           {regenState?.ok && regenState.step === 'codes' && codes.length > 0 ? (
-            <RecoveryCodes codes={codes} />
+            <RecoveryCodes codes={codes} labels={labels} />
           ) : null}
 
           <form action={regenAction} className="space-y-3">
@@ -208,11 +242,11 @@ export function TwoFactorSettings({
               <Alert tone="error">{regenState.message}</Alert>
             ) : null}
             <Field
-              label="Issue new recovery codes"
+              label={labels.issueHeading}
               htmlFor="regen-password"
               required
               error={regenState?.fieldErrors?.password}
-              hint="Your password is required. This invalidates the codes you already have."
+              hint={labels.issueHint}
             >
               <Input
                 id="regen-password"
@@ -223,8 +257,8 @@ export function TwoFactorSettings({
                 error={regenState?.fieldErrors?.password}
               />
             </Field>
-            <SubmitButton variant="secondary" pendingLabel="Issuing…">
-              Issue new recovery codes
+            <SubmitButton variant="secondary" pendingLabel={labels.issuing}>
+              {labels.issueSubmit}
             </SubmitButton>
           </form>
 
@@ -236,11 +270,11 @@ export function TwoFactorSettings({
               <Alert tone="error">{disableState.message}</Alert>
             ) : null}
             <Field
-              label="Turn two-factor off"
+              label={labels.disableHeading}
               htmlFor="disable-password"
               required
               error={disableState?.fieldErrors?.password}
-              hint="Your password is required, so a borrowed session cannot remove it."
+              hint={labels.disableHint}
             >
               <Input
                 id="disable-password"
@@ -253,10 +287,10 @@ export function TwoFactorSettings({
             </Field>
             <SubmitButton
               variant="danger"
-              confirm="Turn off two-factor authentication? Your password alone will sign you in."
-              pendingLabel="Turning off…"
+              confirm={labels.disableConfirm}
+              pendingLabel={labels.turningOff}
             >
-              Turn off two-factor
+              {labels.disableSubmit}
             </SubmitButton>
           </form>
         </div>

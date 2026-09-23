@@ -10,6 +10,7 @@ import {
   requestPayment,
   submitPaymentProof,
 } from '@/server/services/payment-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 function revalidateCase(caseId: string): void {
   revalidatePath(`/cases/${caseId}`);
@@ -17,7 +18,7 @@ function revalidateCase(caseId: string): void {
 }
 
 /** A professional asks the client for a fee. */
-export async function requestPaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function requestPaymentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   const caseId = String(formData.get('caseId') ?? '');
@@ -61,7 +62,7 @@ export async function requestPaymentAction(_prev: FormState, formData: FormData)
  * printed or saved as a PDF. The chat card flips to completed as soon as this
  * returns, which is why the receipt is where the client lands.
  */
-export async function recordBankTransferAction(
+async function recordBankTransferActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -96,7 +97,7 @@ export async function recordBankTransferAction(
 }
 
 /** Sends proof of payment, which is asked for only after the payment is done. */
-export async function submitPaymentProofAction(
+async function submitPaymentProofActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -121,7 +122,7 @@ export async function submitPaymentProofAction(
   return { ok: true, message: 'Proof of payment sent. The professional has been told.' };
 }
 
-export async function cancelPaymentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function cancelPaymentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const paymentId = String(formData.get('paymentId') ?? '');
   const caseId = String(formData.get('caseId') ?? '');
@@ -131,4 +132,37 @@ export async function cancelPaymentAction(_prev: FormState, formData: FormData):
 
   revalidateCase(caseId);
   return { ok: true, message: 'Fee request withdrawn. The client has been told nothing is owed.' };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function requestPaymentAction(
+  ...args: Parameters<typeof requestPaymentActionImpl>
+): Promise<Awaited<ReturnType<typeof requestPaymentActionImpl>>> {
+  return localiseFormState(await requestPaymentActionImpl(...args));
+}
+
+export async function recordBankTransferAction(
+  ...args: Parameters<typeof recordBankTransferActionImpl>
+): Promise<Awaited<ReturnType<typeof recordBankTransferActionImpl>>> {
+  return localiseFormState(await recordBankTransferActionImpl(...args));
+}
+
+export async function submitPaymentProofAction(
+  ...args: Parameters<typeof submitPaymentProofActionImpl>
+): Promise<Awaited<ReturnType<typeof submitPaymentProofActionImpl>>> {
+  return localiseFormState(await submitPaymentProofActionImpl(...args));
+}
+
+export async function cancelPaymentAction(
+  ...args: Parameters<typeof cancelPaymentActionImpl>
+): Promise<Awaited<ReturnType<typeof cancelPaymentActionImpl>>> {
+  return localiseFormState(await cancelPaymentActionImpl(...args));
 }

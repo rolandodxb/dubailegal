@@ -116,7 +116,7 @@ async function main(): Promise<void> {
       account.userId,
       {
         licenseNumber: `LIC-${sequence}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2030-01-01',
         yearsOfExperience: '8',
       },
@@ -398,7 +398,7 @@ async function main(): Promise<void> {
     firmLawyer.userId,
     {
       licenseNumber: `FLIC-${runId}`,
-      licensingAuthority: 'Dubai Legal Affairs Department',
+      licensingAuthority: 'Legal Dash Affairs Department',
       licenseExpiresOn: '2031-01-01',
       yearsOfExperience: '6',
     },

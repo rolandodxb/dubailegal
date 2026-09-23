@@ -1,8 +1,15 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { bankFieldLabel, emirateLabel } from '@/lib/i18n/labels';
+import { EMIRATES } from '@/lib/constants';
 import { getCredentials } from '@/server/services/credential-service';
-import { FirmCredentialForm, LawyerCredentialForm } from '@/components/forms/CredentialForms';
+import {
+  FirmCredentialForm,
+  LawyerCredentialForm,
+  type BankLabels,
+} from '@/components/forms/CredentialForms';
 import { Alert, Card } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'Legal details' };
@@ -12,26 +19,43 @@ export default async function CredentialsPage() {
 
   if (user.accountType === 'USER') redirect('/dashboard');
 
-  const { lawyer, firm } = await getCredentials(user.id, user.accountType);
+  const [{ t }, { lawyer, firm }] = await Promise.all([
+    getI18n(),
+    getCredentials(user.id, user.accountType),
+  ]);
   const isFirm = user.accountType === 'FIRM';
+
+  const emirateLabels = Object.fromEntries(
+    EMIRATES.map((emirate) => [emirate.value, emirateLabel(t, emirate.value)]),
+  );
+
+  const bank: BankLabels = {
+    title: t.memberPro.credentials.bankTitle,
+    intro: t.memberPro.credentials.bankIntro,
+    accountHolder: bankFieldLabel(t, 'accountHolder'),
+    bankName: bankFieldLabel(t, 'bankName'),
+    iban: bankFieldLabel(t, 'iban'),
+    accountNumber: bankFieldLabel(t, 'accountNumber'),
+    accountNumberHint: t.memberPro.credentials.bankAccountNumberHint,
+    swift: bankFieldLabel(t, 'swift'),
+    branch: bankFieldLabel(t, 'branch'),
+    instructions: bankFieldLabel(t, 'instructions'),
+    instructionsHint: t.memberPro.credentials.bankInstructionsHint,
+  };
 
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">
-          {isFirm ? 'Firm legal registration' : 'Your legal licence'}
+          {isFirm ? t.memberPro.credentials.firmTitle : t.memberPro.credentials.lawyerTitle}
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          {isFirm
-            ? 'A legal firm must be able to show both its own registration and the licence of the legal professional through whom it provides representation.'
-            : 'Your permission to provide legal representation in the United Arab Emirates.'}
+          {isFirm ? t.memberPro.credentials.firmIntro : t.memberPro.credentials.lawyerIntro}
         </p>
       </header>
 
-      <Alert tone="info" title="These details are checked against your documents">
-        A reviewer compares what you enter here with the documents you upload. If the number
-        changes after your account is approved, the badge is withdrawn and the account is reviewed
-        again.
+      <Alert tone="info" title={t.memberPro.credentials.checkedTitle}>
+        {t.memberPro.credentials.checkedBody}
       </Alert>
 
       <Card>
@@ -61,6 +85,31 @@ export default async function CredentialsPage() {
                   }
                 : null
             }
+            labels={{
+              notSavedTitle: t.memberPro.credentials.firmNotSavedTitle,
+              legalName: t.memberPro.credentials.legalName,
+              legalNameHint: t.memberPro.credentials.legalNameHint,
+              tradeLicenceNumber: t.memberPro.credentials.tradeLicenceNumber,
+              licensingAuthority: t.memberPro.credentials.licensingAuthority,
+              licensingAuthorityHint: t.memberPro.credentials.licensingAuthorityHintFirm,
+              issuedOn: t.memberPro.credentials.issuedOn,
+              validUntil: t.memberPro.credentials.validUntil,
+              legalStructure: t.memberPro.credentials.legalStructure,
+              legalStructureHint: t.memberPro.credentials.legalStructureHint,
+              registeredEmirate: t.memberPro.credentials.registeredEmirate,
+              notStated: t.memberPro.credentials.notStated,
+              numberOfLawyers: t.memberPro.credentials.numberOfLawyers,
+              authorisedSignatory: t.memberPro.credentials.authorisedSignatory,
+              authorisedSignatoryHint: t.memberPro.credentials.authorisedSignatoryHint,
+              registeredAddress: t.memberPro.credentials.registeredAddress,
+              website: t.memberPro.credentials.website,
+              websiteHint: t.memberPro.credentials.websiteHint,
+              uploadNote: t.memberPro.credentials.firmUploadNote,
+              save: t.memberPro.credentials.saveFirm,
+              saving: t.memberPro.credentials.saving,
+              emirateLabels,
+              bank,
+            }}
           />
         ) : (
           <LawyerCredentialForm
@@ -83,6 +132,22 @@ export default async function CredentialsPage() {
                   }
                 : null
             }
+            labels={{
+              notSavedTitle: t.memberPro.credentials.licenceNotSavedTitle,
+              licenceNumber: t.memberPro.credentials.licenceNumber,
+              licenceNumberHint: t.memberPro.credentials.licenceNumberHint,
+              licensingAuthority: t.memberPro.credentials.licensingAuthority,
+              licensingAuthorityHint: t.memberPro.credentials.licensingAuthorityHintLawyer,
+              issuedOn: t.memberPro.credentials.issuedOn,
+              validUntil: t.memberPro.credentials.validUntil,
+              validUntilHint: t.memberPro.credentials.validUntilHint,
+              yearsOfExperience: t.memberPro.credentials.yearsOfExperience,
+              barAssociationNumber: t.memberPro.credentials.barAssociationNumber,
+              uploadNote: t.memberPro.credentials.licenceUploadNote,
+              save: t.memberPro.credentials.saveLicence,
+              saving: t.memberPro.credentials.saving,
+              bank,
+            }}
           />
         )}
       </Card>

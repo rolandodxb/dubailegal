@@ -3,7 +3,8 @@
 import { useActionState } from 'react';
 import { createCaseAction } from '@/app/actions/case-actions';
 import { initialFormState } from '@/lib/form-state';
-import { LEGAL_AREAS, MAX_CASE_FILES } from '@/lib/constants';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
+import { MAX_CASE_FILES } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Select, Textarea } from '@/components/ui/primitives';
 
@@ -15,17 +16,25 @@ export function CaseSubmissionForm({
   listingId,
   professionalName,
   suggestedType,
+  labels,
+  areaOptions,
+  statusLabels,
 }: {
   listingId: string;
   professionalName: string;
   suggestedType?: string;
+  labels: MemberCasesDict['caseForm'];
+  /** The practice areas, already in the reader's language. */
+  areaOptions: { value: string; label: string }[];
+  /** The three case states the closing note names, in the reader's language. */
+  statusLabels: { submitted: string; underReview: string; assigned: string };
 }) {
   const [state, formAction] = useActionState(createCaseAction, initialFormState);
 
   return (
     <form action={formAction} className="space-y-5" noValidate>
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="The case was not sent">
+        <Alert tone="error" title={labels.notSent}>
           {state.message}
         </Alert>
       ) : null}
@@ -33,11 +42,11 @@ export function CaseSubmissionForm({
       <input type="hidden" name="listingId" value={listingId} />
 
       <Field
-        label="Case name"
+        label={labels.caseName}
         htmlFor="case-title"
         required
         error={state?.fieldErrors?.title}
-        hint="A short name you will recognise, for example “Commercial lease dispute — Deira office”."
+        hint={labels.caseNameHint}
       >
         <Input
           id="case-title"
@@ -50,7 +59,12 @@ export function CaseSubmissionForm({
         />
       </Field>
 
-      <Field label="Case type" htmlFor="case-type" required error={state?.fieldErrors?.caseType}>
+      <Field
+        label={labels.caseType}
+        htmlFor="case-type"
+        required
+        error={state?.fieldErrors?.caseType}
+      >
         <Select
           id="case-type"
           name="caseType"
@@ -58,7 +72,7 @@ export function CaseSubmissionForm({
           defaultValue={state?.values?.caseType ?? suggestedType ?? 'COMMERCIAL'}
           error={state?.fieldErrors?.caseType}
         >
-          {LEGAL_AREAS.map((area) => (
+          {areaOptions.map((area) => (
             <option key={area.value} value={area.value}>
               {area.label}
             </option>
@@ -67,11 +81,11 @@ export function CaseSubmissionForm({
       </Field>
 
       <Field
-        label="Case description"
+        label={labels.caseDescription}
         htmlFor="case-description"
         required
         error={state?.fieldErrors?.description}
-        hint={`Explain what has happened and what you need. ${professionalName} reads this first.`}
+        hint={labels.caseDescriptionHint.replace('{name}', professionalName)}
       >
         <Textarea
           id="case-description"
@@ -86,10 +100,10 @@ export function CaseSubmissionForm({
       </Field>
 
       <Field
-        label="Attachments"
+        label={labels.attachments}
         htmlFor="case-files"
         error={state?.fieldErrors?.files}
-        hint={`Contracts, letters, notices, photographs. PDF, JPEG, PNG or WebP, up to ${MAX_CASE_FILES} files of 10 MB each.`}
+        hint={labels.attachmentsHint.replace('{count}', String(MAX_CASE_FILES))}
       >
         <input
           id="case-files"
@@ -101,13 +115,17 @@ export function CaseSubmissionForm({
         />
       </Field>
 
-      <SubmitButton size="lg" pendingLabel="Sending your case…">
-        Send case for review
+      <SubmitButton size="lg" pendingLabel={labels.sending}>
+        {labels.send}
       </SubmitButton>
 
       <p className="text-xs text-slate-500">
-        Your case starts as <strong>Submitted</strong>. When the professional opens it you will see{' '}
-        <strong>Under review</strong>, and once they accept it, <strong>Assigned</strong>.
+        {labels.statusFlowStart}
+        <strong>{statusLabels.submitted}</strong>
+        {labels.statusFlowMid}
+        <strong>{statusLabels.underReview}</strong>
+        {labels.statusFlowEnd}
+        <strong>{statusLabels.assigned}</strong>.
       </p>
     </form>
   );

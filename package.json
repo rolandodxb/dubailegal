@@ -2,7 +2,7 @@
   "name": "dubai-legal",
   "version": "0.1.0",
   "private": true,
-  "description": "Dubai Legal \u2014 verified directory of lawyers and legal firms in the UAE",
+  "description": "Legal Dash \u2014 verified directory of lawyers and legal firms",
   "scripts": {
     "dev": "next dev -p 3100",
     "build": "prisma generate && next build",

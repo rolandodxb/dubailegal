@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { documentRulesFor, missingRequirements } from '@/lib/document-requirements';
+import type { VerificationBlocker } from '@/lib/i18n/requirements';
 import { purgeCaseEvidence } from './document-purge';
 import { recordAudit } from '@/lib/audit';
 import {
@@ -139,31 +140,48 @@ export async function getVerificationOverview(userId: string) {
   const presentKinds = new Set(usableDocs.map((doc) => doc.kind));
   // A request with alternatives is satisfied by any one of them, so a country
   // that issues no identity card can still be verified with a passport alone.
-  const missingDocuments = missingRequirements(rules, [...presentKinds]).map(
-    (entry) => entry.label,
-  );
+  // The requests themselves, not just their labels: the page that shows these has
+  // to be able to say them in the reader's language, and a residence permit is
+  // named differently in every country.
+  const missingDocumentRequests = missingRequirements(rules, [...presentKinds]);
+  const missingDocuments = missingDocumentRequests.map((entry) => entry.label);
 
   const emailVerified = user.emailVerifiedAt !== null;
   const openCase = user.verificationCases.find(
     (item) => item.status === 'SUBMITTED' || item.status === 'UNDER_REVIEW',
   );
 
+  // Each blocker is kept twice: as the English sentence the service has always
+  // produced, which the tests and the message catalogue key on, and as a code the
+  // pages can render in the reader's language. The two are built together so they
+  // can never disagree about what is outstanding.
   const blockers: string[] = [];
-  if (!emailVerified) blockers.push('Confirm your email address.');
+  const blockerItems: VerificationBlocker[] = [];
+
+  const addText = (text: string) => {
+    blockers.push(text);
+    blockerItems.push({ kind: 'text', text });
+  };
+
+  if (!emailVerified) addText('Confirm your email address.');
   if (missingProfileFields.length > 0) {
-    blockers.push(`Complete your profile: ${missingProfileFields.join(', ')}.`);
+    addText(`Complete your profile: ${missingProfileFields.join(', ')}.`);
   }
   if (needsCredential && !hasCredential) {
-    blockers.push(
+    addText(
       accountType === 'FIRM'
         ? 'Add your firm\u2019s legal registration details.'
         : 'Add your legal licence details.',
     );
   }
-  if (missingDocuments.length > 0) {
-    blockers.push(`Provide the documents for your account: ${missingDocuments.join('; ')}.`);
+  if (missingDocumentRequests.length > 0) {
+    addText(`Provide the documents for your account: ${missingDocuments.join('; ')}.`);
+    blockerItems[blockerItems.length - 1] = {
+      kind: 'documents',
+      requests: missingDocumentRequests,
+    };
   }
-  if (openCase) blockers.push('A verification request is already with our reviewers.');
+  if (openCase) addText('A verification request is already with our reviewers.');
 
   const checkDigitWarning =
     profile?.emiratesIdCheckDigitOk === false
@@ -183,11 +201,15 @@ export async function getVerificationOverview(userId: string) {
     status: user.verificationStatus as VerificationStatus,
     missingProfileFields,
     missingDocuments,
+    missingDocumentRequests,
+    /** The country rules the outstanding documents were derived from. */
+    documentRules: rules,
     hasCredential,
     needsCredential,
     emailVerified,
     checkDigitWarning,
     blockers,
+    blockerItems,
     canSubmit: blockers.length === 0,
   };
 }

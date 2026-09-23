@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { requireMember } from '@/lib/auth';
 import { getI18n } from '@/lib/i18n';
+import { blockerTexts } from '@/lib/i18n/requirements';
 import { getVerificationOverview } from '@/server/services/verification-service';
 import { listCasesForClient, listCasesForFirm, listCasesForLawyer, listClientsForLawyer } from '@/server/services/case-service';
 import {
@@ -11,7 +12,7 @@ import {
   listBookableClients,
 } from '@/server/services/appointment-service';
 import { unreadNotificationCount } from '@/server/services/notification-service';
-import { ACCOUNT_TYPE_LABEL, BADGE, ONGOING_CASE_STATUSES } from '@/lib/constants';
+import { ONGOING_CASE_STATUSES } from '@/lib/constants';
 import { maskEmiratesId } from '@/lib/emirates-id';
 import { formatDate } from '@/lib/format';
 import { formatUaeTime, todayKey } from '@/lib/time';
@@ -20,12 +21,6 @@ import { CaseCard } from '@/components/cases/CaseCard';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'Dashboard' };
-
-const NOTICES: Record<string, string> = {
-  'email-confirmed': 'Your email address is confirmed.',
-  'reviewer-only': 'That area is only available to accounts with reviewer access.',
-  'professionals-only': 'That area is for lawyer and legal-firm accounts.',
-};
 
 /**
  * One dashboard, shaped by the account type.
@@ -39,7 +34,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ notice?: string }>;
 }) {
-  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const [{ t, effectiveLocale }, user] = await Promise.all([getI18n(), requireMember()]);
   const { notice } = await searchParams;
 
   const isReviewer = user.roles.includes('REVIEWER');
@@ -59,6 +54,15 @@ export default async function DashboardPage({
 
   const verified = overview.status === 'APPROVED';
   const displayName = overview.profile?.fullName?.trim() || user.email;
+
+  const noticeText =
+    notice === 'email-confirmed'
+      ? t.memberCore.dashboard.notices.emailConfirmed
+      : notice === 'reviewer-only'
+        ? t.memberCore.dashboard.notices.reviewerOnly
+        : notice === 'professionals-only'
+          ? t.memberCore.dashboard.notices.professionalsOnly
+          : undefined;
 
   // ── Practice numbers ──────────────────────────────────────────────────────
   let portfolioCount = 0;
@@ -108,28 +112,36 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      {notice && NOTICES[notice] ? (
+      {noticeText ? (
         <p className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-900">
-          {NOTICES[notice]}
+          {noticeText}
         </p>
       ) : null}
 
       <header>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold text-slate-900">Hello, {displayName}</h1>
-          {verified ? <VerificationBadge accountType={overview.accountType} size="lg" /> : null}
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {t.memberCore.dashboard.hello.replace('{name}', displayName)}
+          </h1>
+          {verified ? (
+            <VerificationBadge
+              accountType={overview.accountType}
+              size="lg"
+              label={t.badges[overview.accountType]}
+            />
+          ) : null}
         </div>
         <p className="mt-1 text-sm text-slate-600">
-          {ACCOUNT_TYPE_LABEL[overview.accountType]} account · {user.email}
+          {t.memberCore.accountTypeLines[overview.accountType]} · {user.email}
         </p>
       </header>
 
       {isReviewer ? (
         <Alert tone="info" title={t.dashboard.reviewerAccess}>
-          Decide verification requests, manage accounts and read the outbox in the reviewer console.
+          {t.memberCore.dashboard.reviewerConsoleBody}
           <div className="mt-3">
             <Link href="/admin/verifications" className={buttonClasses('primary', 'md')}>
-              Open the reviewer console
+              {t.memberCore.dashboard.openReviewerConsole}
             </Link>
           </div>
         </Alert>
@@ -140,10 +152,22 @@ export default async function DashboardPage({
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { label: 'In my portfolio', value: portfolioCount, href: '/portfolio' },
-              { label: 'Pending review', value: pendingCount, href: '/pending' },
-              { label: 'Clients', value: clientCount, href: '/clients' },
-              { label: 'Meetings today', value: todayAppointments.length, href: '/calendar' },
+              {
+                label: t.memberCore.dashboard.inMyPortfolio,
+                value: portfolioCount,
+                href: '/portfolio',
+              },
+              {
+                label: t.memberCore.dashboard.pendingReview,
+                value: pendingCount,
+                href: '/pending',
+              },
+              { label: t.memberCore.dashboard.clients, value: clientCount, href: '/clients' },
+              {
+                label: t.memberCore.dashboard.meetingsToday,
+                value: todayAppointments.length,
+                href: '/calendar',
+              },
             ].map((stat) => (
               <Link key={stat.label} href={stat.href} className="block">
                 <Card className="transition-colors hover:border-brand-400">
@@ -158,9 +182,9 @@ export default async function DashboardPage({
             <h2 className="font-semibold text-slate-900">{t.dashboard.todayDiary}</h2>
             {todayAppointments.length === 0 ? (
               <p className="mt-1 text-sm text-slate-600">
-                No meetings booked for today.{' '}
+                {t.memberCore.dashboard.noMeetingsToday}{' '}
                 <Link href="/calendar" className="font-medium text-brand-700 hover:underline">
-                  Open the calendar
+                  {t.memberCore.dashboard.openTheCalendar}
                 </Link>
               </p>
             ) : (
@@ -182,7 +206,7 @@ export default async function DashboardPage({
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-semibold text-slate-900">{t.dashboard.waitingForYou}</h2>
                 <Link href="/pending" className="text-sm font-medium text-brand-700 hover:underline">
-                  See all
+                  {t.memberCore.dashboard.seeAll}
                 </Link>
               </div>
               <ul className="grid gap-4 sm:grid-cols-2">
@@ -191,7 +215,7 @@ export default async function DashboardPage({
                     key={item.id}
                     item={item}
                     perspective="professional"
-                    action={{ href: `/cases/${item.id}`, label: 'Review the case' }}
+                    action={{ href: `/cases/${item.id}`, label: t.memberCore.dashboard.reviewTheCase }}
                   />
                 ))}
               </ul>
@@ -202,15 +226,14 @@ export default async function DashboardPage({
             <Card>
               <h2 className="font-semibold text-slate-900">{t.dashboard.lawyersRegistered}</h2>
               <p className="mt-1 text-sm text-slate-600">
-                Only a lawyer registered with your firm can accept a case submitted to it. Add your
-                professionals so nothing sits unaccepted.
+                {t.memberCore.dashboard.firmLawyersBody}
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Link href="/firm/lawyers" className={buttonClasses('primary', 'md')}>
-                  Manage lawyers registered
+                  {t.memberCore.dashboard.manageLawyers}
                 </Link>
                 <Link href="/pending" className={buttonClasses('secondary', 'md')}>
-                  Cases pending review
+                  {t.items.pending}
                 </Link>
               </div>
             </Card>
@@ -222,9 +245,9 @@ export default async function DashboardPage({
       {!isProfessional ? (
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-900">My cases</h2>
+            <h2 className="font-semibold text-slate-900">{t.memberCore.dashboard.myCases}</h2>
             <Link href="/cases" className="text-sm font-medium text-brand-700 hover:underline">
-              See all and my meetings
+              {t.memberCore.dashboard.seeAllAndMeetings}
             </Link>
           </div>
           {clientCases.length === 0 ? (
@@ -233,7 +256,7 @@ export default async function DashboardPage({
               description={t.dashboard.noCasesBody}
               action={
                 <Link href="/directory" className={buttonClasses('primary', 'md')}>
-                  Browse the directory
+                  {t.dashboard.browseDirectory}
                 </Link>
               }
             />
@@ -252,13 +275,16 @@ export default async function DashboardPage({
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-slate-900">Alerts</h2>
+              <h2 className="font-semibold text-slate-900">{t.items.alerts}</h2>
               <p className="mt-1 text-sm text-slate-600">
-                {unreadAlerts} unread alert{unreadAlerts === 1 ? '' : 's'}.
+                {(unreadAlerts === 1
+                  ? t.memberCore.dashboard.alertsUnreadOne
+                  : t.memberCore.dashboard.alertsUnreadMany
+                ).replace('{count}', String(unreadAlerts))}
               </p>
             </div>
             <Link href="/notifications" className={buttonClasses('secondary', 'md')}>
-              Read my alerts
+              {t.items.myAlerts}
             </Link>
           </div>
         </Card>
@@ -272,22 +298,25 @@ export default async function DashboardPage({
             <p className="mt-1 max-w-xl text-sm text-slate-600">
               {verified ? (
                 <>
-                  Your documents were approved on {formatDate(user.verifiedAt)}. Your profile carries
-                  the {BADGE[overview.accountType].label.toLowerCase()} badge.
+                  {t.memberCore.dashboard.approvedOn
+                    .replace('{date}', formatDate(user.verifiedAt))
+                    .replace('{badge}', t.badges[overview.accountType].toLowerCase())}
                 </>
               ) : overview.status === 'PENDING' ? (
-                'Your request is in the queue and has not been picked up yet.'
+                t.memberCore.dashboard.pendingQueue
               ) : overview.status === 'UNDER_REVIEW' ? (
-                'A reviewer is examining your documents now.'
+                t.memberCore.dashboard.underReview
               ) : overview.status === 'REJECTED' ? (
-                'Your last request was not approved. Read the reviewer’s reason, fix it, and submit again.'
+                t.memberCore.dashboard.rejected
               ) : (
-                'Complete your profile, your legal details and your documents, then submit for review.'
+                t.memberCore.dashboard.incomplete
               )}
             </p>
           </div>
           <Link href="/verification" className={buttonClasses('primary', 'md')}>
-            {verified ? 'View my documents' : 'Continue verification'}
+            {verified
+              ? t.memberCore.dashboard.viewMyDocuments
+              : t.memberCore.dashboard.continueVerification}
           </Link>
         </div>
 
@@ -295,9 +324,11 @@ export default async function DashboardPage({
           <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <p className="text-sm font-medium text-slate-800">{t.dashboard.stillOutstanding}</p>
             <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-slate-700">
-              {overview.blockers.map((blocker) => (
-                <li key={blocker}>{blocker}</li>
-              ))}
+              {blockerTexts(t, effectiveLocale, overview.blockerItems, overview.documentRules).map(
+                (blocker) => (
+                  <li key={blocker}>{blocker}</li>
+                ),
+              )}
             </ul>
           </div>
         ) : null}
@@ -308,7 +339,7 @@ export default async function DashboardPage({
             <dd className="font-medium text-slate-900">
               {overview.profile?.emiratesIdNumber
                 ? maskEmiratesId(overview.profile.emiratesIdNumber)
-                : 'Not provided'}
+                : t.memberCore.dashboard.notProvided}
             </dd>
           </div>
           <div>
@@ -333,23 +364,23 @@ export default async function DashboardPage({
               <p className="mt-1 text-sm text-slate-600">
                 {listing.published ? (
                   <>
-                    <strong className="text-slate-900">{listing.displayName}</strong> is published
-                    and visible to everyone.
+                    <strong className="text-slate-900">{listing.displayName}</strong>{' '}
+                    {t.memberCore.dashboard.listingPublished}
                   </>
                 ) : (
                   <>
-                    <strong className="text-slate-900">{listing.displayName}</strong> is saved as a
-                    private draft. Nobody else can see it yet.
+                    <strong className="text-slate-900">{listing.displayName}</strong>{' '}
+                    {t.memberCore.dashboard.listingDraft}
                   </>
                 )}
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Link href="/listing" className={buttonClasses('secondary', 'md')}>
-                  Edit listing
+                  {t.memberCore.dashboard.editListing}
                 </Link>
                 {listing.published ? (
                   <Link href={`/directory/${listing.id}`} className={buttonClasses('ghost', 'md')}>
-                    View it in the directory
+                    {t.memberCore.dashboard.viewInDirectory}
                   </Link>
                 ) : null}
               </div>
@@ -360,7 +391,7 @@ export default async function DashboardPage({
               description={t.dashboard.noListingBody}
               action={
                 <Link href="/listing" className={buttonClasses('primary', 'md')}>
-                  Create my listing
+                  {t.memberCore.dashboard.createMyListing}
                 </Link>
               }
             />
@@ -376,29 +407,29 @@ export default async function DashboardPage({
           </Link>
           {isProfessional ? (
             <Link href="/credentials" className={buttonClasses('secondary', 'md', 'w-full')}>
-              Edit my legal details
+              {t.dashboard.legalDetails}
             </Link>
           ) : null}
           {isProfessional ? (
             <Link href="/clients" className={buttonClasses('secondary', 'md', 'w-full')}>
-              My clients
+              {t.dashboard.myClients}
             </Link>
           ) : (
             <Link href="/directory" className={buttonClasses('secondary', 'md', 'w-full')}>
-              Browse the directory
+              {t.dashboard.browseDirectory}
             </Link>
           )}
           <Link href="/verification" className={buttonClasses('secondary', 'md', 'w-full')}>
-            Manage my documents
+            {t.dashboard.manageDocuments}
           </Link>
           <Link href="/inquiries" className={buttonClasses('secondary', 'md', 'w-full')}>
-            Inquiries
+            {t.items.inquiries}
           </Link>
           <Link href="/blog" className={buttonClasses('secondary', 'md', 'w-full')}>
-            Community — ask, answer, recommend
+            {t.dashboard.community}
           </Link>
           <Link href="/account" className={buttonClasses('secondary', 'md', 'w-full')}>
-            Account and security
+            {t.items.accountSecurity}
           </Link>
         </div>
       </Card>

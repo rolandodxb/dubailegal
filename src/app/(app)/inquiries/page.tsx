@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { listInquiriesReceived, listInquiriesSent } from '@/server/services/inquiry-service';
 import { formatDateTime } from '@/lib/format';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
@@ -19,23 +20,12 @@ const STATUS_STYLES: Record<string, string> = {
   CLOSED: 'bg-slate-100 text-slate-500 ring-slate-200',
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  NEW: 'New',
-  READ: 'Read',
-  RESPONDED: 'Replied',
-  CLOSED: 'Closed',
-};
-
-const NOTICES: Record<string, string> = {
-  'inquiry-sent': 'Your inquiry has been sent.',
-};
-
 export default async function InquiriesPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string; notice?: string }>;
 }) {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
   const params = await searchParams;
   const tab = params.tab === 'sent' ? 'sent' : 'received';
 
@@ -45,16 +35,13 @@ export default async function InquiriesPage({
   ]);
 
   const rows = tab === 'received' ? received : sent;
-  const notice = params.notice ? NOTICES[params.notice] : undefined;
+  const notice = params.notice === 'inquiry-sent' ? t.memberCore.inquiries.sentNotice : undefined;
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Inquiries</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Messages sent through the directory. Replies stay here as a record, and a copy of each
-          message is recorded for the recipient&rsquo;s email address.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.inquiries}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.memberCore.inquiries.intro}</p>
       </header>
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
@@ -70,7 +57,7 @@ export default async function InquiriesPage({
               : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          Received ({received.length})
+          {t.memberCore.inquiries.receivedTab.replace('{count}', String(received.length))}
         </Link>
         <Link
           href="/inquiries?tab=sent"
@@ -82,23 +69,27 @@ export default async function InquiriesPage({
               : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
-          Sent ({sent.length})
+          {t.memberCore.inquiries.sentTab.replace('{count}', String(sent.length))}
         </Link>
       </div>
 
       {rows.length === 0 ? (
         <EmptyState
-          title={tab === 'received' ? 'No inquiries received yet' : 'You have not sent any inquiries'}
+          title={
+            tab === 'received'
+              ? t.memberCore.inquiries.emptyReceivedTitle
+              : t.memberCore.inquiries.emptySentTitle
+          }
           description={
             tab === 'received'
               ? user.accountType === 'USER'
-                ? 'Nobody has contacted you through Dubai Legal.'
-                : 'When someone contacts you from your directory listing, their message appears here.'
-              : 'Find a lawyer or firm in the directory and send them a message.'
+                ? t.memberCore.inquiries.emptyReceivedBodyUser
+                : t.memberCore.inquiries.emptyReceivedBodyPro
+              : t.memberCore.inquiries.emptySentBody
           }
           action={
             <Link href="/directory" className={buttonClasses('primary', 'md')}>
-              Browse the directory
+              {t.dashboard.browseDirectory}
             </Link>
           }
         />
@@ -110,7 +101,9 @@ export default async function InquiriesPage({
                 ? ('fromUser' in inquiry ? inquiry.fromUser : null)
                 : ('toUser' in inquiry ? inquiry.toUser : null);
             const name =
-              counterparty?.profile?.fullName?.trim() || counterparty?.email || 'Unknown member';
+              counterparty?.profile?.fullName?.trim() ||
+              counterparty?.email ||
+              t.memberCore.inquiries.unknownMember;
 
             return (
               <Card as="li" key={inquiry.id}>
@@ -118,14 +111,18 @@ export default async function InquiriesPage({
                   <div className="min-w-0">
                     <h2 className="font-medium text-slate-900">{inquiry.subject}</h2>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {tab === 'received' ? `From ${name}` : `To ${name}`} ·{' '}
-                      {formatDateTime(inquiry.createdAt)} · listing: {inquiry.listing.displayName}
+                      {(tab === 'received'
+                        ? t.memberCore.inquiries.from
+                        : t.memberCore.inquiries.to
+                      ).replace('{name}', name)}{' '}
+                      · {formatDateTime(inquiry.createdAt)} ·{' '}
+                      {t.memberCore.inquiries.listing} {inquiry.listing.displayName}
                     </p>
                   </div>
                   <span
                     className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_STYLES[inquiry.status]}`}
                   >
-                    {STATUS_LABELS[inquiry.status]}
+                    {t.memberCore.inquiries.statuses[inquiry.status]}
                   </span>
                 </div>
 
@@ -136,7 +133,9 @@ export default async function InquiriesPage({
                 {inquiry.replyBody ? (
                   <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
                     <p className="text-xs font-medium text-green-900">
-                      {tab === 'received' ? 'Your reply' : 'Reply from the professional'}
+                      {tab === 'received'
+                        ? t.memberCore.inquiries.yourReply
+                        : t.memberCore.inquiries.replyFromProfessional}
                       {inquiry.repliedAt ? ` · ${formatDateTime(inquiry.repliedAt)}` : ''}
                     </p>
                     <p className="mt-1 whitespace-pre-line text-sm text-green-900">
@@ -147,13 +146,31 @@ export default async function InquiriesPage({
 
                 {tab === 'received' ? (
                   <>
-                    {!inquiry.replyBody ? <InquiryReplyForm inquiryId={inquiry.id} /> : null}
+                    {!inquiry.replyBody ? (
+                      <InquiryReplyForm
+                        inquiryId={inquiry.id}
+                        labels={{
+                          yourReply: t.memberCore.inquiryReply.yourReply,
+                          sending: t.memberCore.inquiryReply.sending,
+                          sendReply: t.memberCore.inquiryReply.sendReply,
+                        }}
+                      />
+                    ) : null}
                     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                       {inquiry.status === 'NEW' ? (
-                        <MarkInquiryReadButton inquiryId={inquiry.id} />
+                        <MarkInquiryReadButton
+                          inquiryId={inquiry.id}
+                          labels={{ markAsRead: t.memberCore.inquiryReply.markAsRead }}
+                        />
                       ) : null}
                       {inquiry.status !== 'CLOSED' ? (
-                        <CloseInquiryButton inquiryId={inquiry.id} />
+                        <CloseInquiryButton
+                          inquiryId={inquiry.id}
+                          labels={{
+                            close: t.memberCore.inquiryReply.close,
+                            closeConfirm: t.memberCore.inquiryReply.closeConfirm,
+                          }}
+                        />
                       ) : null}
                     </div>
                   </>

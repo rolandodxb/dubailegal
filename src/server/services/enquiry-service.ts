@@ -176,7 +176,7 @@ export async function claimEnquiry(
     body: [
       `Hello ${enquiry.name},`,
       '',
-      `Your enquiry to Dubai Legal has been claimed by ${professionalName}.`,
+      `Your enquiry to Legal Dash has been claimed by ${professionalName}.`,
       '',
       'They will contact you using the details you gave. If you would rather manage this properly —',
       'with your documents, the conversation and every fee in one place — create a free account and',
@@ -184,7 +184,7 @@ export async function claimEnquiry(
       '',
       `${env.appUrl}/register`,
       '',
-      '— Dubai Legal',
+      '— Legal Dash',
     ].join('\n'),
     purpose: 'ENQUIRY_CLAIMED',
     userId: claimantUserId,

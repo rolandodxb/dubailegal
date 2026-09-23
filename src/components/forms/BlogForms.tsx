@@ -13,6 +13,12 @@ import {
 import { BLOG_KINDS } from '@/lib/blog';
 import { COMMUNITY_TOPICS } from '@/lib/community';
 import { initialFormState } from '@/lib/form-state';
+import {
+  composerLabelsEn,
+  feedEn,
+  type ComposerLabels,
+  type FeedDict,
+} from '@/lib/i18n/dict/feed';
 import { Alert, buttonClasses, cx, Field, Input, Select, Textarea } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Icon } from '@/components/icons';
@@ -27,20 +33,24 @@ export type RecommendableListing = { id: string; displayName: string; kind: stri
  * recommendation names a professional, a question does not, and a note is
  * neither. Naming a professional is optional either way — a recommendation of
  * "the firm on Sheikh Zayed Road" is still worth reading.
+ *
+ * The words come from the server parent as one `labels` object, because a client
+ * component cannot read the dictionary itself. Until a parent hands them over,
+ * the English ones are used, so the form never renders blank.
  */
 export function PostForm({
   listings,
   defaultListingId = '',
   defaultTopic = '',
-  t,
+  labels = composerLabelsEn,
 }: {
   listings: RecommendableListing[];
   /** Preselected when somebody arrives from a profile page to recommend them. */
   defaultListingId?: string;
   /** Preselected from the board they were reading. */
   defaultTopic?: string;
-  /** The dictionary, so the composer speaks the reader's language. */
-  t?: { community: { writePost: string } };
+  /** The composer's words, resolved for the reader's language. */
+  labels?: ComposerLabels;
 }) {
   const [state, formAction] = useActionState(createPostAction, initialFormState);
 
@@ -50,11 +60,11 @@ export function PostForm({
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
       <Field
-        label="Which board?"
+        label={labels.board}
         htmlFor="topic"
         required
         error={state?.fieldErrors?.topic}
-        hint="The subject, so somebody with the same problem finds it."
+        hint={labels.boardHint}
       >
         <Select
           id="topic"
@@ -65,14 +75,19 @@ export function PostForm({
         >
           {COMMUNITY_TOPICS.map((topic) => (
             <option key={topic.value} value={topic.value}>
-              {topic.label} — {topic.hint}
+              {labels.topics[topic.value] ?? topic.label} — {labels.topicHints[topic.value] ?? topic.hint}
             </option>
           ))}
         </Select>
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="What are you posting?" htmlFor="kind" required error={state?.fieldErrors?.kind}>
+        <Field
+          label={labels.kind}
+          htmlFor="kind"
+          required
+          error={state?.fieldErrors?.kind}
+        >
           <Select
             id="kind"
             name="kind"
@@ -81,34 +96,35 @@ export function PostForm({
           >
             {BLOG_KINDS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {labels.kinds[option.value] ?? option.label}
               </option>
             ))}
           </Select>
         </Field>
 
         <Field
-          label="Recommending somebody?"
+          label={labels.recommend}
           htmlFor="listingId"
           error={state?.fieldErrors?.listingId}
-          hint="Optional. Pick a profile from the directory and it appears on their page too."
+          hint={labels.recommendHint}
         >
           <Select
             id="listingId"
             name="listingId"
             defaultValue={state?.values?.listingId ?? defaultListingId}
           >
-            <option value="">Nobody in particular</option>
+            <option value="">{labels.nobody}</option>
             {listings.map((listing) => (
               <option key={listing.id} value={listing.id}>
-                {listing.displayName} — {listing.kind === 'FIRM' ? 'legal firm' : 'lawyer'}
+                {listing.displayName} —{' '}
+                {listing.kind === 'FIRM' ? labels.listingFirm : labels.listingLawyer}
               </option>
             ))}
           </Select>
         </Field>
       </div>
 
-      <Field label="Title" htmlFor="title" required error={state?.fieldErrors?.title}>
+      <Field label={labels.title} htmlFor="title" required error={state?.fieldErrors?.title}>
         <Input
           id="title"
           name="title"
@@ -116,29 +132,27 @@ export function PostForm({
           maxLength={140}
           defaultValue={state?.values?.title ?? ''}
           error={state?.fieldErrors?.title}
-          placeholder="Recommended for a labour dispute — clear and quick"
+          placeholder={labels.titlePlaceholder}
         />
       </Field>
 
       <Field
-        label="What happened?"
+        label={labels.body}
         htmlFor="body"
         required
         error={state?.fieldErrors?.body}
-        hint="What you were dealing with, who helped, and what you would tell somebody in the same position. Never post anything confidential about a case."
+        hint={labels.bodyHint}
       >
         <Textarea id="body" name="body" required rows={6} maxLength={8000} defaultValue={state?.values?.body ?? ''} error={state?.fieldErrors?.body} />
       </Field>
 
-      <Alert tone="info" title="A moderator reads this first">
-        Posts are checked before they appear on the board, mostly so that a question which has
-        already been asked and answered can be pointed at the thread that answers it. Yours is kept
-        while it waits — nothing is lost.
+      <Alert tone="info" title={labels.moderationTitle}>
+        {labels.moderationBody}
       </Alert>
 
-      <SubmitButton pendingLabel={t ? `${t.community.writePost}…` : 'Sending for review…'}>
+      <SubmitButton pendingLabel={labels.submitPending}>
         <Icon name="message" size={17} />
-        {t ? t.community.writePost : 'Send for review'}
+        {labels.submit}
       </SubmitButton>
     </form>
   );
@@ -148,10 +162,12 @@ export function CommentForm({
   postId,
   parentId = null,
   compact = false,
+  labels = feedEn.commentForm,
 }: {
   postId: string;
   parentId?: string | null;
   compact?: boolean;
+  labels?: FeedDict['commentForm'];
 }) {
   const [state, formAction] = useActionState(addCommentAction, initialFormState);
 
@@ -160,13 +176,13 @@ export function CommentForm({
       {state && !state.ok && state.message ? (
         <p className="text-xs font-medium text-red-700">{state.message}</p>
       ) : null}
-      {state?.ok ? <p className="text-xs font-medium text-green-700">Posted.</p> : null}
+      {state?.ok ? <p className="text-xs font-medium text-green-700">{labels.posted}</p> : null}
 
       <input type="hidden" name="postId" value={postId} />
       {parentId ? <input type="hidden" name="parentId" value={parentId} /> : null}
 
       <label htmlFor={`comment-${parentId ?? postId}`} className="sr-only">
-        Reply
+        {labels.reply}
       </label>
       <Textarea
         id={`comment-${parentId ?? postId}`}
@@ -174,11 +190,11 @@ export function CommentForm({
         required
         rows={compact ? 2 : 3}
         maxLength={4000}
-        placeholder={parentId ? 'Reply to this…' : 'Add your answer or experience…'}
+        placeholder={parentId ? labels.replyPlaceholder : labels.addAnswerPlaceholder}
         error={state?.fieldErrors?.body}
       />
-      <SubmitButton size="sm" variant="secondary" pendingLabel="Posting…">
-        {parentId ? 'Reply' : 'Comment'}
+      <SubmitButton size="sm" variant="secondary" pendingLabel={labels.posting}>
+        {parentId ? labels.reply : labels.comment}
       </SubmitButton>
     </form>
   );
@@ -189,11 +205,13 @@ export function VoteButtons({
   score,
   myVote,
   kind,
+  labels = feedEn.vote,
 }: {
   id: string;
   score: number;
   myVote: number;
   kind: 'post' | 'comment';
+  labels?: FeedDict['vote'];
 }) {
   const [state, formAction] = useActionState(
     kind === 'post' ? voteOnPostAction : voteOnCommentAction,
@@ -210,7 +228,7 @@ export function VoteButtons({
         type="submit"
         name="value"
         value={current === 1 ? 0 : 1}
-        aria-label={current === 1 ? 'Remove your upvote' : 'Upvote'}
+        aria-label={current === 1 ? labels.removeUpvote : labels.upvote}
         aria-pressed={current === 1}
         className={cx(
           'inline-flex h-7 w-7 items-center justify-center rounded-md border text-xs',
@@ -228,7 +246,7 @@ export function VoteButtons({
         type="submit"
         name="value"
         value={current === -1 ? 0 : -1}
-        aria-label={current === -1 ? 'Remove your downvote' : 'Downvote'}
+        aria-label={current === -1 ? labels.removeDownvote : labels.downvote}
         aria-pressed={current === -1}
         className={cx(
           'inline-flex h-7 w-7 items-center justify-center rounded-md border text-xs',
@@ -244,7 +262,13 @@ export function VoteButtons({
 }
 
 /** The author takes their own post down. */
-export function DeletePostButton({ postId }: { postId: string }) {
+export function DeletePostButton({
+  postId,
+  labels = feedEn.remove,
+}: {
+  postId: string;
+  labels?: FeedDict['remove'];
+}) {
   const [state, formAction] = useActionState(deletePostAction, initialFormState);
 
   return (
@@ -256,10 +280,10 @@ export function DeletePostButton({ postId }: { postId: string }) {
       <SubmitButton
         variant="ghost"
         size="sm"
-        confirm="Delete your post and its replies? This cannot be undone."
-        pendingLabel="Deleting…"
+        confirm={labels.confirm}
+        pendingLabel={labels.pending}
       >
-        Delete
+        {labels.label}
       </SubmitButton>
     </form>
   );
@@ -269,9 +293,18 @@ export function DeletePostButton({ postId }: { postId: string }) {
 export function ModeratePostForm({
   postId,
   status,
+  labels,
 }: {
   postId: string;
   status: 'PUBLISHED' | 'HIDDEN' | 'REMOVED';
+  labels: {
+    reason: string;
+    reasonHint: string;
+    hide: string;
+    remove: string;
+    removeConfirm: string;
+    restore: string;
+  };
 }) {
   const [state, formAction] = useActionState(moderatePostAction, initialFormState);
 
@@ -289,10 +322,10 @@ export function ModeratePostForm({
       {status === 'PUBLISHED' ? (
         <>
           <Field
-            label="Reason, if you hide it"
+            label={labels.reason}
             htmlFor={`note-${postId}`}
             error={state?.fieldErrors?.note}
-            hint="Shown to the author. Be plain about what the problem is."
+            hint={labels.reasonHint}
           >
             <Input id={`note-${postId}`} name="note" maxLength={300} />
           </Field>
@@ -303,7 +336,7 @@ export function ModeratePostForm({
               value="HIDDEN"
               className={buttonClasses('secondary', 'sm')}
             >
-              Hide from the feed
+              {labels.hide}
             </button>
             <button
               type="submit"
@@ -311,16 +344,16 @@ export function ModeratePostForm({
               value="REMOVED"
               className={buttonClasses('danger', 'sm')}
               onClick={(event) => {
-                if (!window.confirm('Remove this post for good?')) event.preventDefault();
+                if (!window.confirm(labels.removeConfirm)) event.preventDefault();
               }}
             >
-              Remove
+              {labels.remove}
             </button>
           </div>
         </>
       ) : (
         <button type="submit" name="status" value="PUBLISHED" className={buttonClasses('secondary', 'sm')}>
-          Put it back in the feed
+          {labels.restore}
         </button>
       )}
     </form>
@@ -328,12 +361,12 @@ export function ModeratePostForm({
 }
 
 const REASONS = [
-  { value: 'DUPLICATE', label: 'Already asked and answered' },
-  { value: 'NOT_A_LEGAL_TOPIC', label: 'Not a legal question' },
-  { value: 'CONFIDENTIAL_DETAIL', label: 'Gives away a case' },
-  { value: 'ABUSIVE', label: 'Abusive' },
-  { value: 'ADVERTISING', label: 'Advertising' },
-  { value: 'OTHER', label: 'Something else' },
+  'DUPLICATE',
+  'NOT_A_LEGAL_TOPIC',
+  'CONFIDENTIAL_DETAIL',
+  'ABUSIVE',
+  'ADVERTISING',
+  'OTHER',
 ] as const;
 
 /**
@@ -347,11 +380,33 @@ export function ReviewDecisionForm({
   postId,
   status,
   candidates,
+  labels,
 }: {
   postId: string;
   status: string;
   /** The closest existing posts, best first: what it can be a repeat of. */
   candidates: { id: string; title: string; score: number }[];
+  labels: {
+    legend: string;
+    publishLabel: string;
+    publishBody: string;
+    duplicateLabel: string;
+    duplicateBody: string;
+    hideLabel: string;
+    hideBody: string;
+    removeLabel: string;
+    removeBody: string;
+    duplicateOf: string;
+    duplicateHint: string;
+    chooseEarlier: string;
+    reason: string;
+    reasons: Record<string, string>;
+    note: string;
+    noteHint: string;
+    alreadyDecided: string;
+    saving: string;
+    save: string;
+  };
 }) {
   const [state, formAction] = useActionState(decidePostAction, initialFormState);
   const [decision, setDecision] = useState<'PUBLISHED' | 'DUPLICATE' | 'HIDDEN' | 'REMOVED'>(
@@ -366,29 +421,29 @@ export function ReviewDecisionForm({
       <input type="hidden" name="postId" value={postId} />
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-slate-800">What should happen to it?</legend>
+        <legend className="text-sm font-medium text-slate-800">{labels.legend}</legend>
 
         {(
           [
             {
               value: 'PUBLISHED' as const,
-              label: 'Publish it',
-              body: 'It goes on the board and the author is told.',
+              label: labels.publishLabel,
+              body: labels.publishBody,
             },
             {
               value: 'DUPLICATE' as const,
-              label: 'Close it as a repeat',
-              body: 'The question is already answered elsewhere. Pick which post it repeats.',
+              label: labels.duplicateLabel,
+              body: labels.duplicateBody,
             },
             {
               value: 'HIDDEN' as const,
-              label: 'Hide it',
-              body: 'It leaves the board with a reason the author can read. Reversible.',
+              label: labels.hideLabel,
+              body: labels.hideBody,
             },
             {
               value: 'REMOVED' as const,
-              label: 'Remove it',
-              body: 'The end of it. The author is told.',
+              label: labels.removeLabel,
+              body: labels.removeBody,
             },
           ]
         ).map((option) => (
@@ -417,14 +472,14 @@ export function ReviewDecisionForm({
 
       {decision === 'DUPLICATE' ? (
         <Field
-          label="Which post does it repeat?"
+          label={labels.duplicateOf}
           htmlFor="duplicateOfId"
           required
           error={state?.fieldErrors?.duplicateOfId}
-          hint="The automatic check is ordered by how close each one is."
+          hint={labels.duplicateHint}
         >
           <Select id="duplicateOfId" name="duplicateOfId" required defaultValue="">
-            <option value="">Choose the earlier post…</option>
+            <option value="">{labels.chooseEarlier}</option>
             {candidates.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
                 {Math.round(candidate.score * 100)}% — {candidate.title}
@@ -435,35 +490,33 @@ export function ReviewDecisionForm({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Reason" htmlFor="reason" error={state?.fieldErrors?.reason}>
+        <Field label={labels.reason} htmlFor="reason" error={state?.fieldErrors?.reason}>
           <Select id="reason" name="reason" defaultValue="OTHER">
             {REASONS.map((reason) => (
-              <option key={reason.value} value={reason.value}>
-                {reason.label}
+              <option key={reason} value={reason}>
+                {labels.reasons[reason] ?? reason}
               </option>
             ))}
           </Select>
         </Field>
 
         <Field
-          label="Note to the author"
+          label={labels.note}
           htmlFor="note"
           error={state?.fieldErrors?.note}
-          hint="Shown with the decision. Be plain about what the problem is."
+          hint={labels.noteHint}
         >
           <Input id="note" name="note" maxLength={400} />
         </Field>
       </div>
 
       {status !== 'PENDING' ? (
-        <p className="text-xs text-slate-500">
-          This post has already been decided. Deciding again replaces that decision.
-        </p>
+        <p className="text-xs text-slate-500">{labels.alreadyDecided}</p>
       ) : null}
 
-      <SubmitButton pendingLabel="Saving the decision…">
+      <SubmitButton pendingLabel={labels.saving}>
         <Icon name="check" size={17} />
-        Save the decision
+        {labels.save}
       </SubmitButton>
     </form>
   );

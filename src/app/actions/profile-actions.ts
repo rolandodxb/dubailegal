@@ -11,6 +11,7 @@ import { saveListing, unpublishListing } from '@/server/services/listing-service
 import { deleteDocument, uploadDocument } from '@/server/services/document-service';
 import { submitForVerification, withdrawSubmission } from '@/server/services/verification-service';
 import { featureDisabledMessage, getAvailability, isEnabled } from '@/lib/availability';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 const PROFILE_KEYS = [
   'fullName',
@@ -33,7 +34,7 @@ function revalidateAppSurfaces(): void {
 
 // ── Profile ──────────────────────────────────────────────────────────────────
 
-export async function saveProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function saveProfileActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
 
@@ -56,7 +57,7 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
 
 // ── Legal credentials ────────────────────────────────────────────────────────
 
-export async function saveLawyerCredentialAction(
+async function saveLawyerCredentialActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -89,7 +90,7 @@ export async function saveLawyerCredentialAction(
   };
 }
 
-export async function saveFirmCredentialAction(
+async function saveFirmCredentialActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -129,7 +130,7 @@ export async function saveFirmCredentialAction(
 
 // ── Directory listing ────────────────────────────────────────────────────────
 
-export async function saveListingAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function saveListingActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
 
@@ -169,7 +170,7 @@ export async function saveListingAction(_prev: FormState, formData: FormData): P
   };
 }
 
-export async function unpublishListingAction(): Promise<void> {
+async function unpublishListingActionImpl(): Promise<void> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
   await unpublishListing(user.id, meta);
@@ -180,7 +181,7 @@ export async function unpublishListingAction(): Promise<void> {
 
 // ── Documents ────────────────────────────────────────────────────────────────
 
-export async function uploadDocumentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function uploadDocumentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
 
@@ -209,7 +210,7 @@ export async function uploadDocumentAction(_prev: FormState, formData: FormData)
   return { ok: true, message: 'Document uploaded. It is waiting to be reviewed.' };
 }
 
-export async function deleteDocumentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function deleteDocumentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
 
@@ -225,7 +226,7 @@ export async function deleteDocumentAction(_prev: FormState, formData: FormData)
 
 // ── Verification requests ────────────────────────────────────────────────────
 
-export async function submitVerificationAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+async function submitVerificationActionImpl(_prev: FormState, _formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
 
   if (isAdministrator(user)) {
@@ -253,7 +254,7 @@ export async function submitVerificationAction(_prev: FormState, _formData: Form
   };
 }
 
-export async function withdrawVerificationAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+async function withdrawVerificationActionImpl(_prev: FormState, _formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
 
@@ -262,4 +263,67 @@ export async function withdrawVerificationAction(_prev: FormState, _formData: Fo
 
   revalidateAppSurfaces();
   return { ok: true, message: 'Your verification request has been withdrawn. You can now change your documents.' };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function saveProfileAction(
+  ...args: Parameters<typeof saveProfileActionImpl>
+): Promise<Awaited<ReturnType<typeof saveProfileActionImpl>>> {
+  return localiseFormState(await saveProfileActionImpl(...args));
+}
+
+export async function saveLawyerCredentialAction(
+  ...args: Parameters<typeof saveLawyerCredentialActionImpl>
+): Promise<Awaited<ReturnType<typeof saveLawyerCredentialActionImpl>>> {
+  return localiseFormState(await saveLawyerCredentialActionImpl(...args));
+}
+
+export async function saveFirmCredentialAction(
+  ...args: Parameters<typeof saveFirmCredentialActionImpl>
+): Promise<Awaited<ReturnType<typeof saveFirmCredentialActionImpl>>> {
+  return localiseFormState(await saveFirmCredentialActionImpl(...args));
+}
+
+export async function saveListingAction(
+  ...args: Parameters<typeof saveListingActionImpl>
+): Promise<Awaited<ReturnType<typeof saveListingActionImpl>>> {
+  return localiseFormState(await saveListingActionImpl(...args));
+}
+
+export async function unpublishListingAction(
+  ...args: Parameters<typeof unpublishListingActionImpl>
+): Promise<Awaited<ReturnType<typeof unpublishListingActionImpl>>> {
+  return localiseFormState(await unpublishListingActionImpl(...args));
+}
+
+export async function uploadDocumentAction(
+  ...args: Parameters<typeof uploadDocumentActionImpl>
+): Promise<Awaited<ReturnType<typeof uploadDocumentActionImpl>>> {
+  return localiseFormState(await uploadDocumentActionImpl(...args));
+}
+
+export async function deleteDocumentAction(
+  ...args: Parameters<typeof deleteDocumentActionImpl>
+): Promise<Awaited<ReturnType<typeof deleteDocumentActionImpl>>> {
+  return localiseFormState(await deleteDocumentActionImpl(...args));
+}
+
+export async function submitVerificationAction(
+  ...args: Parameters<typeof submitVerificationActionImpl>
+): Promise<Awaited<ReturnType<typeof submitVerificationActionImpl>>> {
+  return localiseFormState(await submitVerificationActionImpl(...args));
+}
+
+export async function withdrawVerificationAction(
+  ...args: Parameters<typeof withdrawVerificationActionImpl>
+): Promise<Awaited<ReturnType<typeof withdrawVerificationActionImpl>>> {
+  return localiseFormState(await withdrawVerificationActionImpl(...args));
 }

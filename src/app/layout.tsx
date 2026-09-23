@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ServiceWorkerRegistrar } from '@/components/layout/ServiceWorkerRegistrar';
+import { OptionalLabelProvider } from '@/components/ui/Field';
 import { getI18n } from '@/lib/i18n';
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: 'Dubai Legal',
+    title: 'Legal Dash',
     statusBarStyle: 'default',
   },
   icons: {
@@ -23,14 +24,23 @@ export const metadata: Metadata = {
   // Next emits the standard `mobile-web-app-capable`; older iOS wants the
   // apple-prefixed name as well, and it costs one tag.
   other: { 'apple-mobile-web-app-capable': 'yes' },
-  title: {
-    default: 'Dubai Legal — verified lawyers and legal firms in the UAE',
-    template: '%s · Dubai Legal',
-  },
-  description:
-    'Find lawyers and legal firms across the Emirates, filter by area of law and emirate, and see which profiles have been verified against their official documents.',
-  applicationName: 'Dubai Legal',
+  applicationName: 'Legal Dash',
 };
+
+/**
+ * The default title and description, in the reader's language.
+ *
+ * This is what a browser tab and a search result show for every page that does
+ * not set its own, so it has to be built per request rather than declared as a
+ * constant — otherwise a Spanish reader gets an English tab.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: { default: t.meta.title, template: '%s · Legal Dash' },
+    description: t.meta.description,
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -45,7 +55,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { locale, dir } = await getI18n();
+  const { locale, dir, t } = await getI18n();
 
   return (
     // `lang` and `dir` belong on the html element: a screen reader picks the
@@ -53,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     // second, so Arabic reads and flows right to left without a second stylesheet.
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body className="min-h-screen bg-white antialiased">
-        {children}
+        <OptionalLabelProvider value={t.common.optionalSuffix}>{children}</OptionalLabelProvider>
         <ServiceWorkerRegistrar />
       </body>
     </html>

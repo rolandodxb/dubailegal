@@ -6,10 +6,11 @@ import { requestMeta, requireReviewer } from '@/lib/auth';
 import type { FormState } from '@/lib/form-state';
 import { setReviewerRole, setUserSuspended } from '@/server/services/admin-service';
 import { claimCase, decideCase, reviewDocument } from '@/server/services/verification-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 // ── Verification queue ───────────────────────────────────────────────────────
 
-export async function claimCaseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function claimCaseActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
   const caseId = String(formData.get('caseId') ?? '');
@@ -22,7 +23,7 @@ export async function claimCaseAction(_prev: FormState, formData: FormData): Pro
   redirect(`/admin/verifications/${caseId}`);
 }
 
-export async function reviewDocumentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function reviewDocumentActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -50,7 +51,7 @@ export async function reviewDocumentAction(_prev: FormState, formData: FormData)
   };
 }
 
-export async function decideCaseAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function decideCaseActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -79,7 +80,7 @@ export async function decideCaseAction(_prev: FormState, formData: FormData): Pr
 
 // ── Account administration ───────────────────────────────────────────────────
 
-export async function suspendUserAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function suspendUserActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -96,7 +97,7 @@ export async function suspendUserAction(_prev: FormState, formData: FormData): P
   return { ok: true, message: 'Account suspended and all its sessions signed out.' };
 }
 
-export async function reinstateUserAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function reinstateUserActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -113,7 +114,7 @@ export async function reinstateUserAction(_prev: FormState, formData: FormData):
   return { ok: true, message: 'Account reinstated.' };
 }
 
-export async function setReviewerRoleAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function setReviewerRoleActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const reviewer = await requireReviewer();
   const meta = await requestMeta();
 
@@ -126,4 +127,49 @@ export async function setReviewerRoleAction(_prev: FormState, formData: FormData
     ok: true,
     message: grant ? 'Reviewer access granted.' : 'Reviewer access removed.',
   };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function claimCaseAction(
+  ...args: Parameters<typeof claimCaseActionImpl>
+): Promise<Awaited<ReturnType<typeof claimCaseActionImpl>>> {
+  return localiseFormState(await claimCaseActionImpl(...args));
+}
+
+export async function reviewDocumentAction(
+  ...args: Parameters<typeof reviewDocumentActionImpl>
+): Promise<Awaited<ReturnType<typeof reviewDocumentActionImpl>>> {
+  return localiseFormState(await reviewDocumentActionImpl(...args));
+}
+
+export async function decideCaseAction(
+  ...args: Parameters<typeof decideCaseActionImpl>
+): Promise<Awaited<ReturnType<typeof decideCaseActionImpl>>> {
+  return localiseFormState(await decideCaseActionImpl(...args));
+}
+
+export async function suspendUserAction(
+  ...args: Parameters<typeof suspendUserActionImpl>
+): Promise<Awaited<ReturnType<typeof suspendUserActionImpl>>> {
+  return localiseFormState(await suspendUserActionImpl(...args));
+}
+
+export async function reinstateUserAction(
+  ...args: Parameters<typeof reinstateUserActionImpl>
+): Promise<Awaited<ReturnType<typeof reinstateUserActionImpl>>> {
+  return localiseFormState(await reinstateUserActionImpl(...args));
+}
+
+export async function setReviewerRoleAction(
+  ...args: Parameters<typeof setReviewerRoleActionImpl>
+): Promise<Awaited<ReturnType<typeof setReviewerRoleActionImpl>>> {
+  return localiseFormState(await setReviewerRoleActionImpl(...args));
 }

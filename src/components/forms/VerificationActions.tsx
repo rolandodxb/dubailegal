@@ -9,8 +9,30 @@ import { initialFormState } from '@/lib/form-state';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert } from '@/components/ui/primitives';
 
+/** The words the submit form shows, in the reader's language. */
+export type SubmitVerificationFormLabels = {
+  beforeSubmitTitle: string;
+  submit: string;
+  submitting: string;
+  buttonActive: string;
+};
+
+/** The words the withdraw form shows, in the reader's language. */
+export type WithdrawVerificationFormLabels = {
+  confirm: string;
+  withdrawing: string;
+  withdrawRequest: string;
+  withdrawNote: string;
+};
+
 /** Submits the account's evidence to the review queue. */
-export function SubmitVerificationForm({ blockers }: { blockers: string[] }) {
+export function SubmitVerificationForm({
+  blockers,
+  labels,
+}: {
+  blockers: string[];
+  labels: SubmitVerificationFormLabels;
+}) {
   const [state, formAction] = useActionState(submitVerificationAction, initialFormState);
   const blocked = blockers.length > 0;
 
@@ -20,7 +42,7 @@ export function SubmitVerificationForm({ blockers }: { blockers: string[] }) {
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
       {blocked ? (
-        <Alert tone="warning" title="Before you can submit">
+        <Alert tone="warning" title={labels.beforeSubmitTitle}>
           <ul className="list-disc space-y-1 pl-4">
             {blockers.map((blocker) => (
               <li key={blocker}>{blocker}</li>
@@ -29,21 +51,17 @@ export function SubmitVerificationForm({ blockers }: { blockers: string[] }) {
         </Alert>
       ) : null}
 
-      <SubmitButton size="lg" disabled={blocked} pendingLabel="Submitting…">
-        Submit for verification
+      <SubmitButton size="lg" disabled={blocked} pendingLabel={labels.submitting}>
+        {labels.submit}
       </SubmitButton>
 
-      {blocked ? (
-        <p className="text-xs text-slate-500">
-          The button becomes active once every item above is complete.
-        </p>
-      ) : null}
+      {blocked ? <p className="text-xs text-slate-500">{labels.buttonActive}</p> : null}
     </form>
   );
 }
 
 /** Withdraws a request that is still with a reviewer. */
-export function WithdrawVerificationForm() {
+export function WithdrawVerificationForm({ labels }: { labels: WithdrawVerificationFormLabels }) {
   const [state, formAction] = useActionState(withdrawVerificationAction, initialFormState);
 
   return (
@@ -53,14 +71,12 @@ export function WithdrawVerificationForm() {
 
       <SubmitButton
         variant="secondary"
-        confirm="Withdraw your verification request? You will be able to change your documents, then submit again."
-        pendingLabel="Withdrawing…"
+        confirm={labels.confirm}
+        pendingLabel={labels.withdrawing}
       >
-        Withdraw request
+        {labels.withdrawRequest}
       </SubmitButton>
-      <p className="text-xs text-slate-500">
-        While a request is with a reviewer, your documents cannot be changed.
-      </p>
+      <p className="text-xs text-slate-500">{labels.withdrawNote}</p>
     </form>
   );
 }

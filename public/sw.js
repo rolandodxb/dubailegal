@@ -1,9 +1,9 @@
-const CACHE = 'dubai-legal-v1';
+const CACHE = 'legal-dash-v1';
 const OFFLINE_URL = '/offline';
 const PRECACHE = ['/offline', '/manifest.webmanifest', '/logo.svg', '/icon-192.png', '/icon-512.png'];
 
 /*
- * Dubai Legal service worker.
+ * Legal Dash service worker.
  *
  * Its only job is to receive push messages and show them as system
  * notifications, including when no tab is open. Clicking one focuses an existing
@@ -39,13 +39,13 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: 'Dubai Legal', body: event.data ? event.data.text() : '' };
+    data = { title: 'Legal Dash', body: event.data ? event.data.text() : '' };
   }
 
-  const title = data.title || 'Dubai Legal';
+  const title = data.title || 'Legal Dash';
   const options = {
     body: data.body || '',
-    tag: data.tag || 'dubai-legal',
+    tag: data.tag || 'legal-dash',
     renotify: true,
     data: { link: data.link || '/notifications' },
     icon: '/icon-192.png',

@@ -128,7 +128,7 @@ async function main(): Promise<void> {
       account.userId,
       {
         licenseNumber: `FEAT-${sequence}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2032-01-01',
         yearsOfExperience: '6',
         // A fee is paid by bank transfer, so the fixture practice banks somewhere.
@@ -408,7 +408,7 @@ async function main(): Promise<void> {
       firmLawyer.userId,
       {
         licenseNumber: `FEM-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2032-01-01',
         yearsOfExperience: '5',
       },
@@ -447,7 +447,7 @@ async function main(): Promise<void> {
       secondLawyerInFirm.userId,
       {
         licenseNumber: `FSM-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2032-01-01',
         yearsOfExperience: '3',
       },

@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireProfessional } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
 import {
   emergencyStanding,
   listOpenEmergencies,
   listTakenEmergencies,
 } from '@/server/services/emergency-service';
-import { LEGAL_AREA_LABEL } from '@/lib/constants';
 import { formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/Avatar';
 import { VerificationStatusPill } from '@/components/VerificationBadge';
@@ -33,7 +34,7 @@ export const metadata: Metadata = { title: 'Emergency desk' };
  * server as well as in the navigation.
  */
 export default async function EmergencyDeskPage() {
-  const user = await requireProfessional();
+  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
   const isFirm = user.accountType === 'FIRM';
 
   const [queue, taken, standing] = await Promise.all([
@@ -42,6 +43,8 @@ export default async function EmergencyDeskPage() {
     emergencyStanding(user.id),
   ]);
 
+  const publicName = t.memberPro.emergencyDesk.memberOfPublic;
+
   return (
     <div className="space-y-8">
       <header>
@@ -49,29 +52,26 @@ export default async function EmergencyDeskPage() {
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-red-700">
             <Icon name="alert" size={18} />
           </span>
-          <h1 className="text-2xl font-semibold text-slate-900">Emergency desk</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{t.items.emergencyDesk}</h1>
         </div>
         <p className="mt-2 max-w-3xl text-sm text-slate-600">
-          People asking for urgent legal help appear here, and are pushed to every professional who
-          has opted into emergencies. The first to take one has a case opened and assigned to them.
-          Nothing is dispatched to the police, an ambulance or the fire service — that is 999.
+          {t.memberPro.emergencyDesk.intro}
         </p>
       </header>
 
-      <Alert tone="info" title="You are seeing the professional side">
-        This page shows urgent requests to answer. It is not the form for asking for help: the public
-        emergency page is for people who need a lawyer, and it is open to anyone without an account.
+      <Alert tone="info" title={t.memberPro.emergencyDesk.professionalSideTitle}>
+        {t.memberPro.emergencyDesk.professionalSideBody}
       </Alert>
 
       {/* ── The queue ────────────────────────────────────────────────────── */}
       <section>
         <h2 className="mb-3 font-semibold text-slate-900">
-          Open urgent requests ({queue.length})
+          {t.memberPro.emergencyDesk.openRequests.replace('{count}', String(queue.length))}
         </h2>
         {queue.length === 0 ? (
           <EmptyState
-            title="No open urgent requests"
-            description="When somebody raises an emergency, it appears here and is pushed to the professionals who take them."
+            title={t.memberPro.emergencyDesk.noRequestsTitle}
+            description={t.memberPro.emergencyDesk.noRequestsBody}
           />
         ) : (
           <ul className="space-y-3">
@@ -80,14 +80,17 @@ export default async function EmergencyDeskPage() {
               // name and number they gave stand in for it.
               const clientName = item.client
                 ? item.client.profile?.fullName?.trim() || item.client.email
-                : `${item.guestName ?? 'A member of the public'} (no account)`;
+                : t.memberPro.emergencyDesk.guestNoAccount.replace(
+                    '{name}',
+                    item.guestName ?? publicName,
+                  );
               return (
                 <Card as="li" key={item.id} className="border-red-200">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-800 ring-1 ring-inset ring-red-200">
-                          Urgent
+                          {t.memberPro.emergencyDesk.urgent}
                         </span>
                         <h3 className="font-medium text-slate-900">{item.title}</h3>
                       </div>
@@ -108,13 +111,16 @@ export default async function EmergencyDeskPage() {
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-slate-900">{clientName}</p>
                           <p className="text-xs text-slate-500">
-                            {LEGAL_AREA_LABEL[item.caseType] ?? item.caseType}
+                            {legalAreaLabel(t, item.caseType)}
                             {item.client?.profile?.countryOfResidence
                               ? ` · ${item.client.profile.countryOfResidence}`
                               : ''}
                           </p>
                           <p className="mt-1 text-sm font-medium text-slate-900">
-                            Call back: {item.contactPhone}
+                            {t.memberPro.emergencyDesk.callBack.replace(
+                              '{phone}',
+                              item.contactPhone,
+                            )}
                           </p>
                         </div>
                       </div>
@@ -122,14 +128,13 @@ export default async function EmergencyDeskPage() {
                       {item.roomCode ? (
                         <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
                           <p className="text-xs text-red-900">
-                            They are already waiting in a video room. Joining it answers the
-                            emergency and records you as the lawyer who took it.
+                            {t.memberPro.emergencyDesk.waitingRoomBody}
                           </p>
                           <Link
                             href={`/rooms/${item.roomCode}`}
                             className={buttonClasses('primary', 'sm', 'mt-2')}
                           >
-                            Join the call now
+                            {t.memberPro.emergencyDesk.joinCall}
                           </Link>
                         </div>
                       ) : null}
@@ -139,8 +144,9 @@ export default async function EmergencyDeskPage() {
                       </p>
 
                       <p className="mt-2 text-xs text-slate-500">
-                        Raised {formatDateTime(item.createdAt)} · offered until{' '}
-                        {formatDateTime(item.expiresAt)}
+                        {t.memberPro.emergencyDesk.raisedUntil
+                          .replace('{raised}', formatDateTime(item.createdAt))
+                          .replace('{expires}', formatDateTime(item.expiresAt))}
                       </p>
                     </div>
 
@@ -149,13 +155,17 @@ export default async function EmergencyDeskPage() {
                         <VerificationStatusPill
                           accountType={item.client.accountType}
                           status={item.client.verificationStatus}
+                          label={t.badges[item.client.accountType]}
+                          statusLabel={t.verificationStatus[item.client.verificationStatus]}
                         />
                       ) : (
                         <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200">
-                          No account
+                          {t.memberPro.emergencyDesk.noAccount}
                         </span>
                       )}
-                      {item.roomCode ? null : <AcceptEmergencyForm requestId={item.id} />}
+                      {item.roomCode ? null : (
+                        <AcceptEmergencyForm requestId={item.id} labels={t.emergency.accept} />
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -167,18 +177,21 @@ export default async function EmergencyDeskPage() {
 
       {/* ── Availability ─────────────────────────────────────────────────── */}
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">My emergency availability</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {t.memberPro.emergencyDesk.availabilityTitle}
+        </h2>
         <Card>
           {isFirm ? (
             <>
               <p className="text-sm text-slate-600">
-                A firm account does not take emergency calls itself — one of your lawyers does. Name
-                a lawyer as your firm&rsquo;s emergency contact and urgent requests that reach{' '}
-                {standing?.firm?.legalName} are assigned to them directly.
+                {t.memberPro.emergencyDesk.firmAvailabilityBody.replace(
+                  '{firm}',
+                  standing?.firm?.legalName ?? '',
+                )}
               </p>
               {standing?.firm?.lawyers.length ? (
                 <p className="mt-3 text-sm text-slate-800">
-                  Current emergency contact:{' '}
+                  {t.memberPro.emergencyDesk.currentContact}{' '}
                   <strong>
                     {standing.firm.lawyers[0]!.user.profile?.fullName?.trim() ||
                       standing.firm.lawyers[0]!.user.email}
@@ -186,41 +199,41 @@ export default async function EmergencyDeskPage() {
                 </p>
               ) : (
                 <p className="mt-3 text-sm text-amber-800">
-                  No emergency contact is designated. Until one is, urgent requests to your firm sit
-                  in the queue like any other case.
+                  {t.memberPro.emergencyDesk.noContact}
                 </p>
               )}
               <div className="mt-4">
                 <Link href="/firm/lawyers" className={buttonClasses('secondary', 'md')}>
-                  Manage in Lawyers registered
+                  {t.memberPro.emergencyDesk.manageInLawyers}
                 </Link>
               </div>
             </>
           ) : standing?.lawyer ? (
             <>
               <p className="mb-4 text-sm text-slate-600">
-                Turning this on means urgent requests are pushed to you directly, at any hour. Only do
-                so if you can answer.
+                {t.memberPro.emergencyDesk.lawyerAvailabilityBody}
               </p>
               <EmergencyAvailabilityForm
                 accepts={standing.lawyer.acceptsEmergency}
                 note={standing.lawyer.emergencyNote}
+                labels={t.emergency.availability}
               />
               {standing.lawyer.acceptsEmergency ? (
                 <div className="mt-5 border-t border-slate-100 pt-5">
-                  <EmergencyNoteForm note={standing.lawyer.emergencyNote} />
+                  <EmergencyNoteForm
+                    note={standing.lawyer.emergencyNote}
+                    labels={t.emergency.note}
+                  />
                 </div>
               ) : null}
               {standing.lawyer.isFirmEmergency ? (
                 <p className="mt-4 text-xs text-slate-500">
-                  You are also your firm&rsquo;s designated emergency contact.
+                  {t.memberPro.emergencyDesk.alsoFirmContact}
                 </p>
               ) : null}
             </>
           ) : (
-            <p className="text-sm text-slate-600">
-              Emergency availability is set on a lawyer profile.
-            </p>
+            <p className="text-sm text-slate-600">{t.memberPro.emergencyDesk.noLawyerProfile}</p>
           )}
         </Card>
       </section>
@@ -228,7 +241,7 @@ export default async function EmergencyDeskPage() {
       {taken.length > 0 ? (
         <section>
           <h2 className="mb-3 font-semibold text-slate-900">
-            Urgent requests I took ({taken.length})
+            {t.memberPro.emergencyDesk.takenRequests.replace('{count}', String(taken.length))}
           </h2>
           <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
             {taken.map((item) => (
@@ -238,8 +251,11 @@ export default async function EmergencyDeskPage() {
                   <p className="text-xs text-slate-500">
                     {item.client
                       ? item.client.profile?.fullName?.trim() || item.client.email
-                      : item.guestName ?? 'A member of the public'}{' '}
-                    · taken {formatDateTime(item.acceptedAt)}
+                      : item.guestName ?? publicName}{' '}
+                    {t.memberPro.emergencyDesk.takenOn.replace(
+                      '{date}',
+                      formatDateTime(item.acceptedAt),
+                    )}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-3">
@@ -249,10 +265,12 @@ export default async function EmergencyDeskPage() {
                       href={`/cases/${item.legalCase.id}`}
                       className="text-xs font-medium text-brand-700 hover:underline"
                     >
-                      Open case
+                      {t.dashboard.openCase}
                     </Link>
                   ) : null}
-                  {item.status === 'ACCEPTED' ? <CloseEmergencyForm requestId={item.id} /> : null}
+                  {item.status === 'ACCEPTED' ? (
+                    <CloseEmergencyForm requestId={item.id} labels={t.emergency.close} />
+                  ) : null}
                 </div>
               </li>
             ))}

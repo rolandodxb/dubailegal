@@ -81,7 +81,7 @@ export const fr = {
     badge: 'Émirats arabes unis',
     heroTitle: 'Trouvez un avocat que vous pouvez vraiment vérifier.',
     heroBody:
-      'Dubai Legal vous met en relation avec des avocats et des cabinets de tous les Émirats : titres vérifiés, dossier suivi du premier message au dernier, et tout ce qui compte réuni au même endroit.',
+      'Legal Dash vous met en relation avec des avocats et des cabinets de tous les Émirats : titres vérifiés, dossier suivi du premier message au dernier, et tout ce qui compte réuni au même endroit.',
     findLawyer: 'Trouver un avocat',
     iAmProfessional: 'Je suis avocat ou un cabinet',
     urgentHelp: 'Aide urgente, sans compte',
@@ -109,7 +109,7 @@ export const fr = {
     professionalsHeading: 'Pour les avocats et les cabinets',
     communityEyebrow: 'Communauté',
     verifiedByHand: 'Vérifié par une personne, jamais par une machine',
-    clientsIntro: 'La plupart des gens trouvent un avocat par un ami et espèrent que tout ira bien. Dubai Legal vous donne les détails pour juger par vous-même, et une trace de tout ce qui suit. Tout ce qui suit est ce que vous obtenez en tant que client — la recherche est gratuite, et le reste.',
+    clientsIntro: 'La plupart des gens trouvent un avocat par un ami et espèrent que tout ira bien. Legal Dash vous donne les détails pour juger par vous-même, et une trace de tout ce qui suit. Tout ce qui suit est ce que vous obtenez en tant que client — la recherche est gratuite, et le reste.',
     needLawyer: 'J’ai besoin d’un avocat',
     needLawyerBody: 'Un compte est ce qui transforme une fiche d’annuaire en dossier que vous pouvez suivre. Il exige vos documents d’identité pour vous vérifier, et votre numéro n’est jamais publié.',
     createFreeAccount: 'Créer un compte gratuit',
@@ -146,12 +146,12 @@ export const fr = {
     fullNameHint: 'Tel qu’il figure sur votre pièce d’identité, pour qu’un vérificateur puisse le comparer.',
     phone: 'Numéro de téléphone',
     phoneHint: 'Comment l’autre partie d’un dossier vous joint, et comment une réponse vous est signalée.',
-    accountType: 'Comment utiliserez-vous Dubai Legal ?',
+    accountType: 'Comment utiliserez-vous Legal Dash ?',
     accountTypeHint:
       'Cela détermine ce que vous devez fournir pour être vérifié et ne peut pas être modifié ensuite. Vos informations d’identité et vos documents sont demandés dans l’onglet de vérification, où un vérificateur les lit.',
     createAccountTitle: 'Créez votre compte',
     haveAccount: 'Vous avez déjà un compte ?',
-    noAccount: 'Nouveau sur Dubai Legal ?',
+    noAccount: 'Nouveau sur Legal Dash ?',
     forgotPassword: 'Mot de passe oublié ?',
   },
 
@@ -167,6 +167,6 @@ export const fr = {
 
   footer: {
     disclaimer:
-      'Dubai Legal n’est pas un cabinet d’avocats et ne fournit pas de conseil juridique. Les informations de l’annuaire sont fournies par ses membres. Vérifiez toujours qu’un professionnel est inscrit avant de le mandater.',
+      'Legal Dash n’est pas un cabinet d’avocats et ne fournit pas de conseil juridique. Les informations de l’annuaire sont fournies par ses membres. Vérifiez toujours qu’un professionnel est inscrit avant de le mandater.',
   },
 };

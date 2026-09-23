@@ -100,7 +100,7 @@ async function main(): Promise<void> {
 
   const failures = checks.filter((check) => check.count > 0);
 
-  console.info('Dubai Legal — verification integrity check\n');
+  console.info('Legal Dash — verification integrity check\n');
   for (const check of checks) {
     const marker = check.count === 0 ? 'PASS' : 'FAIL';
     console.info(`  [${marker}] ${check.name}: ${check.count}`);

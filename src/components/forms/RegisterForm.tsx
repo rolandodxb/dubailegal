@@ -2,9 +2,10 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
+import type { AccountType } from '@prisma/client';
 import { registerAction } from '@/app/actions/auth-actions';
 import { initialFormState } from '@/lib/form-state';
-import { ACCOUNT_TYPES, ACCOUNT_TYPE_DESCRIPTION, ACCOUNT_TYPE_LABEL, MIN_PASSWORD_LENGTH } from '@/lib/constants';
+import { MIN_PASSWORD_LENGTH } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, cx } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
@@ -21,18 +22,45 @@ const ACCOUNT_ICON = {
  * The account type is chosen here and cannot be changed afterwards, because it
  * determines which legal information and which documents the account must
  * supply before a reviewer can verify it.
+ *
+ * Every word comes from the page that renders it: this is a client component,
+ * so it cannot read the dictionary itself.
  */
 export function RegisterForm({
   defaultAccountType,
   inviteToken,
   invitedByFirm,
   lockedEmail,
+  labels,
 }: {
   defaultAccountType?: string;
   inviteToken?: string;
   /** Set when the visitor arrived through a firm's invitation link. */
   invitedByFirm?: string;
   lockedEmail?: string;
+  labels: {
+    invitedTitle: string;
+    invitedLead: string;
+    invitedTail: string;
+    failedTitle: string;
+    accountTypeLegend: string;
+    accountTypeHint: string;
+    accountTypes: { value: AccountType; label: string; description: string }[];
+    fullName: string;
+    fullNameHint: string;
+    phone: string;
+    phoneHint: string;
+    email: string;
+    password: string;
+    passwordHint: string;
+    confirmPassword: string;
+    terms: string;
+    pending: string;
+    submit: string;
+    haveAccount: string;
+    signIn: string;
+    emiratesIdNote: string;
+  };
 }) {
   const [state, formAction] = useActionState(registerAction, initialFormState);
   const preselected = state?.values?.accountType || defaultAccountType || 'USER';
@@ -42,36 +70,35 @@ export function RegisterForm({
       {inviteToken ? <input type="hidden" name="inviteToken" value={inviteToken} /> : null}
 
       {invitedByFirm ? (
-        <Alert tone="info" title={`You have been invited to join ${invitedByFirm}`}>
-          Create your lawyer account with <strong>{lockedEmail}</strong> and complete your licence
-          details. You will be registered with the firm automatically once your legal details are
-          saved.
+        <Alert
+          tone="info"
+          title={labels.invitedTitle.replace('{firm}', invitedByFirm)}
+        >
+          {labels.invitedLead}
+          <strong>{lockedEmail}</strong>
+          {labels.invitedTail}
         </Alert>
       ) : null}
 
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="We could not create your account">
+        <Alert tone="error" title={labels.failedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-slate-800">
-          How will you use Dubai Legal?
+          {labels.accountTypeLegend}
           <span className="ml-1 text-brand-700" aria-hidden="true">
             *
           </span>
         </legend>
-        <p className="text-xs text-slate-500">
-          This decides what you must provide to become verified, and cannot be changed later. Your
-          account opens as soon as you create it — your identity details and documents are asked for
-          in the verification tab, where a reviewer reads them.
-        </p>
+        <p className="text-xs text-slate-500">{labels.accountTypeHint}</p>
 
         <div className="grid gap-3">
-          {ACCOUNT_TYPES.map((type) => (
+          {labels.accountTypes.map((type) => (
             <label
-              key={type}
+              key={type.value}
               className={cx(
                 'flex cursor-pointer items-start gap-3 rounded-xl border bg-white p-4 transition-colors',
                 'border-slate-300 hover:border-brand-400',
@@ -81,17 +108,17 @@ export function RegisterForm({
               <input
                 type="radio"
                 name="accountType"
-                value={type}
+                value={type.value}
                 required
-                defaultChecked={preselected === type}
+                defaultChecked={preselected === type.value}
                 className="mt-1 h-4 w-4 shrink-0 accent-brand-700"
               />
               <span className="min-w-0">
                 <span className="flex items-center gap-2.5 text-sm font-semibold text-slate-900">
-                  <Icon name={ACCOUNT_ICON[type]} size={18} className="text-slate-500" />
-                  {type === 'USER' ? 'I am a user' : type === 'LAWYER' ? 'I am a lawyer' : 'I am a legal firm'}
+                  <Icon name={ACCOUNT_ICON[type.value]} size={18} className="text-slate-500" />
+                  {type.label}
                 </span>
-                <span className="mt-1 block text-xs text-slate-600">{ACCOUNT_TYPE_DESCRIPTION[type]}</span>
+                <span className="mt-1 block text-xs text-slate-600">{type.description}</span>
               </span>
             </label>
           ))}
@@ -104,11 +131,11 @@ export function RegisterForm({
       </fieldset>
 
       <Field
-        label="Your full name"
+        label={labels.fullName}
         htmlFor="fullName"
         required
         error={state?.fieldErrors?.fullName}
-        hint="As it appears on your identification, so a reviewer can match it."
+        hint={labels.fullNameHint}
       >
         <Input
           id="fullName"
@@ -123,11 +150,11 @@ export function RegisterForm({
       </Field>
 
       <Field
-        label="Phone number"
+        label={labels.phone}
         htmlFor="phone"
         required
         error={state?.fieldErrors?.phone}
-        hint="How the other side of a case reaches you, and how you are told about a reply."
+        hint={labels.phoneHint}
       >
         <Input
           id="phone"
@@ -142,7 +169,7 @@ export function RegisterForm({
         />
       </Field>
 
-      <Field label="Email address" htmlFor="email" required error={state?.fieldErrors?.email}>
+      <Field label={labels.email} htmlFor="email" required error={state?.fieldErrors?.email}>
         <Input
           id="email"
           name="email"
@@ -158,11 +185,11 @@ export function RegisterForm({
       </Field>
 
       <Field
-        label="Password"
+        label={labels.password}
         htmlFor="password"
         required
         error={state?.fieldErrors?.password}
-        hint={`At least ${MIN_PASSWORD_LENGTH} characters, including a letter and a number.`}
+        hint={labels.passwordHint.replace('{count}', String(MIN_PASSWORD_LENGTH))}
       >
         <Input
           id="password"
@@ -175,7 +202,12 @@ export function RegisterForm({
         />
       </Field>
 
-      <Field label="Confirm password" htmlFor="confirmPassword" required error={state?.fieldErrors?.confirmPassword}>
+      <Field
+        label={labels.confirmPassword}
+        htmlFor="confirmPassword"
+        required
+        error={state?.fieldErrors?.confirmPassword}
+      >
         <Input
           id="confirmPassword"
           name="confirmPassword"
@@ -195,10 +227,7 @@ export function RegisterForm({
             required
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 accent-brand-700"
           />
-          <span className="text-sm text-slate-700">
-            I confirm the details I give are my own, and I understand that documents I upload are
-            examined by a reviewer before any verification badge is issued.
-          </span>
+          <span className="text-sm text-slate-700">{labels.terms}</span>
         </label>
         {state?.fieldErrors?.acceptTerms ? (
           <p className="mt-1 text-xs font-medium text-red-600" role="alert">
@@ -207,20 +236,17 @@ export function RegisterForm({
         ) : null}
       </div>
 
-      <SubmitButton className="w-full" size="lg" pendingLabel="Creating your account…">
-        Create account
+      <SubmitButton className="w-full" size="lg" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
 
       <p className="text-center text-sm text-slate-600">
-        Already have an account?{' '}
+        {labels.haveAccount}{' '}
         <Link href="/login" className="font-medium text-brand-700 hover:underline">
-          Sign in
+          {labels.signIn}
         </Link>
       </p>
-      <p className="text-center text-xs text-slate-500">
-        {ACCOUNT_TYPE_LABEL.USER}, {ACCOUNT_TYPE_LABEL.LAWYER} and {ACCOUNT_TYPE_LABEL.FIRM}{' '}
-        accounts all require an Emirates ID before verification.
-      </p>
+      <p className="text-center text-xs text-slate-500">{labels.emiratesIdNote}</p>
     </form>
   );
 }

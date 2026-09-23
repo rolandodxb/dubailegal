@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getI18n } from '@/lib/i18n';
 import { requireReviewer } from '@/lib/auth';
 import { listAllReviewsForAdmin } from '@/server/services/review-service';
 import { formatDateTime } from '@/lib/format';
@@ -16,7 +17,7 @@ export const metadata: Metadata = { title: 'Reviews' };
  * intact and the author can be told why. Every decision is audited.
  */
 export default async function AdminReviewsPage() {
-  await requireReviewer();
+  const [, { t }] = await Promise.all([requireReviewer(), getI18n()]);
   const reviews = await listAllReviewsForAdmin();
 
   const published = reviews.filter((review) => review.status === 'PUBLISHED');
@@ -26,22 +27,24 @@ export default async function AdminReviewsPage() {
       ? null
       : Math.round((published.reduce((total, review) => total + review.rating, 0) / published.length) * 10) / 10;
 
+  /** The stored status stays the stored status; only the word changes. */
+  const statusLabel: Record<string, string> = t.admin.reviews.status;
+
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Reviews</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Every review is tied to a case the professional accepted, so a review cannot be written
-          without a real engagement. Hide one if it breaks the rules: hiding keeps the record and
-          tells the author, deleting would not.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.reviews}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{t.admin.reviews.intro}</p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Published', value: String(published.length) },
-          { label: 'Hidden', value: String(hidden.length) },
-          { label: 'Average of published', value: average === null ? '—' : average.toFixed(1) },
+          { label: statusLabel.PUBLISHED, value: String(published.length) },
+          { label: statusLabel.HIDDEN, value: String(hidden.length) },
+          {
+            label: t.admin.reviews.averageOfPublished,
+            value: average === null ? '—' : average.toFixed(1),
+          },
         ].map((stat) => (
           <Card key={stat.label}>
             <p className="text-sm text-slate-600">{stat.label}</p>
@@ -52,8 +55,8 @@ export default async function AdminReviewsPage() {
 
       {reviews.length === 0 ? (
         <EmptyState
-          title="No reviews have been written yet"
-          description="Reviews appear here once a client reviews a case a professional accepted."
+          title={t.admin.reviews.empty.title}
+          description={t.admin.reviews.empty.body}
         />
       ) : (
         <ul className="space-y-4">
@@ -71,7 +74,7 @@ export default async function AdminReviewsPage() {
                           : 'bg-red-50 text-red-800 ring-red-200'
                       }`}
                     >
-                      {review.status === 'PUBLISHED' ? 'Published' : 'Hidden'}
+                      {statusLabel[review.status] ?? review.status}
                     </span>
                   </div>
                   {review.title ? (
@@ -85,7 +88,7 @@ export default async function AdminReviewsPage() {
                     >
                       {review.author.profile?.fullName?.trim() || review.author.email}
                     </Link>{' '}
-                    reviewed{' '}
+                    {t.admin.reviews.reviewed}{' '}
                     <Link
                       href={`/admin/users?q=${encodeURIComponent(review.target.email)}`}
                       className="text-brand-700 hover:underline"
@@ -95,17 +98,30 @@ export default async function AdminReviewsPage() {
                     · {formatDateTime(review.createdAt)}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    About case {review.case.reference} — {review.case.title}
+                    {t.admin.reviews.aboutCase
+                      .replace('{reference}', review.case.reference)
+                      .replace('{title}', review.case.title)}
                   </p>
                   {review.hiddenReason ? (
                     <p className="mt-1 text-xs text-red-700">
-                      Hidden because: {review.hiddenReason}
+                      {t.admin.reviews.hiddenBecause.replace('{reason}', review.hiddenReason)}
                     </p>
                   ) : null}
                 </div>
 
                 <div className="shrink-0">
-                  <ModerateReviewForm reviewId={review.id} hidden={review.status === 'HIDDEN'} />
+                  <ModerateReviewForm
+                    reviewId={review.id}
+                    hidden={review.status === 'HIDDEN'}
+                    labels={{
+                      placeholder: t.admin.reviews.moderate.reasonPlaceholder,
+                      saving: t.admin.reviews.moderate.saving,
+                      confirmRestore: t.admin.reviews.moderate.confirmRestore,
+                      confirmHide: t.admin.reviews.moderate.confirmHide,
+                      restore: t.admin.reviews.moderate.restore,
+                      hide: t.admin.reviews.moderate.hide,
+                    }}
+                  />
                 </div>
               </div>
             </Card>
@@ -115,10 +131,10 @@ export default async function AdminReviewsPage() {
 
       <div className="flex flex-wrap gap-3">
         <Link href="/admin/settings" className={buttonClasses('secondary', 'md')}>
-          Settings
+          {t.items.settings}
         </Link>
         <Link href="/admin/traffic" className={buttonClasses('secondary', 'md')}>
-          Activity register
+          {t.items.activityRegister}
         </Link>
       </div>
     </div>

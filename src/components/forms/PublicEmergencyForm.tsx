@@ -3,7 +3,6 @@
 import { useActionState } from 'react';
 import { raisePublicEmergencyAction } from '@/app/actions/emergency-actions';
 import { initialFormState } from '@/lib/form-state';
-import { LEGAL_AREAS } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Select, Textarea } from '@/components/ui/primitives';
 
@@ -14,8 +13,30 @@ import { Alert, Field, Input, Select, Textarea } from '@/components/ui/primitive
  * and what is happening. No account, no password, no email confirmation — the
  * point is to be in front of a lawyer in seconds. Submitting goes straight to a
  * video room.
+ *
+ * The words come from the page that renders it: this is a client component, so
+ * it cannot read the dictionary itself.
  */
-export function PublicEmergencyForm() {
+export function PublicEmergencyForm({
+  labels,
+}: {
+  labels: {
+    failedTitle: string;
+    name: string;
+    nameHint: string;
+    phone: string;
+    phoneHint: string;
+    description: string;
+    descriptionHint: string;
+    areaOfLaw: string;
+    areaOptions: { value: string; label: string }[];
+    email: string;
+    emailHint: string;
+    pending: string;
+    submit: string;
+    note: string;
+  };
+}) {
   const [state, formAction] = useActionState(raisePublicEmergencyAction, initialFormState);
 
   const value = (key: string) => state?.values?.[key] ?? '';
@@ -23,18 +44,18 @@ export function PublicEmergencyForm() {
   return (
     <form action={formAction} className="space-y-5" noValidate>
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="We could not send that">
+        <Alert tone="error" title={labels.failedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
-          label="Your name"
+          label={labels.name}
           htmlFor="em-name"
           required
           error={state?.fieldErrors?.guestName}
-          hint="A first name is enough."
+          hint={labels.nameHint}
         >
           <Input
             id="em-name"
@@ -48,11 +69,11 @@ export function PublicEmergencyForm() {
         </Field>
 
         <Field
-          label="Number to call you on"
+          label={labels.phone}
           htmlFor="em-phone"
           required
           error={state?.fieldErrors?.guestPhone}
-          hint="A lawyer may call this before joining the room."
+          hint={labels.phoneHint}
         >
           <Input
             id="em-phone"
@@ -68,11 +89,11 @@ export function PublicEmergencyForm() {
       </div>
 
       <Field
-        label="What is happening?"
+        label={labels.description}
         htmlFor="em-description"
         required
         error={state?.fieldErrors?.description}
-        hint="A sentence is enough. The lawyer reads this as they join."
+        hint={labels.descriptionHint}
       >
         <Textarea
           id="em-description"
@@ -87,7 +108,12 @@ export function PublicEmergencyForm() {
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Area of law" htmlFor="em-type" required error={state?.fieldErrors?.caseType}>
+        <Field
+          label={labels.areaOfLaw}
+          htmlFor="em-type"
+          required
+          error={state?.fieldErrors?.caseType}
+        >
           <Select
             id="em-type"
             name="caseType"
@@ -95,7 +121,7 @@ export function PublicEmergencyForm() {
             defaultValue={value('caseType') || 'CRIMINAL_PENAL'}
             error={state?.fieldErrors?.caseType}
           >
-            {LEGAL_AREAS.map((area) => (
+            {labels.areaOptions.map((area) => (
               <option key={area.value} value={area.value}>
                 {area.label}
               </option>
@@ -104,10 +130,10 @@ export function PublicEmergencyForm() {
         </Field>
 
         <Field
-          label="Email"
+          label={labels.email}
           htmlFor="em-email"
           error={state?.fieldErrors?.guestEmail}
-          hint="Optional. For a copy of what you sent."
+          hint={labels.emailHint}
         >
           <Input
             id="em-email"
@@ -120,14 +146,11 @@ export function PublicEmergencyForm() {
         </Field>
       </div>
 
-      <SubmitButton size="lg" className="w-full" pendingLabel="Finding a lawyer…">
-        Get a lawyer on video now
+      <SubmitButton size="lg" className="w-full" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
 
-      <p className="text-xs text-slate-500">
-        No account needed. You go straight to a video room where a lawyer on emergency call joins
-        you. Keep the page open.
-      </p>
+      <p className="text-xs text-slate-500">{labels.note}</p>
     </form>
   );
 }

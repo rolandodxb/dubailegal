@@ -26,7 +26,7 @@ export type SettingKey =
 export const SETTING_DEFAULTS: Record<SettingKey, string> = {
   'maintenance.enabled': 'false',
   'maintenance.message':
-    'Dubai Legal is temporarily unavailable while we carry out maintenance. Please try again shortly.',
+    'Legal Dash is temporarily unavailable while we carry out maintenance. Please try again shortly.',
   'feature.registration': 'true',
   'feature.directory': 'true',
   'feature.case_submission': 'true',

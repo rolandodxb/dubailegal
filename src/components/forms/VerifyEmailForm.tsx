@@ -12,8 +12,17 @@ import { Alert } from '@/components/ui/primitives';
  * Corporate mail scanners and link prefetchers follow URLs in email. If the
  * token were consumed on GET, simply receiving the message could confirm the
  * address. A POST makes the human the actor.
+ *
+ * The words come from the page: this is a client component, so it cannot read
+ * the dictionary itself.
  */
-export function VerifyEmailForm({ token }: { token: string }) {
+export function VerifyEmailForm({
+  token,
+  labels,
+}: {
+  token: string;
+  labels: { pending: string; submit: string };
+}) {
   const [state, formAction] = useActionState(verifyEmailAction, initialFormState);
 
   return (
@@ -22,8 +31,8 @@ export function VerifyEmailForm({ token }: { token: string }) {
 
       <input type="hidden" name="token" value={token} />
 
-      <SubmitButton className="w-full" size="lg" pendingLabel="Confirming…">
-        Confirm my email address
+      <SubmitButton className="w-full" size="lg" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
     </form>
   );

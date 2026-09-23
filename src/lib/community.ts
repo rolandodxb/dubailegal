@@ -72,7 +72,7 @@ export const COMMUNITY_TOPICS = [
   },
   {
     value: 'USING_DUBAI_LEGAL',
-    label: 'Using Dubai Legal',
+    label: 'Using Legal Dash',
     hint: 'Verification, the directory, cases, meetings, payments on this platform.',
     icon: 'shieldCheck',
   },

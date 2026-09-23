@@ -9,9 +9,9 @@ import { fromZodError, failure, success, type ServiceResult } from './result';
  * Billing receipts, and whose letterhead they carry.
  *
  * A fee request produces a receipt. What that receipt looks like is the
- * professional's decision: the standard Dubai Legal layout, or a letterhead of
+ * professional's decision: the standard Legal Dash layout, or a letterhead of
  * their own with their name, their mark and their colour. Either way the
- * platform mark stays on the document — a receipt is issued through Dubai Legal,
+ * platform mark stays on the document — a receipt is issued through Legal Dash,
  * and the person holding it should be able to see where it came from.
  *
  * A new account has no template, which means the standard layout. Nothing has to
@@ -21,7 +21,7 @@ import { fromZodError, failure, success, type ServiceResult } from './result';
 
 /** Where the platform mark and the standard wording live. */
 export const PLATFORM_BRAND = {
-  name: 'Dubai Legal',
+  name: 'Legal Dash',
   tagline: 'Lawyers and legal firms of the United Arab Emirates',
   logo: '/logo.svg',
 } as const;
@@ -170,7 +170,7 @@ export async function saveReceiptTemplate(
 
   if (account.roles.includes('REVIEWER')) {
     return failure(
-      'Administrator accounts use the Dubai Legal letterhead, and it cannot be changed.',
+      'Administrator accounts use the Legal Dash letterhead, and it cannot be changed.',
       { status: 403 },
     );
   }

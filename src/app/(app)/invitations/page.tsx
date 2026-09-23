@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { emirateLabel } from '@/lib/i18n/labels';
 import { listInvitationsForLawyer } from '@/server/services/firm-service';
-import { EMIRATE_LABEL } from '@/lib/constants';
 import { formatDateTime } from '@/lib/format';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { InvitationResponseForm } from '@/components/forms/FirmForms';
@@ -14,15 +15,19 @@ export const metadata: Metadata = { title: 'Invitations' };
  * to that firm, which is what lets them accept cases addressed to it.
  */
 export default async function InvitationsPage() {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
 
   if (user.accountType !== 'LAWYER') {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Invitations</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.memberCore.invitations.title}</h1>
         <Alert tone="neutral">
-          Only lawyer accounts can join a firm. You are signed in as a{' '}
-          {user.accountType === 'FIRM' ? 'legal firm' : 'individual'} account.
+          {t.memberCore.invitations.onlyLawyers.replace(
+            '{type}',
+            user.accountType === 'FIRM'
+              ? t.memberCore.invitations.legalFirm
+              : t.memberCore.invitations.individual,
+          )}
         </Alert>
       </div>
     );
@@ -33,20 +38,19 @@ export default async function InvitationsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Invitations</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.memberCore.invitations.title}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Firms that have invited you to join as one of their registered lawyers. Accepting links
-          your licence to the firm and lets you accept cases submitted to it.
+          {t.memberCore.invitations.intro}
         </p>
       </header>
 
       {invitations.length === 0 ? (
         <EmptyState
-          title="No pending invitations"
-          description="When a firm registers you as a professional, the invitation appears here."
+          title={t.memberCore.invitations.emptyTitle}
+          description={t.memberCore.invitations.emptyBody}
           action={
             <Link href="/dashboard" className={buttonClasses('secondary', 'md')}>
-              Back to my dashboard
+              {t.memberCore.invitations.backToDashboard}
             </Link>
           }
         />
@@ -56,16 +60,24 @@ export default async function InvitationsPage() {
             <Card as="li" key={invitation.id}>
               <h2 className="font-semibold text-slate-900">{invitation.firm.legalName}</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Invited {formatDateTime(invitation.createdAt)} · trade licence{' '}
-                {invitation.firm.tradeLicenseNumber}
-                {invitation.firm.registeredEmirate
-                  ? ` · ${EMIRATE_LABEL[invitation.firm.registeredEmirate]}`
-                  : ''}
+                {t.memberCore.invitations.invited
+                  .replace('{date}', formatDateTime(invitation.createdAt))
+                  .replace('{licence}', invitation.firm.tradeLicenseNumber)
+                  .replace(
+                    '{emirate}',
+                    invitation.firm.registeredEmirate
+                      ? t.memberCore.invitations.emirateSuffix.replace(
+                          '{emirate}',
+                          emirateLabel(t, invitation.firm.registeredEmirate),
+                        )
+                      : '',
+                  )}
               </p>
               <div className="mt-4">
                 <InvitationResponseForm
                   invitationId={invitation.id}
                   firmName={invitation.firm.legalName}
+                  labels={t.memberCore.invitations.response}
                 />
               </div>
             </Card>

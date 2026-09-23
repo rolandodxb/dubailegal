@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { createReviewAction } from '@/app/actions/review-actions';
 import { initialFormState } from '@/lib/form-state';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Select, Textarea } from '@/components/ui/primitives';
 import { StarIcon } from '@/components/icons';
@@ -14,13 +15,7 @@ export type ReviewableCase = {
   professional: string;
 };
 
-const RATING_LABELS: Record<number, string> = {
-  1: 'Poor',
-  2: 'Below expectations',
-  3: 'Acceptable',
-  4: 'Good',
-  5: 'Excellent',
-};
+const RATING_LABEL_KEYS = ['ratingPoor', 'ratingBelow', 'ratingAcceptable', 'ratingGood', 'ratingExcellent'] as const;
 
 /**
  * Writes a review against a case this client actually had.
@@ -28,7 +23,13 @@ const RATING_LABELS: Record<number, string> = {
  * The case selector is not decoration: a review is only accepted against a real
  * engagement, which is what stops the rating from being an open comment box.
  */
-export function ReviewForm({ cases }: { cases: ReviewableCase[] }) {
+export function ReviewForm({
+  cases,
+  labels,
+}: {
+  cases: ReviewableCase[];
+  labels: MemberCasesDict['reviewForm'];
+}) {
   const [state, formAction] = useActionState(createReviewAction, initialFormState);
   const selected = state?.values?.rating ?? '';
 
@@ -36,24 +37,19 @@ export function ReviewForm({ cases }: { cases: ReviewableCase[] }) {
     <form action={formAction} className="space-y-5" noValidate>
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="Your review was not published">
+        <Alert tone="error" title={labels.notPublished}>
           {state.message}
         </Alert>
       ) : null}
 
-      {cases.length === 0 ? (
-        <Alert tone="neutral">
-          You can leave a review once a professional has accepted a case of yours. Reviews are tied
-          to a real engagement, so there is nothing to review yet.
-        </Alert>
-      ) : null}
+      {cases.length === 0 ? <Alert tone="neutral">{labels.empty}</Alert> : null}
 
       <Field
-        label="Which case is this about?"
+        label={labels.whichCase}
         htmlFor="review-case"
         required
         error={state?.fieldErrors?.caseId}
-        hint="Only cases a professional accepted appear here."
+        hint={labels.whichCaseHint}
       >
         <Select
           id="review-case"
@@ -63,7 +59,7 @@ export function ReviewForm({ cases }: { cases: ReviewableCase[] }) {
           defaultValue={state?.values?.caseId ?? ''}
           error={state?.fieldErrors?.caseId}
         >
-          <option value="">Choose a case…</option>
+          <option value="">{labels.chooseCase}</option>
           {cases.map((item) => (
             <option key={item.id} value={item.id}>
               {item.reference} — {item.title} ({item.professional})
@@ -74,7 +70,7 @@ export function ReviewForm({ cases }: { cases: ReviewableCase[] }) {
 
       <fieldset>
         <legend className="text-sm font-medium text-slate-800">
-          Your rating
+          {labels.yourRating}
           <span className="ml-1 text-brand-700" aria-hidden="true">
             *
           </span>
@@ -100,7 +96,9 @@ export function ReviewForm({ cases }: { cases: ReviewableCase[] }) {
                   <StarIcon key={index} size={12} />
                 ))}
               </span>
-              <span className="ml-2 text-xs text-slate-600">{RATING_LABELS[value]}</span>
+              <span className="ml-2 text-xs text-slate-600">
+                {labels[RATING_LABEL_KEYS[value - 1]!]}
+              </span>
             </label>
           ))}
         </div>
@@ -111,23 +109,23 @@ export function ReviewForm({ cases }: { cases: ReviewableCase[] }) {
         ) : null}
       </fieldset>
 
-      <Field label="Headline" htmlFor="review-title" error={state?.fieldErrors?.title}>
+      <Field label={labels.headline} htmlFor="review-title" error={state?.fieldErrors?.title}>
         <Input
           id="review-title"
           name="title"
           maxLength={120}
-          placeholder="e.g. Clear advice and quick to respond"
+          placeholder={labels.headlinePlaceholder}
           defaultValue={state?.values?.title ?? ''}
           error={state?.fieldErrors?.title}
         />
       </Field>
 
       <Field
-        label="Your review"
+        label={labels.yourReview}
         htmlFor="review-body"
         required
         error={state?.fieldErrors?.body}
-        hint="Describe your experience. At least 20 characters."
+        hint={labels.yourReviewHint}
       >
         <Textarea
           id="review-body"
@@ -141,14 +139,11 @@ export function ReviewForm({ cases }: { cases: ReviewableCase[] }) {
         />
       </Field>
 
-      <SubmitButton size="lg" disabled={cases.length === 0} pendingLabel="Publishing…">
-        Publish review
+      <SubmitButton size="lg" disabled={cases.length === 0} pendingLabel={labels.publishing}>
+        {labels.publish}
       </SubmitButton>
 
-      <p className="text-xs text-slate-500">
-        Your review is published under your name with your verification badge. It is tied to the
-        case you choose, and an administrator can hide it if it breaks the rules.
-      </p>
+      <p className="text-xs text-slate-500">{labels.footnote}</p>
     </form>
   );
 }

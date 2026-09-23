@@ -3,32 +3,41 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
+import { getI18n, type Dictionary } from '@/lib/i18n';
+import {
+  accountTypeLabel,
+  blogKindLabel,
+  documentKindLabel,
+  emirateLabel,
+  legalAreaLabel,
+} from '@/lib/i18n/labels';
 import { getListingById } from '@/server/services/directory-service';
 import { listReviewableCases, reviewSummariesFor } from '@/server/services/review-service';
 import { listPostsForProfile } from '@/server/services/blog-service';
 import { getAvailability, isEnabled } from '@/lib/availability';
 import { ReviewSection } from '@/components/reviews/ReviewSection';
 import { StarRating } from '@/components/StarRating';
-import { ACCOUNT_TYPE_LABEL, DOCUMENT_KIND_LABEL, EMIRATE_LABEL, LEGAL_AREA_LABEL } from '@/lib/constants';
 import { calculateAge, formatDate, safeExternalUrl } from '@/lib/format';
-import { minutesLabel } from '@/lib/time';
 import { Avatar } from '@/components/Avatar';
 import { VerificationBadge, VerificationStatusPill } from '@/components/VerificationBadge';
 import { InquiryForm } from '@/components/forms/InquiryForm';
 import { Alert, buttonClasses, Card, Chip, DescriptionList, cx } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
+import { relativeTime } from '@/lib/i18n/format';
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
+  const [{ id }, { t }] = await Promise.all([params, getI18n()]);
   const listing = await getListingById(id);
-  if (!listing || !listing.published) return { title: 'Profile not found' };
+  if (!listing || !listing.published) return { title: t.publicPages.listing.metaNotFound };
   return {
     title: listing.displayName,
-    description: listing.headline ?? `Profile of ${listing.displayName} on Dubai Legal.`,
+    description:
+      listing.headline ??
+      t.publicPages.listing.metaDescription.replace('{name}', listing.displayName),
   };
 }
 
@@ -37,29 +46,37 @@ export async function generateMetadata({
  * document; this says whether it is currently valid, which is not the same
  * claim and is not left to the reader to work out.
  */
-function licenseValidity(expiresOn: Date | null | undefined): React.ReactNode {
-  if (!expiresOn) return 'No expiry date recorded';
+function licenseValidity(t: Dictionary, expiresOn: Date | null | undefined): React.ReactNode {
+  const labels = t.publicPages.listing;
+  if (!expiresOn) return labels.noExpiry;
   const formatted = formatDate(expiresOn);
   const days = Math.ceil((expiresOn.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
-  if (days < 0) return <span className="font-medium text-red-700">{formatted} — expired</span>;
-  if (days <= 90) {
+  if (days < 0) {
     return (
-      <span className="font-medium text-amber-700">
-        {formatted} — expires in {days} day{days === 1 ? '' : 's'}
+      <span className="font-medium text-red-700">
+        {labels.expired.replace('{date}', formatted)}
       </span>
     );
   }
-  return <span className="font-medium text-green-700">{formatted} — currently valid</span>;
+  if (days <= 90) {
+    return (
+      <span className="font-medium text-amber-700">
+        {(days === 1 ? labels.expiresInOne : labels.expiresInOther)
+          .replace('{date}', formatted)
+          .replace('{count}', String(days))}
+      </span>
+    );
+  }
+  return (
+    <span className="font-medium text-green-700">
+      {labels.currentlyValid.replace('{date}', formatted)}
+    </span>
+  );
 }
 
 type Tab = 'posts' | 'about' | 'reviews' | 'contact';
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'posts', label: 'Posts' },
-  { key: 'about', label: 'About' },
-  { key: 'reviews', label: 'Recommendations' },
-  { key: 'contact', label: 'Contact' },
-];
+const TABS: Tab[] = ['posts', 'about', 'reviews', 'contact'];
 
 /**
  * A professional's page, laid out the way a page like this is read: a cover and a
@@ -77,7 +94,12 @@ export default async function ListingDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const [{ id }, { tab: tabParam }] = await Promise.all([params, searchParams]);
+  const [{ id }, { tab: tabParam }, { t }] = await Promise.all([
+    params,
+    searchParams,
+    getI18n(),
+  ]);
+  const labels = t.publicPages.listing;
 
   const [listing, viewer, availability] = await Promise.all([
     getListingById(id),
@@ -114,7 +136,7 @@ export default async function ListingDetailPage({
   const profile = owner.profile;
   const isVerified = owner.verificationStatus === 'APPROVED' && owner.verifiedAt !== null;
   const isOwnListing = viewer?.id === owner.id;
-  const tab: Tab = TABS.some((entry) => entry.key === tabParam) ? (tabParam as Tab) : 'posts';
+  const tab: Tab = TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'posts';
 
   // Could this viewer review this professional? Only if they have an accepted
   // case that has not been reviewed yet.
@@ -141,8 +163,12 @@ export default async function ListingDetailPage({
   // Only a contact address the member deliberately published. Falling back to
   // the account's login email would leak a private address into a public page.
   const contactEmail = listing.contactEmail;
-  const category = `${ACCOUNT_TYPE_LABEL[owner.accountType]} · ${EMIRATE_LABEL[listing.primaryEmirate]}`;
+  const category = `${accountTypeLabel(t, owner.accountType)} · ${emirateLabel(t, listing.primaryEmirate)}`;
   const tabHref = (key: Tab) => `/directory/${listing.id}?tab=${key}`;
+  const recommendationCount = (summary.count === 1 ? labels.recommendationOne : labels.recommendationOther).replace(
+    '{count}',
+    String(summary.count),
+  );
 
   const reviewProps = {
     targetUserId: owner.id,
@@ -163,17 +189,15 @@ export default async function ListingDetailPage({
 
   return (
     <div className="dl-container py-6 sm:py-10">
-      <nav className="mb-4 text-sm" aria-label="Breadcrumb">
+      <nav className="mb-4 text-sm" aria-label={t.publicPages.shell.breadcrumb}>
         <Link href="/directory" className="text-brand-700 hover:underline">
-          ← Back to the directory
+          {labels.backToDirectory}
         </Link>
       </nav>
 
       {hiddenFromPublic ? (
         <Alert tone="info" className="mb-4">
-          {representedByFirm
-            ? 'This lawyer is registered with a firm, so their public profile is on the firm’s page. You are seeing it because you may edit or check it.'
-            : 'This profile is a private draft. Nobody else can see it yet.'}
+          {representedByFirm ? labels.representedByFirm : labels.privateDraft}
         </Alert>
       ) : null}
 
@@ -199,15 +223,19 @@ export default async function ListingDetailPage({
                     <>
                       <StarRating value={Math.round(summary.average ?? 0)} size={13} />
                       <span>
-                        {summary.average} · {summary.count} recommendation
-                        {summary.count === 1 ? '' : 's'}
+                        {summary.average} · {recommendationCount}
                       </span>
                     </>
                   ) : (
-                    <span>No recommendations yet</span>
+                    <span>{labels.noRecommendations}</span>
                   )}
                   {listing.yearsOfExperience ? (
-                    <span>· {listing.yearsOfExperience} years&rsquo; experience</span>
+                    <span>
+                      {labels.yearsExperience.replace(
+                        '{count}',
+                        String(listing.yearsOfExperience),
+                      )}
+                    </span>
                   ) : null}
                 </p>
               </div>
@@ -216,7 +244,7 @@ export default async function ListingDetailPage({
             <div className="flex flex-wrap items-center gap-2">
               {isOwnListing ? (
                 <Link href="/listing" className={buttonClasses('secondary', 'md')}>
-                  Edit my page
+                  {labels.editMyPage}
                 </Link>
               ) : (
                 <>
@@ -226,7 +254,7 @@ export default async function ListingDetailPage({
                       className={buttonClasses('primary', 'md')}
                     >
                       <Icon name="folder" size={16} />
-                      Send a case
+                      {labels.sendCase}
                     </Link>
                   ) : null}
                   <Link
@@ -238,7 +266,7 @@ export default async function ListingDetailPage({
                     className={buttonClasses('secondary', 'md')}
                   >
                     <Icon name="star" size={16} />
-                    {viewer ? 'Recommend' : 'Sign in to recommend'}
+                    {viewer ? labels.recommend : labels.signInToRecommend}
                   </Link>
                 </>
               )}
@@ -247,21 +275,21 @@ export default async function ListingDetailPage({
 
           {/* ── Tabs ─────────────────────────────────────────────────────── */}
           <div className="mt-5 flex gap-1 overflow-x-auto border-t border-slate-200 pt-1">
-            {TABS.map((entry) => (
+            {TABS.map((key) => (
               <Link
-                key={entry.key}
-                href={tabHref(entry.key)}
-                aria-current={tab === entry.key ? 'page' : undefined}
+                key={key}
+                href={tabHref(key)}
+                aria-current={tab === key ? 'page' : undefined}
                 className={cx(
                   'shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium',
-                  tab === entry.key
+                  tab === key
                     ? 'border-brand-700 text-brand-800'
                     : 'border-transparent text-slate-600 hover:text-slate-900',
                 )}
               >
-                {entry.label}
-                {entry.key === 'reviews' && summary.count > 0 ? ` (${summary.count})` : ''}
-                {entry.key === 'posts' && posts.length > 0 ? ` (${posts.length})` : ''}
+                {labels.tabs[key]}
+                {key === 'reviews' && summary.count > 0 ? ` (${summary.count})` : ''}
+                {key === 'posts' && posts.length > 0 ? ` (${posts.length})` : ''}
               </Link>
             ))}
           </div>
@@ -270,15 +298,15 @@ export default async function ListingDetailPage({
 
       {!isVerified ? (
         <Alert tone="warning" className="mt-4">
-          This profile has <strong>not</strong> had its documents reviewed. Dubai Legal has confirmed
-          only that the account exists. Check the professional&rsquo;s licence with the relevant
-          authority before instructing them.
+          {labels.notReviewedLead}
+          <strong>{labels.notReviewedStrong}</strong>
+          {labels.notReviewedTail}
         </Alert>
       ) : (
         <Alert tone="success" className="mt-4">
-          A reviewer approved this member&rsquo;s documents
-          {owner.verifiedAt ? ` on ${formatDate(owner.verifiedAt)}` : ''}. This confirms the documents
-          supplied, not the outcome of any matter.
+          {labels.verifiedLead}
+          {owner.verifiedAt ? labels.verifiedOn.replace('{date}', formatDate(owner.verifiedAt)) : ''}
+          {labels.verifiedTail}
         </Alert>
       )}
 
@@ -287,11 +315,13 @@ export default async function ListingDetailPage({
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <Card>
             <div className="flex items-center justify-between gap-2">
-              <h2 className="font-semibold text-slate-900">Intro</h2>
+              <h2 className="font-semibold text-slate-900">{labels.intro}</h2>
               <VerificationStatusPill
                 accountType={owner.accountType}
                 status={owner.verificationStatus}
                 size="sm"
+                label={t.badges[owner.accountType]}
+                statusLabel={t.verificationStatus[owner.verificationStatus]}
               />
             </div>
 
@@ -305,7 +335,7 @@ export default async function ListingDetailPage({
             <div className="mt-4 flex flex-wrap gap-1.5">
               {listing.areas.slice(0, 6).map((area) => (
                 <Chip key={area} tone="brand">
-                  {LEGAL_AREA_LABEL[area]}
+                  {legalAreaLabel(t, area)}
                 </Chip>
               ))}
               {listing.areas.length > 6 ? <Chip>+{listing.areas.length - 6}</Chip> : null}
@@ -315,29 +345,34 @@ export default async function ListingDetailPage({
               <DescriptionList
                 items={[
                   {
-                    term: 'Emirates',
+                    term: t.directory.emirates,
                     detail:
-                      listing.emirates.map((emirate) => EMIRATE_LABEL[emirate]).join(', ') ||
-                      'Not stated',
+                      listing.emirates.map((emirate) => emirateLabel(t, emirate)).join(', ') ||
+                      labels.notStated,
                   },
-                  { term: 'Languages', detail: listing.languages.join(', ') || 'Not stated' },
                   {
-                    term: 'New clients',
-                    detail: listing.acceptsNewClients ? 'Accepting new clients' : 'Not at the moment',
+                    term: t.directory.languages,
+                    detail: listing.languages.join(', ') || labels.notStated,
                   },
-                  ...(age !== null ? [{ term: 'Age', detail: String(age) }] : []),
+                  {
+                    term: labels.newClients,
+                    detail: listing.acceptsNewClients
+                      ? labels.acceptingNewClients
+                      : labels.notAtTheMoment,
+                  },
+                  ...(age !== null ? [{ term: labels.age, detail: String(age) }] : []),
                 ]}
               />
             </div>
 
             <Link href={tabHref('about')} className={buttonClasses('secondary', 'md', 'mt-4 w-full')}>
-              See the full profile
+              {labels.seeFullProfile}
             </Link>
           </Card>
 
           {/* A page's "Page info" card: only what the member published. */}
           <Card>
-            <h2 className="font-semibold text-slate-900">Page info</h2>
+            <h2 className="font-semibold text-slate-900">{labels.pageInfo}</h2>
             <ul className="mt-3 space-y-3 text-sm">
               {contactEmail ? (
                 <li className="flex items-start gap-2">
@@ -375,49 +410,39 @@ export default async function ListingDetailPage({
                 </li>
               ) : null}
               {!contactEmail && !listing.contactPhone && !listing.addressLine && !website ? (
-                <li className="text-sm text-slate-500">
-                  This member has not published contact details. Send a case and they will reply inside
-                  it.
-                </li>
+                <li className="text-sm text-slate-500">{labels.noContactDetails}</li>
               ) : null}
             </ul>
             <Link href={tabHref('contact')} className={buttonClasses('ghost', 'sm', 'mt-3')}>
-              Contact details
+              {labels.contactDetails}
             </Link>
           </Card>
 
           {!isOwnListing ? (
             <Card>
-              <h2 className="font-semibold text-slate-900">Work with them</h2>
+              <h2 className="font-semibold text-slate-900">{labels.workWithThem}</h2>
               {viewer ? (
                 canSendCase ? (
                   <>
-                    <p className="mt-1 mb-3 text-sm text-slate-600">
-                      A case is a file with a reference, a status, the papers and a conversation.
-                    </p>
+                    <p className="mt-1 mb-3 text-sm text-slate-600">{labels.caseExplanation}</p>
                     <Link
                       href={`/cases/new?listing=${listing.id}`}
                       className={buttonClasses('primary', 'md', 'w-full')}
                     >
-                      Get in touch about a case
+                      {labels.getInTouchAboutCase}
                     </Link>
                   </>
                 ) : (
-                  <p className="mt-1 text-sm text-slate-600">
-                    Sending new cases is switched off on this installation. Existing cases continue as
-                    normal.
-                  </p>
+                  <p className="mt-1 text-sm text-slate-600">{labels.casesSwitchedOff}</p>
                 )
               ) : (
                 <>
-                  <p className="mt-1 mb-3 text-sm text-slate-600">
-                    Sign in to send a case or a message. An account is free.
-                  </p>
+                  <p className="mt-1 mb-3 text-sm text-slate-600">{labels.signInToSend}</p>
                   <Link href="/login" className={buttonClasses('primary', 'md', 'w-full')}>
-                    Sign in
+                    {t.nav.signIn}
                   </Link>
                   <Link href="/register" className={buttonClasses('secondary', 'md', 'mt-2 w-full')}>
-                    Create an account
+                    {t.nav.createAccount}
                   </Link>
                 </>
               )}
@@ -433,12 +458,12 @@ export default async function ListingDetailPage({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="font-semibold text-slate-900">
-                      Posts {isOwnListing ? 'on this page' : `about ${listing.displayName}`}
+                      {isOwnListing
+                        ? labels.postsOnPage
+                        : labels.postsAbout.replace('{name}', listing.displayName)}
                     </h2>
                     <p className="mt-1 text-sm text-slate-600">
-                      {isOwnListing
-                        ? 'What you have posted, and what members have written about you.'
-                        : 'What the practice has posted, and what members have written about them.'}
+                      {isOwnListing ? labels.postsOwnSubtitle : labels.postsOtherSubtitle}
                     </p>
                   </div>
                   {isOwnListing ? (
@@ -446,30 +471,30 @@ export default async function ListingDetailPage({
                       href={`/blog?recommend=${listing.id}`}
                       className={buttonClasses('primary', 'md')}
                     >
-                      Post to my page
+                      {labels.postToMyPage}
                     </Link>
                   ) : viewer ? (
                     <Link
                       href={`/blog?recommend=${listing.id}`}
                       className={buttonClasses('secondary', 'md')}
                     >
-                      Write a recommendation
+                      {labels.writeRecommendation}
                     </Link>
                   ) : null}
                 </div>
 
                 {posts.length === 0 ? (
                   <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                    Nobody has posted about {listing.displayName} yet. A recommendation here comes from
-                    somebody who actually instructed them, so this is empty rather than filled with
-                    examples.
+                    {labels.noPosts.replace('{name}', listing.displayName)}
                   </p>
                 ) : (
                   <ul className="mt-4 space-y-3">
                     {posts.map((post) => {
                       const byThePage = post.authorId === owner.id;
                       const poster =
-                        post.author.profile?.fullName?.trim() || post.author.email || 'A member';
+                        post.author.profile?.fullName?.trim() ||
+                        post.author.email ||
+                        labels.aMember;
                       return (
                       <li key={post.id} className="rounded-lg border border-slate-200 p-4">
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -481,13 +506,7 @@ export default async function ListingDetailPage({
                                 : 'bg-slate-100 text-slate-600 ring-slate-200',
                             )}
                           >
-                            {byThePage
-                              ? 'Posted by the practice'
-                              : post.kind === 'RECOMMENDATION'
-                                ? 'Recommendation'
-                                : post.kind === 'QUESTION'
-                                  ? 'Question'
-                                  : 'Experience'}
+                            {byThePage ? labels.postedByPractice : blogKindLabel(t, post.kind)}
                           </span>
                           {!byThePage ? (
                             <span className="flex items-center gap-1.5">
@@ -499,17 +518,28 @@ export default async function ListingDetailPage({
                               />
                               {poster}
                               {post.author.verificationStatus === 'APPROVED' ? (
-                                <VerificationBadge accountType={post.author.accountType} size="sm" />
+                                <VerificationBadge
+                                  accountType={post.author.accountType}
+                                  size="sm"
+                                  label={t.badges[post.author.accountType]}
+                                />
                               ) : null}
                             </span>
                           ) : null}
                           <span>
-                            {post.score} point{post.score === 1 ? '' : 's'}
+                            {(post.score === 1 ? labels.pointsOne : labels.pointsOther).replace(
+                              '{count}',
+                              String(post.score),
+                            )}
                           </span>
                           <span>
-                            · {post._count.comments} comment{post._count.comments === 1 ? '' : 's'}
+                            ·{' '}
+                            {(post._count.comments === 1
+                              ? labels.commentsOne
+                              : labels.commentsOther
+                            ).replace('{count}', String(post._count.comments))}
                           </span>
-                          <span>· {minutesLabel(post.createdAt)}</span>
+                          <span>· {relativeTime(t, post.createdAt)}</span>
                         </div>
                         <h3 className="mt-2 font-medium text-slate-900">
                           <Link href={`/blog/${post.id}`} className="hover:underline">
@@ -531,12 +561,13 @@ export default async function ListingDetailPage({
               {owner.accountType === 'FIRM' && owner.firmProfile ? (
                 <Card>
                   <h2 className="font-semibold text-slate-900">
-                    Lawyers at this firm ({owner.firmProfile.lawyers.length})
+                    {labels.lawyersAtFirm.replace(
+                      '{count}',
+                      String(owner.firmProfile.lawyers.length),
+                    )}
                   </h2>
                   {owner.firmProfile.lawyers.length === 0 ? (
-                    <p className="mt-2 text-sm text-slate-600">
-                      No lawyers are currently registered with this firm.
-                    </p>
+                    <p className="mt-2 text-sm text-slate-600">{labels.noLawyers}</p>
                   ) : (
                     <ul className="mt-3 divide-y divide-slate-100">
                       {owner.firmProfile.lawyers.map((member) => (
@@ -552,7 +583,9 @@ export default async function ListingDetailPage({
                               {member.user.profile?.fullName?.trim() || member.user.email}
                             </p>
                             <p className="text-xs text-slate-500">
-                              Licence {member.licenseNumber} · {member.licensingAuthority}
+                              {labels.licence
+                                .replace('{number}', member.licenseNumber)
+                                .replace('{authority}', member.licensingAuthority)}
                             </p>
                           </div>
                         </li>
@@ -570,17 +603,17 @@ export default async function ListingDetailPage({
             <>
               {listing.bio ? (
                 <Card>
-                  <h2 className="font-semibold text-slate-900">About</h2>
+                  <h2 className="font-semibold text-slate-900">{labels.tabs.about}</h2>
                   <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{listing.bio}</p>
                 </Card>
               ) : null}
 
               <Card>
-                <h2 className="font-semibold text-slate-900">Practice</h2>
+                <h2 className="font-semibold text-slate-900">{labels.practice}</h2>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {listing.areas.map((area) => (
                     <Chip key={area} tone="brand">
-                      {LEGAL_AREA_LABEL[area]}
+                      {legalAreaLabel(t, area)}
                     </Chip>
                   ))}
                 </div>
@@ -588,15 +621,17 @@ export default async function ListingDetailPage({
                   <DescriptionList
                     items={[
                       {
-                        term: 'Emirates covered',
-                        detail: listing.emirates.map((emirate) => EMIRATE_LABEL[emirate]).join(', '),
+                        term: labels.emiratesCovered,
+                        detail: listing.emirates
+                          .map((emirate) => emirateLabel(t, emirate))
+                          .join(', '),
                       },
-                      { term: 'Languages', detail: listing.languages.join(', ') },
+                      { term: t.directory.languages, detail: listing.languages.join(', ') },
                       {
-                        term: 'New clients',
+                        term: labels.newClients,
                         detail: listing.acceptsNewClients
-                          ? 'Accepting new clients'
-                          : 'Not currently accepting new clients',
+                          ? labels.acceptingNewClients
+                          : labels.notAcceptingNewClients,
                       },
                     ]}
                   />
@@ -608,16 +643,18 @@ export default async function ListingDetailPage({
               {isVerified && owner.lawyerProfile ? (
                 <Card>
                   <h2 className="font-semibold text-slate-900">
-                    {owner.accountType === 'FIRM' ? 'Legal consultant registration' : 'Legal licence'}
+                    {owner.accountType === 'FIRM'
+                      ? labels.legalConsultantRegistration
+                      : labels.legalLicence}
                   </h2>
                   <div className="mt-3">
                     <DescriptionList
                       items={[
-                        { term: 'Licence number', detail: owner.lawyerProfile.licenseNumber },
-                        { term: 'Authority', detail: owner.lawyerProfile.licensingAuthority },
+                        { term: labels.licenceNumber, detail: owner.lawyerProfile.licenseNumber },
+                        { term: labels.authority, detail: owner.lawyerProfile.licensingAuthority },
                         {
-                          term: 'Valid until',
-                          detail: licenseValidity(owner.lawyerProfile.licenseExpiresOn),
+                          term: labels.validUntil,
+                          detail: licenseValidity(t, owner.lawyerProfile.licenseExpiresOn),
                         },
                       ]}
                     />
@@ -627,21 +664,24 @@ export default async function ListingDetailPage({
 
               {isVerified && owner.firmProfile ? (
                 <Card>
-                  <h2 className="font-semibold text-slate-900">Firm registration</h2>
+                  <h2 className="font-semibold text-slate-900">{labels.firmRegistration}</h2>
                   <div className="mt-3">
                     <DescriptionList
                       items={[
-                        { term: 'Trade licence', detail: owner.firmProfile.tradeLicenseNumber },
-                        { term: 'Authority', detail: owner.firmProfile.tradeLicenseAuthority },
+                        { term: labels.tradeLicence, detail: owner.firmProfile.tradeLicenseNumber },
                         {
-                          term: 'Valid until',
-                          detail: licenseValidity(owner.firmProfile.tradeLicenseExpiresOn),
+                          term: labels.authority,
+                          detail: owner.firmProfile.tradeLicenseAuthority,
                         },
                         {
-                          term: 'Registered emirate',
+                          term: labels.validUntil,
+                          detail: licenseValidity(t, owner.firmProfile.tradeLicenseExpiresOn),
+                        },
+                        {
+                          term: labels.registeredEmirate,
                           detail: owner.firmProfile.registeredEmirate
-                            ? EMIRATE_LABEL[owner.firmProfile.registeredEmirate]
-                            : 'Not stated',
+                            ? emirateLabel(t, owner.firmProfile.registeredEmirate)
+                            : labels.notStated,
                         },
                       ]}
                     />
@@ -654,12 +694,13 @@ export default async function ListingDetailPage({
               {owner.accountType === 'FIRM' && owner.firmProfile ? (
                 <Card>
                   <h2 className="font-semibold text-slate-900">
-                    Lawyers at this firm ({owner.firmProfile.lawyers.length})
+                    {labels.lawyersAtFirm.replace(
+                      '{count}',
+                      String(owner.firmProfile.lawyers.length),
+                    )}
                   </h2>
                   {owner.firmProfile.lawyers.length === 0 ? (
-                    <p className="mt-2 text-sm text-slate-600">
-                      No lawyers are currently registered with this firm.
-                    </p>
+                    <p className="mt-2 text-sm text-slate-600">{labels.noLawyers}</p>
                   ) : (
                     <ul className="mt-3 divide-y divide-slate-100">
                       {owner.firmProfile.lawyers.map((member) => (
@@ -675,7 +716,9 @@ export default async function ListingDetailPage({
                               {member.user.profile?.fullName?.trim() || member.user.email}
                             </p>
                             <p className="text-xs text-slate-500">
-                              Licence {member.licenseNumber} · {member.licensingAuthority}
+                              {labels.licence
+                                .replace('{number}', member.licenseNumber)
+                                .replace('{authority}', member.licensingAuthority)}
                             </p>
                           </div>
                         </li>
@@ -687,11 +730,8 @@ export default async function ListingDetailPage({
 
               {isVerified ? (
                 <Card>
-                  <h2 className="font-semibold text-slate-900">Verified documents</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    What a reviewer checked. The documents themselves and the Emirates ID number are
-                    never published.
-                  </p>
+                  <h2 className="font-semibold text-slate-900">{labels.verifiedDocuments}</h2>
+                  <p className="mt-1 text-sm text-slate-600">{labels.verifiedDocumentsBody}</p>
                   <ul className="mt-3 divide-y divide-slate-100">
                     {owner.documents.map((document) => (
                       <li
@@ -702,19 +742,22 @@ export default async function ListingDetailPage({
                           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-800">
                             <Icon name="check" size={12} strokeWidth={2.25} />
                           </span>
-                          {DOCUMENT_KIND_LABEL[document.kind]}
+                          {documentKindLabel(t, document.kind)}
                         </span>
                         <span className="text-xs text-slate-500">
                           {document.kind === 'EMIRATES_ID'
-                            ? 'Emirates ID verified'
-                            : `Verified ${document.reviewedAt ? formatDate(document.reviewedAt) : ''}`.trim()}
+                            ? labels.emiratesIdVerified
+                            : labels.documentVerified
+                                .replace(
+                                  '{date}',
+                                  document.reviewedAt ? formatDate(document.reviewedAt) : '',
+                                )
+                                .trim()}
                         </span>
                       </li>
                     ))}
                     {owner.documents.length === 0 ? (
-                      <li className="py-2 text-sm text-slate-500">
-                        No document records are attached to this approval.
-                      </li>
+                      <li className="py-2 text-sm text-slate-500">{labels.noDocumentRecords}</li>
                     ) : null}
                   </ul>
                 </Card>
@@ -723,11 +766,8 @@ export default async function ListingDetailPage({
               {owner.accountType === 'FIRM' ? (
                 /* A firm has a person accountable for it, not a work history. */
                 <Card>
-                  <h2 className="font-semibold text-slate-900">Legal representative</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    The person accountable for this firm on Dubai Legal and named as its authorised
-                    signatory.
-                  </p>
+                  <h2 className="font-semibold text-slate-900">{labels.legalRepresentative}</h2>
+                  <p className="mt-1 text-sm text-slate-600">{labels.legalRepresentativeBody}</p>
 
                   <div className="mt-4 flex items-start gap-4">
                     <Avatar
@@ -741,14 +781,14 @@ export default async function ListingDetailPage({
                       <p className="font-medium text-slate-900">
                         {owner.firmProfile?.authorisedSignatory?.trim() ||
                           profile?.fullName?.trim() ||
-                          'Not stated'}
+                          labels.notStated}
                       </p>
                       <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Authorised signatory
+                        {labels.authorisedSignatory}
                       </p>
                       {profile?.countryOfResidence ? (
                         <p className="mt-2 text-sm text-slate-600">
-                          Based in {profile.countryOfResidence}
+                          {labels.basedIn.replace('{country}', profile.countryOfResidence)}
                         </p>
                       ) : null}
                     </div>
@@ -758,19 +798,19 @@ export default async function ListingDetailPage({
                     <DescriptionList
                       items={[
                         {
-                          term: 'Registered name',
+                          term: labels.registeredName,
                           detail: owner.firmProfile?.legalName ?? listing.displayName,
                         },
                         {
-                          term: 'Legal structure',
-                          detail: owner.firmProfile?.legalStructure ?? 'Not stated',
+                          term: labels.legalStructure,
+                          detail: owner.firmProfile?.legalStructure ?? labels.notStated,
                         },
                         {
-                          term: 'Registered address',
+                          term: labels.registeredAddress,
                           detail:
                             listing.addressLine ??
                             owner.firmProfile?.registeredAddress ??
-                            'Not stated',
+                            labels.notStated,
                         },
                       ]}
                     />
@@ -778,20 +818,27 @@ export default async function ListingDetailPage({
                 </Card>
               ) : (
                 <Card>
-                  <h2 className="font-semibold text-slate-900">Work and education</h2>
+                  <h2 className="font-semibold text-slate-900">{labels.workAndEducation}</h2>
                   <div className="mt-3">
                     <DescriptionList
                       items={[
-                        { term: 'Work', detail: profile?.workDescription ?? 'Not provided' },
-                        { term: 'Education', detail: profile?.educationBackground ?? 'Not provided' },
+                        { term: labels.work, detail: profile?.workDescription ?? labels.notProvided },
                         {
-                          term: 'Country of residence',
-                          detail: profile?.countryOfResidence ?? 'Not provided',
+                          term: labels.education,
+                          detail: profile?.educationBackground ?? labels.notProvided,
+                        },
+                        {
+                          term: labels.countryOfResidence,
+                          detail: profile?.countryOfResidence ?? labels.notProvided,
                         },
                       ]}
                     />
                   </div>
-                  {age !== null ? <p className="mt-3 text-xs text-slate-500">Age {age}.</p> : null}
+                  {age !== null ? (
+                    <p className="mt-3 text-xs text-slate-500">
+                      {labels.ageNote.replace('{age}', String(age))}
+                    </p>
+                  ) : null}
                 </Card>
               )}
             </>
@@ -802,33 +849,36 @@ export default async function ListingDetailPage({
           {tab === 'contact' ? (
             <>
               <Card>
-                <h2 className="font-semibold text-slate-900">Contact and location</h2>
+                <h2 className="font-semibold text-slate-900">{labels.contactAndLocation}</h2>
                 <div className="mt-3">
                   <DescriptionList
                     items={[
                       {
-                        term: 'Email',
+                        term: t.common.email,
                         detail: contactEmail ? (
                           <a href={`mailto:${contactEmail}`} className="text-brand-700 hover:underline">
                             {contactEmail}
                           </a>
                         ) : (
-                          'Not published — use “Get in touch”'
+                          labels.notPublishedUseGetInTouch
                         ),
                       },
                       {
-                        term: 'Phone',
+                        term: t.common.phone,
                         detail: listing.contactPhone ? (
                           <a href={`tel:${listing.contactPhone}`} className="text-brand-700 hover:underline">
                             {listing.contactPhone}
                           </a>
                         ) : (
-                          'Not published'
+                          labels.notPublished
                         ),
                       },
-                      { term: 'Address in the UAE', detail: listing.addressLine ?? 'Not published' },
                       {
-                        term: 'Website',
+                        term: labels.addressInUae,
+                        detail: listing.addressLine ?? labels.notPublished,
+                      },
+                      {
+                        term: labels.website,
                         detail: website ? (
                           <a
                             href={website}
@@ -839,7 +889,7 @@ export default async function ListingDetailPage({
                             {website.replace(/^https?:\/\//, '')}
                           </a>
                         ) : (
-                          'Not published'
+                          labels.notPublished
                         ),
                       },
                     ]}
@@ -849,28 +899,28 @@ export default async function ListingDetailPage({
 
               {!isOwnListing && viewer && canInquire ? (
                 <Card>
-                  <h2 className="font-semibold text-slate-900">Send a message</h2>
-                  <p className="mt-1 mb-4 text-sm text-slate-600">
-                    For a question that is not yet a case. It goes to their inbox and does not create a
-                    case file.
-                  </p>
-                  <InquiryForm listingId={listing.id} displayName={listing.displayName} />
+                  <h2 className="font-semibold text-slate-900">{labels.sendMessage}</h2>
+                  <p className="mt-1 mb-4 text-sm text-slate-600">{labels.sendMessageBody}</p>
+                  <InquiryForm
+                    listingId={listing.id}
+                    displayName={listing.displayName}
+                    labels={t.memberCore.inquiryForm}
+                  />
                 </Card>
               ) : null}
 
               {!viewer ? (
                 <Card>
-                  <h2 className="font-semibold text-slate-900">Get in touch</h2>
+                  <h2 className="font-semibold text-slate-900">{labels.getInTouch}</h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    Sign in to send {listing.displayName} a case or a message. An account is free, and
-                    you keep a record of everything you send.
+                    {labels.getInTouchBody.replace('{name}', listing.displayName)}
                   </p>
                   <div className="mt-4 space-y-2">
                     <Link href="/login" className={buttonClasses('primary', 'md', 'w-full')}>
-                      Sign in
+                      {t.nav.signIn}
                     </Link>
                     <Link href="/register" className={buttonClasses('secondary', 'md', 'w-full')}>
-                      Create an account
+                      {t.nav.createAccount}
                     </Link>
                   </div>
                 </Card>

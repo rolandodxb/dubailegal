@@ -1,10 +1,9 @@
 'use client';
 
 import { useActionState } from 'react';
-import type { AccountType } from '@prisma/client';
 import { saveListingAction } from '@/app/actions/profile-actions';
 import { initialFormState } from '@/lib/form-state';
-import { ACCOUNT_TYPE_LABEL, EMIRATES, LEGAL_AREAS } from '@/lib/constants';
+import { EMIRATES, LEGAL_AREAS } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import {
   Alert,
@@ -34,17 +33,59 @@ export type ListingFormValues = {
 };
 
 /**
+ * The words this form shows, resolved on the server so the client bundle never
+ * has to carry the whole dictionary.
+ *
+ * `emirateLabels` and `areaLabels` are the shared names of the emirates and the
+ * areas of law, keyed by the stored code; the values come from the dictionary's
+ * label vocabulary, so they are translated with everything else.
+ */
+export type ListingFormLabels = {
+  notSavedTitle: string;
+  displayName: string;
+  displayNameHint: string;
+  headline: string;
+  headlineHint: string;
+  about: string;
+  aboutHint: string;
+  mainEmirate: string;
+  yearsOfExperience: string;
+  emiratesCovered: string;
+  emiratesHelp: string;
+  areasOfLaw: string;
+  areasHelp: string;
+  languages: string;
+  languagesHint: string;
+  languagesDefault: string;
+  contactEmail: string;
+  contactEmailHint: string;
+  contactPhone: string;
+  practiceAddress: string;
+  practiceAddressHint: string;
+  website: string;
+  visibility: string;
+  acceptingClients: string;
+  acceptingClientsHint: string;
+  publishListing: string;
+  publishListingHint: string;
+  saveListing: string;
+  saving: string;
+  emirateLabels: Record<string, string>;
+  areaLabels: Record<string, string>;
+};
+
+/**
  * The public directory entry. Publishing is explicit: a saved listing stays a
  * private draft until the member ticks "publish".
  */
 export function ListingForm({
   listing,
-  accountType,
   defaultDisplayName,
+  labels,
 }: {
   listing: ListingFormValues | null;
-  accountType: AccountType;
   defaultDisplayName: string;
+  labels: ListingFormLabels;
 }) {
   const [state, formAction] = useActionState(saveListingAction, initialFormState);
 
@@ -69,21 +110,17 @@ export function ListingForm({
     <form action={formAction} className="space-y-6" noValidate>
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="Your listing was not saved">
+        <Alert tone="error" title={labels.notSavedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <Field
-        label="Display name"
+        label={labels.displayName}
         htmlFor="displayName"
         required
         error={state?.fieldErrors?.displayName}
-        hint={
-          accountType === 'FIRM'
-            ? 'Your firm name as it should appear in the directory.'
-            : 'Your name as you wish to be listed.'
-        }
+        hint={labels.displayNameHint}
       >
         <Input
           id="displayName"
@@ -96,10 +133,10 @@ export function ListingForm({
       </Field>
 
       <Field
-        label="Headline"
+        label={labels.headline}
         htmlFor="headline"
         error={state?.fieldErrors?.headline}
-        hint="One line under your name, for example “Criminal defence · Dubai”."
+        hint={labels.headlineHint}
       >
         <Input
           id="headline"
@@ -111,10 +148,10 @@ export function ListingForm({
       </Field>
 
       <Field
-        label="About"
+        label={labels.about}
         htmlFor="bio"
         error={state?.fieldErrors?.bio}
-        hint={`Appears on your public ${ACCOUNT_TYPE_LABEL[accountType].toLowerCase()} profile.`}
+        hint={labels.aboutHint}
       >
         <Textarea
           id="bio"
@@ -128,7 +165,7 @@ export function ListingForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
-          label="Main emirate"
+          label={labels.mainEmirate}
           htmlFor="primaryEmirate"
           required
           error={state?.fieldErrors?.primaryEmirate}
@@ -142,14 +179,14 @@ export function ListingForm({
           >
             {EMIRATES.map((emirate) => (
               <option key={emirate.value} value={emirate.value}>
-                {emirate.label}
+                {labels.emirateLabels[emirate.value]}
               </option>
             ))}
           </Select>
         </Field>
 
         <Field
-          label="Years of experience"
+          label={labels.yearsOfExperience}
           htmlFor="yearsOfExperience"
           error={state?.fieldErrors?.yearsOfExperience}
         >
@@ -167,14 +204,12 @@ export function ListingForm({
 
       <fieldset>
         <legend className="text-sm font-medium text-slate-800">
-          Emirates covered
+          {labels.emiratesCovered}
           <span className="ml-1 text-brand-700" aria-hidden="true">
             *
           </span>
         </legend>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Used by the directory&rsquo;s emirate filter. Must include your main emirate.
-        </p>
+        <p className="mt-0.5 text-xs text-slate-500">{labels.emiratesHelp}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {EMIRATES.map((emirate) => (
             <ChipCheckbox
@@ -182,7 +217,7 @@ export function ListingForm({
               id={`listing-emirate-${emirate.value}`}
               name="emirates"
               value={emirate.value}
-              label={emirate.label}
+              label={labels.emirateLabels[emirate.value]}
               defaultChecked={selectedEmirates.has(emirate.value)}
             />
           ))}
@@ -196,14 +231,12 @@ export function ListingForm({
 
       <fieldset>
         <legend className="text-sm font-medium text-slate-800">
-          Areas of law
+          {labels.areasOfLaw}
           <span className="ml-1 text-brand-700" aria-hidden="true">
             *
           </span>
         </legend>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Used by the directory&rsquo;s legal-type filter. Select every area you actually practise.
-        </p>
+        <p className="mt-0.5 text-xs text-slate-500">{labels.areasHelp}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {LEGAL_AREAS.map((area) => (
             <ChipCheckbox
@@ -211,7 +244,7 @@ export function ListingForm({
               id={`listing-area-${area.value}`}
               name="areas"
               value={area.value}
-              label={area.label}
+              label={labels.areaLabels[area.value]}
               defaultChecked={selectedAreas.has(area.value)}
             />
           ))}
@@ -224,27 +257,29 @@ export function ListingForm({
       </fieldset>
 
       <Field
-        label="Languages"
+        label={labels.languages}
         htmlFor="languages"
         required
         error={state?.fieldErrors?.languages}
-        hint="Separate with commas, for example: Arabic, English, French."
+        hint={labels.languagesHint}
       >
         <Input
           id="languages"
           name="languages"
           required
-          defaultValue={(state?.values?.languages ?? listing?.languages?.join(', ')) ?? 'Arabic, English'}
+          defaultValue={
+            (state?.values?.languages ?? listing?.languages?.join(', ')) ?? labels.languagesDefault
+          }
           error={state?.fieldErrors?.languages}
         />
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
-          label="Contact email"
+          label={labels.contactEmail}
           htmlFor="contactEmail"
           error={state?.fieldErrors?.contactEmail}
-          hint="Published. Leave blank to keep your account email private."
+          hint={labels.contactEmailHint}
         >
           <Input
             id="contactEmail"
@@ -255,7 +290,11 @@ export function ListingForm({
           />
         </Field>
 
-        <Field label="Contact phone" htmlFor="contactPhone" error={state?.fieldErrors?.contactPhone}>
+        <Field
+          label={labels.contactPhone}
+          htmlFor="contactPhone"
+          error={state?.fieldErrors?.contactPhone}
+        >
           <Input
             id="contactPhone"
             name="contactPhone"
@@ -267,10 +306,10 @@ export function ListingForm({
       </div>
 
       <Field
-        label="Practice address in the UAE"
+        label={labels.practiceAddress}
         htmlFor="addressLine"
         error={state?.fieldErrors?.addressLine}
-        hint="Published, so a client can see where you actually are. For example: Office 1204, Sample Tower, Sheikh Zayed Road, Dubai."
+        hint={labels.practiceAddressHint}
       >
         <Input
           id="addressLine"
@@ -281,7 +320,7 @@ export function ListingForm({
         />
       </Field>
 
-      <Field label="Website" htmlFor="listingWebsite" error={state?.fieldErrors?.website}>
+      <Field label={labels.website} htmlFor="listingWebsite" error={state?.fieldErrors?.website}>
         <Input
           id="listingWebsite"
           name="website"
@@ -293,25 +332,25 @@ export function ListingForm({
       </Field>
 
       <fieldset className="space-y-3 rounded-xl border border-slate-200 p-4">
-        <legend className="px-1 text-sm font-semibold text-slate-900">Visibility</legend>
+        <legend className="px-1 text-sm font-semibold text-slate-900">{labels.visibility}</legend>
         <Checkbox
           id="acceptsNewClients"
           name="acceptsNewClients"
-          label="I am accepting new clients"
-          description="Uncheck to show visitors that you are not taking new instructions."
+          label={labels.acceptingClients}
+          description={labels.acceptingClientsHint}
           defaultChecked={acceptsNewClients}
         />
         <Checkbox
           id="published"
           name="published"
-          label="Publish this listing in the public directory"
-          description="Leave unchecked to keep it as a private draft only you can see."
+          label={labels.publishListing}
+          description={labels.publishListingHint}
           defaultChecked={isPublished}
         />
       </fieldset>
 
-      <SubmitButton size="lg" pendingLabel="Saving…">
-        Save listing
+      <SubmitButton size="lg" pendingLabel={labels.saving}>
+        {labels.saveListing}
       </SubmitButton>
     </form>
   );

@@ -55,18 +55,18 @@ export function emailDeliveryNotice(): string {
 export function buildConfirmationEmail(fullName: string | null, link: string): { subject: string; body: string } {
   const greeting = fullName ? `Hello ${fullName},` : 'Hello,';
   return {
-    subject: 'Confirm your Dubai Legal email address',
+    subject: 'Confirm your Legal Dash email address',
     body: [
       greeting,
       '',
-      'Confirm this email address to activate your Dubai Legal account:',
+      'Confirm this email address to activate your Legal Dash account:',
       link,
       '',
       `The link expires in ${env.tokenTtlMinutes} minutes and can be used once.`,
       '',
-      'If you did not create a Dubai Legal account, ignore this message.',
+      'If you did not create a Legal Dash account, ignore this message.',
       '',
-      '— Dubai Legal',
+      '— Legal Dash',
     ].join('\n'),
   };
 }
@@ -74,7 +74,7 @@ export function buildConfirmationEmail(fullName: string | null, link: string): {
 export function buildPasswordResetEmail(fullName: string | null, link: string): { subject: string; body: string } {
   const greeting = fullName ? `Hello ${fullName},` : 'Hello,';
   return {
-    subject: 'Reset your Dubai Legal password',
+    subject: 'Reset your Legal Dash password',
     body: [
       greeting,
       '',
@@ -85,7 +85,7 @@ export function buildPasswordResetEmail(fullName: string | null, link: string): 
       '',
       'If this was not you, no action is needed — your current password still works.',
       '',
-      '— Dubai Legal',
+      '— Legal Dash',
     ].join('\n'),
   };
 }

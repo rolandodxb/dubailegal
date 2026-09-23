@@ -155,7 +155,7 @@ async function main(): Promise<void> {
       lawyer.userId,
       {
         licenseNumber: `R2-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2032-01-01',
         yearsOfExperience: '7',
         // A fee is paid by bank transfer, so the fixture practice banks somewhere.
@@ -687,7 +687,7 @@ async function main(): Promise<void> {
       noBank.userId,
       {
         licenseNumber: `NB-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2032-01-01',
         yearsOfExperience: '3',
       },

@@ -270,19 +270,21 @@ export function optionalKinds(rules: DocumentRules): DocumentKind[] {
 }
 
 /**
- * Whether a set of uploaded kinds satisfies the rules.
+ * The requests a set of uploaded kinds does not yet satisfy.
  *
- * A request with alternatives is satisfied by any one of them, which is what lets
- * a country that issues no identity card be verified with a passport alone.
+ * Whole requests rather than their labels: the caller that only wants to name them
+ * reads `.label`, and the caller that has to *say* them in the reader's language
+ * needs the code and the country codes the sentence is built from. A request with
+ * alternatives is satisfied by any one of them, which is what lets a country that
+ * issues no identity card be verified with a passport alone.
  */
 export function missingRequirements(
   rules: DocumentRules,
   uploaded: DocumentKind[],
-): { label: string; kinds: DocumentKind[] }[] {
+): DocumentRequest[] {
   const present = new Set(uploaded);
   return rules.requests
     .filter((request) => request.kinds.length > 0 && request.kinds[0] !== 'PROFILE_PHOTO')
     .filter((request) => !(request.mayBeDeclaredMissing && rules.declaredNoResidencePermit))
-    .filter((request) => !request.kinds.some((kind) => present.has(kind)))
-    .map((request) => ({ label: request.label, kinds: request.kinds }));
+    .filter((request) => !request.kinds.some((kind) => present.has(kind)));
 }

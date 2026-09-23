@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { recordBankTransferAction } from '@/app/actions/payment-actions';
 import { initialFormState } from '@/lib/form-state';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { formatAed } from '@/lib/payment-format';
 import { Alert, buttonClasses, cx, Field, Input, Textarea } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
@@ -29,6 +30,7 @@ export function BankTransferForm({
   lines,
   instructions,
   method,
+  labels,
 }: {
   paymentId: string;
   caseId: string;
@@ -40,6 +42,7 @@ export function BankTransferForm({
   instructions: string | null;
   /** Chosen in the URL, so the page works without JavaScript. */
   method: 'TRANSFER' | 'CARD';
+  labels: MemberCasesDict['bankTransfer'];
 }) {
   const [state, formAction] = useActionState(recordBankTransferAction, initialFormState);
   const href = (next: 'TRANSFER' | 'CARD') => `/payments/${paymentId}/pay?method=${next.toLowerCase()}`;
@@ -53,7 +56,9 @@ export function BankTransferForm({
             <p className="text-xs font-semibold uppercase tracking-wider text-domain-payment">
               {purposeLabel}
             </p>
-            <p className="mt-1 text-sm text-slate-700">For case {reference}</p>
+            <p className="mt-1 text-sm text-slate-700">
+              {labels.forCase.replace('{reference}', reference)}
+            </p>
           </div>
           <p className="text-xl font-semibold tabular-nums text-slate-900">{formatAed(amountFils)}</p>
         </div>
@@ -61,7 +66,7 @@ export function BankTransferForm({
 
       {/* ── How to pay ───────────────────────────────────────────────────── */}
       <fieldset className="space-y-3">
-        <legend className="text-sm font-medium text-slate-800">How would you like to pay?</legend>
+        <legend className="text-sm font-medium text-slate-800">{labels.howPay}</legend>
 
         <Link
           href={href('TRANSFER')}
@@ -81,11 +86,10 @@ export function BankTransferForm({
           <span className="min-w-0">
             <span className="flex items-center gap-2 text-sm font-medium text-slate-900">
               <Icon name="building" size={16} />
-              Bank transfer
+              {labels.bankTransfer}
             </span>
             <span className="mt-0.5 block text-xs text-slate-600">
-              Send the amount to the account below, then record it here with the reference your bank
-              gives you.
+              {labels.bankTransferBody}
             </span>
           </span>
         </Link>
@@ -106,21 +110,18 @@ export function BankTransferForm({
           <span className="min-w-0">
             <span className="flex items-center gap-2 text-sm font-medium text-slate-900">
               <Icon name="creditCard" size={16} />
-              Card
+              {labels.card}
             </span>
-            <span className="mt-0.5 block text-xs text-slate-600">
-              Not available yet. Choosing it tells you what is happening rather than showing a form
-              that cannot work.
-            </span>
+            <span className="mt-0.5 block text-xs text-slate-600">{labels.cardBody}</span>
           </span>
         </Link>
       </fieldset>
 
       {method === 'CARD' ? (
-        <Alert tone="warning" title="Card payment is being developed">
-          Card payment is being developed and will be ready soon. Until then a fee is paid by bank
-          transfer — choose <strong>Bank transfer</strong> above and the account details are on this
-          page.
+        <Alert tone="warning" title={labels.cardTitle}>
+          {labels.cardAlertBefore}
+          <strong>{labels.cardAlertBold}</strong>
+          {labels.cardAlertAfter}
         </Alert>
       ) : null}
 
@@ -128,7 +129,7 @@ export function BankTransferForm({
       {method === 'TRANSFER' ? (
         <>
           <div className="rounded-xl border border-slate-200 p-4">
-            <h2 className="text-sm font-semibold text-slate-900">Transfer to</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{labels.transferTo}</h2>
             <dl className="mt-3 space-y-2 text-sm">
               {lines.map((line) => (
                 <div key={line.label} className="flex flex-wrap items-baseline justify-between gap-2">
@@ -137,7 +138,7 @@ export function BankTransferForm({
                 </div>
               ))}
               <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-slate-100 pt-2">
-                <dt className="text-slate-500">Reference to quote</dt>
+                <dt className="text-slate-500">{labels.referenceToQuote}</dt>
                 <dd className="font-mono font-medium text-slate-900">{reference}</dd>
               </div>
             </dl>
@@ -154,18 +155,16 @@ export function BankTransferForm({
 
             {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
-            <Alert tone="info" title="Send the transfer from your own bank first">
-              This page does not move money. Make the transfer in your banking app, then come back and
-              record it here — the professional is told, a receipt is issued, and you are asked for the
-              proof of payment.
+            <Alert tone="info" title={labels.sendFirstTitle}>
+              {labels.sendFirstBody}
             </Alert>
 
             <Field
-              label="Transfer reference"
+              label={labels.transferReference}
               htmlFor="reference"
               required
               error={state?.fieldErrors?.reference}
-              hint="The reference your bank gave you, or the one you quoted."
+              hint={labels.transferReferenceHint}
             >
               <Input
                 id="reference"
@@ -178,7 +177,7 @@ export function BankTransferForm({
               />
             </Field>
 
-            <Field label="Note" htmlFor="note" error={state?.fieldErrors?.note}>
+            <Field label={labels.note} htmlFor="note" error={state?.fieldErrors?.note}>
               <Textarea
                 id="note"
                 name="note"
@@ -186,24 +185,21 @@ export function BankTransferForm({
                 maxLength={500}
                 defaultValue={state?.values?.note ?? ''}
                 error={state?.fieldErrors?.note}
-                placeholder="Anything the professional should know about this payment"
+                placeholder={labels.notePlaceholder}
               />
             </Field>
 
-            <SubmitButton size="lg" className="w-full" pendingLabel="Recording…">
-              I have sent the transfer
+            <SubmitButton size="lg" className="w-full" pendingLabel={labels.recording}>
+              {labels.sent}
             </SubmitButton>
 
-            <p className="text-center text-xs text-slate-500">
-              Confirming issues a receipt you can print or save as a PDF, and returns you to the case
-              conversation.
-            </p>
+            <p className="text-center text-xs text-slate-500">{labels.confirming}</p>
           </form>
         </>
       ) : (
         <p>
           <Link href={href('TRANSFER')} className={buttonClasses('secondary', 'md')}>
-            Pay by bank transfer instead
+            {labels.payByTransferInstead}
           </Link>
         </p>
       )}

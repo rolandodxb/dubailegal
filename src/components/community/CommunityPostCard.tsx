@@ -1,14 +1,24 @@
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
 import { VerificationBadge } from '@/components/VerificationBadge';
-import { InlineCommentForm, ReactionBar, VoteButtons } from '@/components/community/Reactions';
-import { COMMUNITY_TOPIC_LABEL } from '@/lib/community';
+import {
+  InlineCommentForm,
+  ReactionBar,
+  VoteButtons,
+  type CommunityLabels,
+} from '@/components/community/Reactions';
+import { getI18n, type Dictionary } from '@/lib/i18n';
+import { communityTopicLabel, reactionLabel } from '@/lib/i18n/labels';
 import { countReactions } from '@/server/services/blog-service';
-import { minutesLabel } from '@/lib/time';
+import { relativeTime } from '@/lib/i18n/format';
 
-/** The card is rendered from server data and from JSON, so dates arrive both ways. */
-function when(value: Date | string): string {
-  return minutesLabel(value instanceof Date ? value : new Date(value));
+/**
+ * The card is rendered from server data and from JSON, so dates arrive both ways.
+ * The reader's language comes in as an argument because this is called from the
+ * card's own render, which already has the dictionary.
+ */
+function when(t: Dictionary, value: Date | string): string {
+  return relativeTime(t, value instanceof Date ? value : new Date(value));
 }
 import { Card, cx } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
@@ -55,14 +65,21 @@ export type CommunityPost = {
   commentCount?: number;
 };
 
-const KIND_LABEL: Record<string, string> = {
-  RECOMMENDATION: 'Recommendation',
-  QUESTION: 'Question',
-  NOTE: 'Experience',
-};
+/** "{count} reactions" in the number the language needs. */
+function countLabel(one: string, many: string, count: number): string {
+  return (count === 1 ? one : many).replace('{count}', String(count));
+}
+
+/** What the post is, as the short chip on its card. */
+function kindLabel(t: Dictionary, kind: string): string {
+  if (kind === 'RECOMMENDATION') return t.feed.kind.recommendation;
+  if (kind === 'QUESTION') return t.feed.kind.question;
+  if (kind === 'NOTE') return t.feed.kind.note;
+  return kind;
+}
 
 /** Who wrote it, with the badge — or the plain absence of one. */
-export function AuthorLine({ author }: { author: CommunityAuthor }) {
+export function AuthorLine({ author, t }: { author: CommunityAuthor; t: Dictionary }) {
   const name = author.profile?.fullName?.trim() || author.email;
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -77,28 +94,37 @@ export function AuthorLine({ author }: { author: CommunityAuthor }) {
         <VerificationBadge accountType={author.accountType as 'USER' | 'LAWYER' | 'FIRM'} size="sm" />
       ) : (
         <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
-          Not verified
+          {t.verificationStatus.UNVERIFIED}
         </span>
       )}
       <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
-        {author.accountType === 'FIRM' ? 'Legal firm' : author.accountType === 'LAWYER' ? 'Lawyer' : 'Client'}
+        {author.accountType === 'FIRM'
+          ? t.feed.author.legalFirm
+          : author.accountType === 'LAWYER'
+            ? t.feed.author.lawyer
+            : t.feed.author.client}
       </span>
       {author.profile?.countryOfResidence ? <span>· {author.profile.countryOfResidence}</span> : null}
     </div>
   );
 }
 
-function CommentRow({
+async function CommentRow({
   comment,
   postId,
   viewerId,
   withReplies,
+  labels,
 }: {
   comment: CommunityComment;
   postId: string;
   viewerId: string | null;
   withReplies: boolean;
+  labels: CommunityLabels;
 }) {
+  // Read here rather than passed in: the row needs one word for its timestamp, and
+  // its callers are already carrying enough props.
+  const { t } = await getI18n();
   const mine = comment.reactions?.find((reaction) => reaction.userId === viewerId)?.kind ?? null;
   const counts = countReactions(comment.reactions ?? []);
 
@@ -127,26 +153,27 @@ function CommentRow({
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-3 pl-1">
-          <span className="text-[11px] text-slate-400">{when(comment.createdAt)}</span>
+          <span className="text-[11px] text-slate-400">{when(t, comment.createdAt)}</span>
           {viewerId ? (
             <ReactionBar
               id={comment.id}
               kind="comment"
               counts={counts}
               myReaction={mine}
+              labels={labels}
             />
           ) : counts.total > 0 ? (
             <span className="text-[11px] text-slate-500">
-              {counts.total} reaction{counts.total === 1 ? '' : 's'}
+              {countLabel(labels.reactionOne, labels.reactionMany, counts.total)}
             </span>
           ) : null}
           {withReplies && viewerId ? (
             <details className="w-full">
               <summary className="cursor-pointer text-[11px] font-medium text-brand-700">
-                Reply
+                {labels.reply}
               </summary>
               <div className="mt-2">
-                <InlineCommentForm postId={postId} parentId={comment.id} placeholder="Reply…" compact />
+                <InlineCommentForm postId={postId} parentId={comment.id} compact labels={labels} />
               </div>
             </details>
           ) : null}
@@ -161,6 +188,7 @@ function CommentRow({
                 postId={postId}
                 viewerId={viewerId}
                 withReplies={false}
+                labels={labels}
               />
             ))}
           </ul>
@@ -182,8 +210,12 @@ function CommentRow({
  * A guest gets the same card without any of the controls, and the invitation to
  * sign in sits **outside** it, because a card full of disabled buttons is a card
  * that says nothing.
+ *
+ * The dictionary is read here rather than handed in, so the card renders in the
+ * reader's language wherever it is used — the landing panel, the board, or one
+ * post on its own.
  */
-export function CommunityPostCard({
+export async function CommunityPostCard({
   post,
   viewerId,
   comments = [],
@@ -199,6 +231,29 @@ export function CommunityPostCard({
   totalComments?: number;
   className?: string;
 }) {
+  const { t } = await getI18n();
+  const labels: CommunityLabels = {
+    reactions: {
+      LIKE: reactionLabel(t, 'LIKE'),
+      HEART: reactionLabel(t, 'HEART'),
+      WOW: reactionLabel(t, 'WOW'),
+    },
+    removeReaction: t.feed.reactions.remove,
+    reactionOne: t.feed.reactions.one,
+    reactionMany: t.feed.reactions.many,
+    commentOne: t.feed.comments.one,
+    commentMany: t.feed.comments.many,
+    reply: t.community.reply,
+    comment: t.community.comment,
+    replyPlaceholder: `${t.community.reply}…`,
+    writeComment: t.community.writeComment,
+    posted: t.feed.comments.posted,
+    upvote: t.feed.vote.upvote,
+    removeUpvote: t.feed.vote.removeUpvote,
+    downvote: t.feed.vote.downvote,
+    removeDownvote: t.feed.vote.removeDownvote,
+  };
+
   const mine = post.reactions?.find((reaction) => reaction.userId === viewerId)?.kind ?? null;
   const counts = countReactions(post.reactions ?? []);
   const commentsShown = showAllComments ? comments : comments.slice(0, 3);
@@ -211,7 +266,13 @@ export function CommunityPostCard({
         <div className="flex items-start gap-3">
           <div className="hidden sm:block">
             {viewerId ? (
-              <VoteButtons id={post.id} score={post.score} myVote={post.myVote} kind="post" />
+              <VoteButtons
+                id={post.id}
+                score={post.score}
+                myVote={post.myVote}
+                kind="post"
+                labels={labels}
+              />
             ) : (
               <span className="inline-flex min-w-6 justify-center text-sm font-semibold tabular-nums text-slate-700">
                 {post.score}
@@ -220,7 +281,7 @@ export function CommunityPostCard({
           </div>
 
           <div className="min-w-0 flex-1">
-            <AuthorLine author={post.author} />
+            <AuthorLine author={post.author} t={t} />
 
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Link
@@ -228,12 +289,12 @@ export function CommunityPostCard({
                 className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-200"
               >
                 <Icon name="folder" size={11} />
-                {COMMUNITY_TOPIC_LABEL[post.topic] ?? post.topic}
+                {communityTopicLabel(t, post.topic)}
               </Link>
               <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
-                {KIND_LABEL[post.kind] ?? post.kind}
+                {kindLabel(t, post.kind)}
               </span>
-              <span className="text-[11px] text-slate-400">{when(post.createdAt)}</span>
+              <span className="text-[11px] text-slate-400">{when(t, post.createdAt)}</span>
               {post.listing ? (
                 <Link
                   href={`/directory/${post.listing.id}`}
@@ -271,15 +332,14 @@ export function CommunityPostCard({
             counts={counts}
             myReaction={mine}
             commentCount={commentTotal}
+            labels={labels}
           />
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-            <span>
-              {counts.total} reaction{counts.total === 1 ? '' : 's'}
-            </span>
+            <span>{countLabel(t.feed.reactions.one, t.feed.reactions.many, counts.total)}</span>
             <span className="inline-flex items-center gap-1">
               <Icon name="message" size={13} />
-              {commentTotal} comment{commentTotal === 1 ? '' : 's'}
+              {countLabel(t.feed.comments.one, t.feed.comments.many, commentTotal)}
             </span>
           </div>
         )}
@@ -294,6 +354,7 @@ export function CommunityPostCard({
               postId={post.id}
               viewerId={viewerId}
               withReplies={showAllComments}
+              labels={labels}
             />
           ))}
         </ul>
@@ -302,7 +363,7 @@ export function CommunityPostCard({
       {!showAllComments && hidden > 0 ? (
         <p className="border-t border-slate-100 px-4 py-2.5 text-xs sm:px-5">
           <Link href={`/blog/${post.id}`} className="font-medium text-brand-700 hover:underline">
-            See all {commentTotal} comments
+            {t.feed.comments.seeAll.replace('{count}', String(commentTotal))}
           </Link>
         </p>
       ) : null}
@@ -312,7 +373,7 @@ export function CommunityPostCard({
           is rendered by the page, outside the card. */}
       {viewerId ? (
         <div className="border-t border-slate-100 px-4 py-3 sm:px-5">
-          <InlineCommentForm postId={post.id} />
+          <InlineCommentForm postId={post.id} labels={labels} />
         </div>
       ) : null}
     </Card>

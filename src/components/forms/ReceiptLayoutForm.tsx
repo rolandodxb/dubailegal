@@ -6,6 +6,7 @@ import {
   saveReceiptTemplateAction,
 } from '@/app/actions/receipt-template-actions';
 import { initialFormState } from '@/lib/form-state';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { Alert, buttonClasses, Card, Field, Input, Textarea } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Icon } from '@/components/icons';
@@ -14,7 +15,7 @@ import { LogoMark } from '@/components/layout/Logo';
 /**
  * The letterhead chooser.
  *
- * Two layouts, plainly: the standard Dubai Legal one, or the professional's own.
+ * Two layouts, plainly: the standard Legal Dash one, or the professional's own.
  * The preview updates as the fields are typed, so what the client will see is
  * on screen while it is being decided rather than discovered afterwards.
  */
@@ -29,6 +30,7 @@ export function ReceiptLayoutForm({
   showFirm,
   showContact,
   professionalName,
+  labels,
 }: {
   layout: 'STANDARD' | 'CUSTOM';
   brandName: string;
@@ -40,6 +42,7 @@ export function ReceiptLayoutForm({
   showFirm: boolean;
   showContact: boolean;
   professionalName: string;
+  labels: MemberCasesDict['receiptLayout'];
 }) {
   const [state, formAction] = useActionState(saveReceiptTemplateAction, initialFormState);
   const [resetState, resetAction] = useActionState(resetReceiptTemplateAction, initialFormState);
@@ -57,34 +60,32 @@ export function ReceiptLayoutForm({
           <div className="flex items-center gap-3">
             <LogoMark size={40} />
             <div>
-              <h2 className="font-semibold text-slate-900">Standard layout</h2>
-              <p className="text-sm text-slate-600">
-                The Dubai Legal receipt. Nothing to fill in, and nothing that can be wrong.
-              </p>
+              <h2 className="font-semibold text-slate-900">{labels.standardTitle}</h2>
+              <p className="text-sm text-slate-600">{labels.standardBody}</p>
             </div>
           </div>
           <span className="inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-medium text-brand-800 ring-1 ring-inset ring-brand-200">
-            Provided by the platform
+            {labels.providedByPlatform}
           </span>
         </div>
       </Card>
 
       <form action={formAction} className="space-y-6">
         <Card>
-          <h2 className="font-semibold text-slate-900">Which layout should your receipts use?</h2>
+          <h2 className="font-semibold text-slate-900">{labels.whichLayout}</h2>
 
           <div className="mt-4 space-y-3">
             {(
               [
                 {
                   value: 'STANDARD',
-                  title: 'The standard Dubai Legal layout',
-                  body: 'Carries the Dubai Legal mark, the amount, the reason, the case and the card used. Recommended unless you have your own letterhead.',
+                  title: labels.optionStandardTitle,
+                  body: labels.optionStandardBody,
                 },
                 {
                   value: 'CUSTOM',
-                  title: 'My own letterhead',
-                  body: 'Your name, your mark and your colour, with the Dubai Legal mark kept at the foot of the receipt.',
+                  title: labels.optionCustomTitle,
+                  body: labels.optionCustomBody,
                 },
               ] as const
             ).map((option) => (
@@ -109,18 +110,15 @@ export function ReceiptLayoutForm({
         </Card>
 
         <Card>
-          <h2 className="font-semibold text-slate-900">Your letterhead</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Only used when the layout above is your own. Leave the mark empty to keep the Dubai Legal
-            one.
-          </p>
+          <h2 className="font-semibold text-slate-900">{labels.yourLetterhead}</h2>
+          <p className="mt-1 text-sm text-slate-600">{labels.yourLetterheadBody}</p>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Field
-              label="Name on the receipt"
+              label={labels.nameOnReceipt}
               htmlFor="brandName"
               error={state?.fieldErrors?.brandName}
-              hint={`Defaults to ${professionalName} when left empty.`}
+              hint={labels.nameOnReceiptHint.replace('{name}', professionalName)}
             >
               <Input
                 id="brandName"
@@ -133,10 +131,10 @@ export function ReceiptLayoutForm({
             </Field>
 
             <Field
-              label="Strapline"
+              label={labels.strapline}
               htmlFor="headerLine"
               error={state?.fieldErrors?.headerLine}
-              hint="For example: Advocates and legal consultants."
+              hint={labels.straplineHint}
             >
               <Input
                 id="headerLine"
@@ -148,10 +146,10 @@ export function ReceiptLayoutForm({
             </Field>
 
             <Field
-              label="Accent colour"
+              label={labels.accentColour}
               htmlFor="accentColor"
               error={state?.fieldErrors?.accentColor}
-              hint="A hex colour, used for the rules and headings."
+              hint={labels.accentColourHint}
             >
               <div className="flex items-center gap-2">
                 <Input
@@ -172,10 +170,10 @@ export function ReceiptLayoutForm({
             </Field>
 
             <Field
-              label="Your mark"
+              label={labels.yourMark}
               htmlFor="logo"
               error={state?.fieldErrors?.logo}
-              hint="PNG, JPEG or WebP, up to 5 MB. Shown in place of the Dubai Legal mark at the head of the receipt. SVG is not accepted: an uploaded SVG can run script in the browser."
+              hint={labels.yourMarkHint}
             >
               <input
                 id="logo"
@@ -190,15 +188,15 @@ export function ReceiptLayoutForm({
           {logoUrl ? (
             <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
               <input type="checkbox" name="removeLogo" />
-              Remove the mark I uploaded
+              {labels.removeMark}
             </label>
           ) : null}
 
           <Field
-            label="Footer note"
+            label={labels.footerNote}
             htmlFor="footerNote"
             error={state?.fieldErrors?.footerNote}
-            hint="Terms, a thank-you, or who to contact about the receipt."
+            hint={labels.footerNoteHint}
           >
             <Textarea
               id="footerNote"
@@ -211,13 +209,13 @@ export function ReceiptLayoutForm({
           </Field>
 
           <fieldset className="mt-4 border-t border-slate-100 pt-4">
-            <legend className="text-sm font-medium text-slate-800">What the receipt shows</legend>
+            <legend className="text-sm font-medium text-slate-800">{labels.whatShows}</legend>
             <div className="mt-2 space-y-2">
               {(
                 [
-                  { name: 'showLicence', label: 'My licence number and authority', checked: showLicence },
-                  { name: 'showFirm', label: 'My firm and its trade licence', checked: showFirm },
-                  { name: 'showContact', label: 'My contact details', checked: showContact },
+                  { name: 'showLicence', label: labels.showLicence, checked: showLicence },
+                  { name: 'showFirm', label: labels.showFirm, checked: showFirm },
+                  { name: 'showContact', label: labels.showContact, checked: showContact },
                 ] as const
               ).map((option) => (
                 <label key={option.name} className="flex items-center gap-2 text-sm text-slate-700">
@@ -229,37 +227,34 @@ export function ReceiptLayoutForm({
           </fieldset>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <SubmitButton pendingLabel="Saving…">
+            <SubmitButton pendingLabel={labels.saving}>
               <Icon name="check" size={17} />
-              Save my receipt layout
+              {labels.saveLayout}
             </SubmitButton>
           </div>
         </Card>
       </form>
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Back to the standard layout</h2>
-        <p className="mt-1 mb-3 text-sm text-slate-600">
-          Removes your letterhead and any mark you uploaded. Receipts you have already issued are not
-          changed — they keep the layout they were issued with.
-        </p>
+        <h2 className="font-semibold text-slate-900">{labels.backToStandard}</h2>
+        <p className="mt-1 mb-3 text-sm text-slate-600">{labels.backToStandardBody}</p>
         {resetState?.ok && resetState.message ? (
           <p className="mb-2 text-xs font-medium text-green-700">{resetState.message}</p>
         ) : null}
         <form action={resetAction}>
           <SubmitButton
             variant="secondary"
-            confirm="Go back to the standard Dubai Legal layout and remove your uploaded mark?"
-            pendingLabel="Resetting…"
+            confirm={labels.resetConfirm}
+            pendingLabel={labels.resetting}
           >
-            Use the standard layout
+            {labels.useStandard}
           </SubmitButton>
         </form>
       </Card>
 
       <p className="text-xs text-slate-500">
         <a href="/payments" className={buttonClasses('ghost', 'sm')}>
-          See the receipts already issued
+          {labels.seeReceipts}
         </a>
       </p>
     </div>

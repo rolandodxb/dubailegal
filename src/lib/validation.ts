@@ -164,7 +164,7 @@ function optionalYearCount(label: string, max: number) {
 export const registerSchema = z
   .object({
     accountType: z.nativeEnum(AccountType, {
-      errorMap: () => ({ message: 'Choose how you will use Dubai Legal.' }),
+      errorMap: () => ({ message: 'Choose how you will use Legal Dash.' }),
     }),
     fullName: requiredString(2, 120, 'Full name'),
     phone: phoneSchema,

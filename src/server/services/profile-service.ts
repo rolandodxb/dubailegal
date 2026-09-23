@@ -55,7 +55,7 @@ export async function updateProfile(
     return failure('That Emirates ID is already linked to another account.', {
       fieldErrors: {
         emiratesIdNumber:
-          'This Emirates ID is already linked to another Dubai Legal account. Each identity may hold one account.',
+          'This Emirates ID is already linked to another Legal Dash account. Each identity may hold one account.',
       },
     });
   }

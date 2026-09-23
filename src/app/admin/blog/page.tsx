@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireReviewer } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { listPendingPosts, listPostsForModeration } from '@/server/services/blog-service';
-import { describeMatch } from '@/server/services/community-match';
-import { COMMUNITY_TOPIC_LABEL } from '@/lib/community';
+import { accountTypeLabel, blogKindLabel, communityTopicLabel } from '@/lib/i18n/labels';
 import { formatUaeDateTime } from '@/lib/time';
-import { ACCOUNT_TYPE_LABEL } from '@/lib/constants';
 import { Alert, buttonClasses, Card, cx, EmptyState } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
@@ -33,7 +32,7 @@ export default async function AdminCommunityPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireReviewer();
+  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
   const { status } = await searchParams;
   const filter =
     status === 'PUBLISHED' ||
@@ -53,32 +52,65 @@ export default async function AdminCommunityPage({
 
   const decided = rows.filter((row) => row.status !== 'PENDING');
 
+  /** The stored status stays the stored status; only the word changes. */
+  const statusLabel: Record<string, string> = t.admin.blog.status;
+
+  /** How alike two posts are, in the words the reader uses. */
+  const alike = (match: { score: number; sharedTerms: string[] }): string => {
+    const percent = String(Math.round(match.score * 100));
+    return match.sharedTerms.length > 0
+      ? t.admin.blog.alikeTerms
+          .replace('{percent}', percent)
+          .replace('{terms}', match.sharedTerms.join(', '))
+      : t.admin.blog.alike.replace('{percent}', percent);
+  };
+
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Community</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Every post a member writes waits for a moderator before it appears on the board. The useful
-          part of that job is noticing that the question has been asked already — so the review screen
-          runs an automatic check against the posts already published and shows you the closest
-          matches before you decide.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.nav.community}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{t.admin.blog.intro}</p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {[
-          { label: 'Waiting for review', value: pending, href: '/admin/blog?status=PENDING' },
-          { label: 'On the board', value: published, href: '/admin/blog?status=PUBLISHED' },
-          { label: 'Closed as repeats', value: duplicates, href: '/admin/blog?status=DUPLICATE' },
-          { label: 'Hidden', value: hidden, href: '/admin/blog?status=HIDDEN' },
-          { label: 'Removed', value: removed, href: '/admin/blog?status=REMOVED' },
+          {
+            id: 'PENDING',
+            label: t.admin.blog.waitingForReview,
+            value: pending,
+            href: '/admin/blog?status=PENDING',
+          },
+          {
+            id: 'PUBLISHED',
+            label: t.admin.blog.onTheBoard,
+            value: published,
+            href: '/admin/blog?status=PUBLISHED',
+          },
+          {
+            id: 'DUPLICATE',
+            label: t.admin.blog.closedAsRepeats,
+            value: duplicates,
+            href: '/admin/blog?status=DUPLICATE',
+          },
+          {
+            id: 'HIDDEN',
+            label: t.admin.blog.hidden,
+            value: hidden,
+            href: '/admin/blog?status=HIDDEN',
+          },
+          {
+            id: 'REMOVED',
+            label: t.admin.blog.removed,
+            value: removed,
+            href: '/admin/blog?status=REMOVED',
+          },
         ].map((stat) => (
-          <Link key={stat.label} href={stat.href} className="block">
+          <Link key={stat.id} href={stat.href} className="block">
             <Card
               className={cx(
                 'transition-colors hover:border-brand-400',
                 filter && stat.href.endsWith(filter) ? 'ring-2 ring-brand-600' : undefined,
-                stat.label === 'Waiting for review' && stat.value > 0 ? 'border-amber-300' : undefined,
+                stat.id === 'PENDING' && stat.value > 0 ? 'border-amber-300' : undefined,
               )}
             >
               <p className="text-sm text-slate-600">{stat.label}</p>
@@ -90,11 +122,13 @@ export default async function AdminCommunityPage({
 
       {queue.length > 0 ? (
         <section>
-          <h2 className="mb-3 font-semibold text-slate-900">Waiting for review ({queue.length})</h2>
+          <h2 className="mb-3 font-semibold text-slate-900">
+            {t.admin.blog.waitingForReviewCount.replace('{count}', String(queue.length))}
+          </h2>
           <ul className="space-y-3">
             {queue.map((post) => {
               const author =
-                post.author.profile?.fullName?.trim() || post.author.email || 'A member';
+                post.author.profile?.fullName?.trim() || post.author.email || t.admin.blog.aMember;
               const best = post.similar[0] ?? null;
               return (
                 <Card as="li" key={post.id} className={best ? 'border-amber-200' : undefined}>
@@ -102,11 +136,11 @@ export default async function AdminCommunityPage({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
-                          {COMMUNITY_TOPIC_LABEL[post.topic] ?? post.topic}
+                          {communityTopicLabel(t, post.topic)}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {post.kind.toLowerCase()} · {author} ·{' '}
-                          {ACCOUNT_TYPE_LABEL[post.author.accountType]} ·{' '}
+                          {blogKindLabel(t, post.kind)} · {author} ·{' '}
+                          {accountTypeLabel(t, post.author.accountType)} ·{' '}
                           {formatUaeDateTime(post.createdAt)}
                         </span>
                       </div>
@@ -118,12 +152,11 @@ export default async function AdminCommunityPage({
                       {best ? (
                         <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-medium text-amber-800">
                           <Icon name="alertTriangle" size={13} />
-                          Closest existing post: “{best.title}” — {describeMatch(best.match)}
+                          {t.admin.blog.closestExisting.replace('{title}', best.title)} —{' '}
+                          {alike(best.match)}
                         </p>
                       ) : (
-                        <p className="mt-2 text-xs text-slate-500">
-                          Nothing similar on the board.
-                        </p>
+                        <p className="mt-2 text-xs text-slate-500">{t.admin.blog.nothingSimilar}</p>
                       )}
                     </div>
 
@@ -132,7 +165,7 @@ export default async function AdminCommunityPage({
                       className={buttonClasses('primary', 'md')}
                     >
                       <Icon name="search" size={16} />
-                      Review it
+                      {t.admin.blog.reviewIt}
                     </Link>
                   </div>
                 </Card>
@@ -144,24 +177,39 @@ export default async function AdminCommunityPage({
 
       {filter && filter !== 'PENDING' ? (
         <p className="text-sm text-slate-600">
-          Showing {filter.toLowerCase()} posts.{' '}
+          {t.admin.blog.showingPosts.replace(
+            '{status}',
+            statusLabel[filter] ?? filter.toLowerCase(),
+          )}{' '}
           <Link href="/admin/blog" className="font-medium text-brand-700 hover:underline">
-            Show everything
+            {t.admin.blog.showEverything}
           </Link>
         </p>
       ) : null}
 
       {(filter ? decided : decided).length === 0 && queue.length === 0 ? (
         <EmptyState
-          title={filter ? `Nothing ${filter.toLowerCase()}` : 'Nothing has been written yet'}
-          description="When members write posts, they arrive here for review before they appear on the board."
+          title={
+            filter
+              ? t.admin.blog.emptyNothingStatus.replace(
+                  '{status}',
+                  statusLabel[filter] ?? filter.toLowerCase(),
+                )
+              : t.admin.blog.emptyNothingWritten
+          }
+          description={t.admin.blog.emptyBody}
         />
       ) : null}
 
       {decided.length > 0 ? (
         <section>
           <h2 className="mb-3 font-semibold text-slate-900">
-            {filter ? `${filter.toLowerCase()} posts` : 'Decided'}
+            {filter
+              ? t.admin.blog.statusPosts.replace(
+                  '{status}',
+                  statusLabel[filter] ?? filter.toLowerCase(),
+                )
+              : t.admin.blog.decided}
           </h2>
           <ul className="space-y-3">
             {decided.map((post) => {
@@ -177,14 +225,17 @@ export default async function AdminCommunityPage({
                             STATUS_STYLE[post.status] ?? 'bg-slate-100 text-slate-600 ring-slate-200',
                           )}
                         >
-                          {post.status.toLowerCase()}
+                          {statusLabel[post.status] ?? post.status.toLowerCase()}
                         </span>
                         <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
-                          {COMMUNITY_TOPIC_LABEL[post.topic] ?? post.topic}
+                          {communityTopicLabel(t, post.topic)}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {post.score} point{post.score === 1 ? '' : 's'} · {post._count.comments}{' '}
-                          comment{post._count.comments === 1 ? '' : 's'}
+                          {post.score} {post.score === 1 ? t.admin.blog.point : t.admin.blog.points}{' '}
+                          · {post._count.comments}{' '}
+                          {post._count.comments === 1
+                            ? t.admin.blog.comment
+                            : t.admin.blog.comments}
                         </span>
                       </div>
 
@@ -194,12 +245,12 @@ export default async function AdminCommunityPage({
                         </Link>
                       </h3>
                       <p className="mt-0.5 text-xs text-slate-500">
-                        {author} · {ACCOUNT_TYPE_LABEL[post.author.accountType]} ·{' '}
+                        {author} · {accountTypeLabel(t, post.author.accountType)} ·{' '}
                         {formatUaeDateTime(post.createdAt)}
                       </p>
                       {post.moderationNote ? (
                         <p className="mt-2 rounded-md bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                          Note to the author: {post.moderationNote}
+                          {t.admin.blog.noteToAuthor.replace('{note}', post.moderationNote)}
                         </p>
                       ) : null}
                     </div>
@@ -208,7 +259,7 @@ export default async function AdminCommunityPage({
                       href={`/admin/blog/${post.id}`}
                       className={buttonClasses('secondary', 'sm')}
                     >
-                      Open
+                      {t.common.open}
                     </Link>
                   </div>
                 </Card>
@@ -218,15 +269,13 @@ export default async function AdminCommunityPage({
         </section>
       ) : null}
 
-      <Alert tone="info" title="What a recommendation is, and is not">
-        Posts are opinions written by members. A recommendation is not a verification: the badge on a
-        professional&apos;s profile is the only thing on this platform that says a document was
-        checked.
+      <Alert tone="info" title={t.admin.blog.recommendationNoticeTitle}>
+        {t.admin.blog.recommendationNoticeBody}
       </Alert>
 
       <p>
         <Link href="/blog" className={buttonClasses('ghost', 'sm')}>
-          See the community as members see it
+          {t.admin.blog.seeAsMembers}
         </Link>
       </p>
     </div>

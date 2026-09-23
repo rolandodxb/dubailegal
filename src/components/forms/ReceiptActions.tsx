@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { buttonClasses } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 
@@ -13,7 +14,15 @@ import { Icon } from '@/components/icons';
  * — whether the client saved a file or cancelled — the page returns to the case
  * conversation, where the fee card now reads as paid.
  */
-export function ReceiptActions({ caseId, receiptNumber }: { caseId: string; receiptNumber: string }) {
+export function ReceiptActions({
+  caseId,
+  receiptNumber,
+  labels,
+}: {
+  caseId: string;
+  receiptNumber: string;
+  labels: MemberCasesDict['receiptActions'];
+}) {
   const router = useRouter();
   const [returning, setReturning] = useState(false);
 
@@ -36,17 +45,15 @@ export function ReceiptActions({ caseId, receiptNumber }: { caseId: string; rece
     <div className="mt-6 flex flex-wrap items-center gap-3 print:hidden">
       <button type="button" onClick={() => window.print()} className={buttonClasses('primary', 'lg')}>
         <Icon name="printer" size={18} />
-        Download receipt as PDF
+        {labels.download}
       </button>
 
       <button type="button" onClick={goBack} className={buttonClasses('secondary', 'lg')}>
-        Back to the case
+        {labels.backToCase}
       </button>
 
       <span className="text-xs text-slate-500">
-        {returning
-          ? 'Receipt saved. Returning to the case conversation…'
-          : `Receipt ${receiptNumber}. Choosing “Save as PDF” in the print dialog downloads it.`}
+        {returning ? labels.saved : labels.hint.replace('{number}', receiptNumber)}
       </span>
     </div>
   );

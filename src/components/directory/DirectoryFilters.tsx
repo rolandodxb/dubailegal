@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { AccountType, Emirate, LegalArea } from '@prisma/client';
-import { EMIRATES, LEGAL_AREAS, ACCOUNT_TYPE_LABEL } from '@/lib/constants';
+import { getI18n } from '@/lib/i18n';
+import { accountTypeLabel, emirateLabel, legalAreaLabel } from '@/lib/i18n/labels';
+import { EMIRATES, LEGAL_AREAS } from '@/lib/constants';
 import type { DirectoryQuery } from '@/server/services/directory-service';
 import {
   buttonClasses,
@@ -26,37 +28,39 @@ type Facets = {
  * real number of published profiles in each category, and a category with no
  * profiles is not offered.
  */
-export function DirectoryFilters({
+export async function DirectoryFilters({
   query,
   facets,
 }: {
   query: DirectoryQuery;
   facets: Facets;
 }) {
+  const { t } = await getI18n();
+  const labels = t.publicPages.directoryFilters;
   const selectedAreas = new Set(query.areas ?? []);
   const selectedEmirates = new Set(query.emirates ?? []);
   const kindCount = (kind: AccountType) => facets.kindCounts.get(kind) ?? 0;
 
   return (
     <form method="get" action="/directory" className="space-y-6">
-      <Field label="Search" htmlFor="q" hint="Matches a name, headline or description.">
+      <Field label={t.common.search} htmlFor="q" hint={labels.searchHint}>
         <Input
           id="q"
           name="q"
           type="search"
           defaultValue={query.q ?? ''}
-          placeholder="e.g. arbitration, Al Habtoor, family law"
+          placeholder={labels.searchPlaceholder}
         />
       </Field>
 
       <fieldset>
-        <legend className="text-sm font-medium text-slate-800">Who are you looking for?</legend>
+        <legend className="text-sm font-medium text-slate-800">{labels.whoFor}</legend>
         <div className="mt-2 space-y-2">
           {(
             [
-              { value: 'ALL' as const, label: 'Lawyers and firms' },
-              { value: 'LAWYER' as const, label: ACCOUNT_TYPE_LABEL.LAWYER },
-              { value: 'FIRM' as const, label: ACCOUNT_TYPE_LABEL.FIRM },
+              { value: 'ALL' as const, label: labels.lawyersAndFirms },
+              { value: 'LAWYER' as const, label: accountTypeLabel(t, 'LAWYER') },
+              { value: 'FIRM' as const, label: accountTypeLabel(t, 'FIRM') },
             ]
           ).map((option) => {
             const count = option.value === 'ALL' ? facets.totalPublished : kindCount(option.value);
@@ -90,8 +94,8 @@ export function DirectoryFilters({
       </fieldset>
 
       <fieldset>
-        <legend className="text-sm font-medium text-slate-800">Area of law</legend>
-        <p className="mt-0.5 text-xs text-slate-500">Select any number. Leave clear to include all.</p>
+        <legend className="text-sm font-medium text-slate-800">{labels.areaOfLaw}</legend>
+        <p className="mt-0.5 text-xs text-slate-500">{labels.areaHint}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {LEGAL_AREAS.filter((area) => (facets.areaCounts.get(area.value) ?? 0) > 0).map((area) => (
             <ChipCheckbox
@@ -99,21 +103,19 @@ export function DirectoryFilters({
               id={`area-${area.value}`}
               name="areas"
               value={area.value}
-              label={area.label}
+              label={legalAreaLabel(t, area.value)}
               count={facets.areaCounts.get(area.value)}
               defaultChecked={selectedAreas.has(area.value)}
             />
           ))}
           {facets.areaCounts.size === 0 ? (
-            <p className="text-xs text-slate-500">
-              No published profile has listed an area of law yet.
-            </p>
+            <p className="text-xs text-slate-500">{labels.noAreas}</p>
           ) : null}
         </div>
       </fieldset>
 
       <fieldset>
-        <legend className="text-sm font-medium text-slate-800">Emirate</legend>
+        <legend className="text-sm font-medium text-slate-800">{labels.emirate}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {EMIRATES.filter((emirate) => (facets.emirateCounts.get(emirate.value) ?? 0) > 0).map(
             (emirate) => (
@@ -122,44 +124,42 @@ export function DirectoryFilters({
                 id={`emirate-${emirate.value}`}
                 name="emirates"
                 value={emirate.value}
-                label={emirate.label}
+                label={emirateLabel(t, emirate.value)}
                 count={facets.emirateCounts.get(emirate.value)}
                 defaultChecked={selectedEmirates.has(emirate.value)}
               />
             ),
           )}
           {facets.emirateCounts.size === 0 ? (
-            <p className="text-xs text-slate-500">
-              No published profile has listed an emirate yet.
-            </p>
+            <p className="text-xs text-slate-500">{labels.noEmirates}</p>
           ) : null}
         </div>
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="text-sm font-medium text-slate-800">Refine</legend>
+        <legend className="text-sm font-medium text-slate-800">{labels.refine}</legend>
         <Checkbox
           id="verifiedOnly"
           name="verifiedOnly"
-          label="Verified members only"
-          description="Show only profiles whose documents have been approved by a reviewer."
+          label={t.directory.verifiedOnly}
+          description={labels.verifiedOnlyHint}
           defaultChecked={query.verifiedOnly}
         />
         <Checkbox
           id="acceptsNewClients"
           name="acceptsNewClients"
-          label="Accepting new clients"
-          description="Hide members who have said they are not taking new instructions."
+          label={labels.acceptsNewClients}
+          description={labels.acceptsNewClientsHint}
           defaultChecked={query.acceptsNewClients}
         />
       </fieldset>
 
       <div className="flex flex-wrap gap-3">
         <button type="submit" className={buttonClasses('primary', 'md')}>
-          Apply filters
+          {labels.apply}
         </button>
         <Link href="/directory" className={buttonClasses('secondary', 'md')}>
-          Clear all
+          {labels.clearAll}
         </Link>
       </div>
     </form>

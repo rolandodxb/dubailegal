@@ -14,17 +14,20 @@ import { initialFormState } from '@/lib/form-state';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Textarea } from '@/components/ui/primitives';
 
-export function ClaimCaseForm({ caseId }: { caseId: string }) {
+export function ClaimCaseForm({
+  caseId,
+  labels,
+}: {
+  caseId: string;
+  labels: { button: string; pending: string; hint: string };
+}) {
   const [state, formAction] = useActionState(claimCaseAction, initialFormState);
   return (
     <form action={formAction} className="space-y-3">
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
       <input type="hidden" name="caseId" value={caseId} />
-      <SubmitButton pendingLabel="Taking…">Take this request</SubmitButton>
-      <p className="text-xs text-slate-500">
-        Taking the request assigns it to you. Other reviewers can still see it, but decisions record
-        your name.
-      </p>
+      <SubmitButton pendingLabel={labels.pending}>{labels.button}</SubmitButton>
+      <p className="text-xs text-slate-500">{labels.hint}</p>
     </form>
   );
 }
@@ -32,9 +35,11 @@ export function ClaimCaseForm({ caseId }: { caseId: string }) {
 export function ReviewDocumentForm({
   documentId,
   caseId,
+  labels,
 }: {
   documentId: string;
   caseId: string;
+  labels: { notesLabel: string; notesHint: string; accept: string; reject: string };
 }) {
   const [state, formAction] = useActionState(reviewDocumentAction, initialFormState);
 
@@ -47,10 +52,10 @@ export function ReviewDocumentForm({
       <input type="hidden" name="caseId" value={caseId} />
 
       <Field
-        label="Notes"
+        label={labels.notesLabel}
         htmlFor={`notes-${documentId}`}
         error={state?.fieldErrors?.notes}
-        hint="Required when rejecting, so the applicant knows what to fix."
+        hint={labels.notesHint}
       >
         <Input id={`notes-${documentId}`} name="notes" maxLength={2000} />
       </Field>
@@ -62,7 +67,7 @@ export function ReviewDocumentForm({
           value="APPROVED"
           className="inline-flex items-center justify-center rounded-lg bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800"
         >
-          Accept document
+          {labels.accept}
         </button>
         <button
           type="submit"
@@ -70,20 +75,33 @@ export function ReviewDocumentForm({
           value="REJECTED"
           className="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50"
         >
-          Reject document
+          {labels.reject}
         </button>
       </div>
     </form>
   );
 }
 
-export function DecisionForm({ caseId }: { caseId: string }) {
+export function DecisionForm({
+  caseId,
+  labels,
+}: {
+  caseId: string;
+  labels: {
+    errorTitle: string;
+    reasonLabel: string;
+    reasonHint: string;
+    approve: string;
+    refuse: string;
+    footnote: string;
+  };
+}) {
   const [state, formAction] = useActionState(decideCaseAction, initialFormState);
 
   return (
     <form action={formAction} className="space-y-4">
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="The decision was not recorded">
+        <Alert tone="error" title={labels.errorTitle}>
           {state.message}
         </Alert>
       ) : null}
@@ -91,10 +109,10 @@ export function DecisionForm({ caseId }: { caseId: string }) {
       <input type="hidden" name="caseId" value={caseId} />
 
       <Field
-        label="Reason"
+        label={labels.reasonLabel}
         htmlFor="decision-notes"
         error={state?.fieldErrors?.notes}
-        hint="Required when refusing, so the applicant can put it right. Recorded permanently against the case."
+        hint={labels.reasonHint}
       >
         <Textarea id="decision-notes" name="notes" rows={4} maxLength={2000} />
       </Field>
@@ -106,7 +124,7 @@ export function DecisionForm({ caseId }: { caseId: string }) {
           value="APPROVED"
           className="inline-flex items-center justify-center rounded-lg bg-green-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-800"
         >
-          Approve and issue badge
+          {labels.approve}
         </button>
         <button
           type="submit"
@@ -114,50 +132,58 @@ export function DecisionForm({ caseId }: { caseId: string }) {
           value="REJECTED"
           className="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50"
         >
-          Refuse with reasons
+          {labels.refuse}
         </button>
       </div>
 
-      <p className="text-xs text-slate-500">
-        Approval requires every required document to be accepted individually. The decision is
-        recorded with your account and cannot be undone — a later change to the evidence withdraws
-        the badge and needs a new review.
-      </p>
+      <p className="text-xs text-slate-500">{labels.footnote}</p>
     </form>
   );
 }
 
-export function SuspendUserForm({ userId }: { userId: string }) {
+export function SuspendUserForm({
+  userId,
+  labels,
+}: {
+  userId: string;
+  labels: { reasonLabel: string; confirm: string; pending: string; button: string };
+}) {
   const [state, formAction] = useActionState(suspendUserAction, initialFormState);
   return (
     <form action={formAction} className="mt-2 space-y-2">
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
       <input type="hidden" name="userId" value={userId} />
-      <Field label="Reason for suspension" htmlFor={`reason-${userId}`} error={state?.fieldErrors?.reason}>
+      <Field label={labels.reasonLabel} htmlFor={`reason-${userId}`} error={state?.fieldErrors?.reason}>
         <Input id={`reason-${userId}`} name="reason" maxLength={300} />
       </Field>
       <SubmitButton
         variant="danger"
         size="sm"
-        confirm="Suspend this account? All its sessions will be signed out."
-        pendingLabel="Suspending…"
+        confirm={labels.confirm}
+        pendingLabel={labels.pending}
       >
-        Suspend account
+        {labels.button}
       </SubmitButton>
     </form>
   );
 }
 
-export function ReinstateUserForm({ userId }: { userId: string }) {
+export function ReinstateUserForm({
+  userId,
+  labels,
+}: {
+  userId: string;
+  labels: { pending: string; button: string };
+}) {
   const [state, formAction] = useActionState(reinstateUserAction, initialFormState);
   return (
     <form action={formAction} className="mt-2 space-y-2">
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
       <input type="hidden" name="userId" value={userId} />
-      <SubmitButton variant="secondary" size="sm" pendingLabel="Reinstating…">
-        Reinstate account
+      <SubmitButton variant="secondary" size="sm" pendingLabel={labels.pending}>
+        {labels.button}
       </SubmitButton>
     </form>
   );
@@ -170,13 +196,27 @@ export function ReinstateUserForm({ userId }: { userId: string }) {
  * it cannot be reached by a stray click. Suspension is the reversible option and
  * sits above it.
  */
-export function DeleteAccountForm({ userId, email }: { userId: string; email: string }) {
+export function DeleteAccountForm({
+  userId,
+  email,
+  labels,
+}: {
+  userId: string;
+  email: string;
+  labels: {
+    summary: string;
+    confirmLabel: string;
+    hint: string;
+    pending: string;
+    button: string;
+  };
+}) {
   const [state, formAction] = useActionState(deleteAccountAction, initialFormState);
 
   return (
     <details className="rounded-lg border border-red-200 bg-red-50/50 p-3">
       <summary className="cursor-pointer text-xs font-semibold text-red-800">
-        Delete this account permanently
+        {labels.summary}
       </summary>
 
       <form action={formAction} className="mt-3 space-y-3">
@@ -186,10 +226,10 @@ export function DeleteAccountForm({ userId, email }: { userId: string; email: st
         <input type="hidden" name="userId" value={userId} />
 
         <Field
-          label={`Type ${email} to confirm`}
+          label={labels.confirmLabel.replace('{email}', email)}
           htmlFor={`confirm-delete-${userId}`}
           error={state?.fieldErrors?.confirm}
-          hint="This removes the account, its cases, documents and sessions. It cannot be undone."
+          hint={labels.hint}
         >
           <Input
             id={`confirm-delete-${userId}`}
@@ -200,15 +240,29 @@ export function DeleteAccountForm({ userId, email }: { userId: string; email: st
           />
         </Field>
 
-        <SubmitButton variant="danger" size="sm" pendingLabel="Deleting…">
-          Delete permanently
+        <SubmitButton variant="danger" size="sm" pendingLabel={labels.pending}>
+          {labels.button}
         </SubmitButton>
       </form>
     </details>
   );
 }
 
-export function ReviewerRoleForm({ userId, grant }: { userId: string; grant: boolean }) {
+export function ReviewerRoleForm({
+  userId,
+  grant,
+  labels,
+}: {
+  userId: string;
+  grant: boolean;
+  labels: {
+    grantConfirm: string;
+    revokeConfirm: string;
+    pending: string;
+    makeReviewer: string;
+    removeReviewer: string;
+  };
+}) {
   const [state, formAction] = useActionState(setReviewerRoleAction, initialFormState);
   return (
     <form action={formAction} className="inline">
@@ -220,14 +274,10 @@ export function ReviewerRoleForm({ userId, grant }: { userId: string; grant: boo
       <SubmitButton
         variant={grant ? 'secondary' : 'ghost'}
         size="sm"
-        confirm={
-          grant
-            ? 'Give this account access to review other members\u2019 identity documents?'
-            : 'Remove this account\u2019s reviewer access?'
-        }
-        pendingLabel="…"
+        confirm={grant ? labels.grantConfirm : labels.revokeConfirm}
+        pendingLabel={labels.pending}
       >
-        {grant ? 'Make reviewer' : 'Remove reviewer'}
+        {grant ? labels.makeReviewer : labels.removeReviewer}
       </SubmitButton>
     </form>
   );

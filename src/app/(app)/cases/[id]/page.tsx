@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel, paymentPurposeLabel } from '@/lib/i18n/labels';
 import { getCaseForViewer, listCaseMessages } from '@/server/services/case-service';
 import {
   bankTransferLines,
@@ -9,22 +11,21 @@ import {
   listCasePayments,
   missingBankingFields,
 } from '@/server/services/payment-service';
-import { LEGAL_AREA_LABEL } from '@/lib/constants';
 import { formatDateTime, formatFileSize, safeExternalUrl } from '@/lib/format';
 import { formatUaeDateTime } from '@/lib/time';
 import { Avatar } from '@/components/Avatar';
 import { Icon } from '@/components/icons';
-import { VerificationStatusPill } from '@/components/VerificationBadge';
 import { CaseActionPanel } from '@/components/cases/CaseActionPanel';
 import { listCaseOffers } from '@/server/services/case-service';
 import { activeUrgentCall } from '@/server/services/appointment-service';
 import { RequestUrgentCallButton } from '@/components/forms/UrgentCallButton';
 import { PaymentRequestForm } from '@/components/cases/PaymentRequestForm';
-import { formatMoney, formatAed } from '@/lib/payment-format';
+import { formatMoney } from '@/lib/payment-format';
 import { CaseChat } from '@/components/cases/CaseChat';
 import { CaseProgressTrack, CaseStatusChip } from '@/components/cases/CaseStatusChip';
 import { EncryptionNotice } from '@/components/SecurityNotice';
 import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/primitives';
+import { localiseBankLines } from '@/lib/i18n/format';
 
 export const metadata: Metadata = { title: 'Case' };
 
@@ -39,15 +40,6 @@ const EMPTY_BANK = {
   bankInstructions: null,
 };
 
-const NOTICES: Record<string, string> = {
-  'case-submitted': 'Your case has been sent. It is now Submitted and awaiting review.',
-  'case-under-review': 'The lawyer has opened your case. It is now Under review.',
-  'case-assigned': 'The case has been accepted and assigned.',
-  'case-declined': 'The case was declined. The reason is shown below.',
-  'case-in-progress': 'Work on this case has started.',
-  'case-completed': 'This case has been marked complete.',
-};
-
 export default async function CaseDetailPage({
   params,
   searchParams,
@@ -55,7 +47,9 @@ export default async function CaseDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ notice?: string }>;
 }) {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const labels = t.memberCases.caseDetail;
+  const purposeLower = labels.purposeLower as Record<string, string>;
   const [{ id }, { notice }] = await Promise.all([params, searchParams]);
 
   const found = await getCaseForViewer(id, user.id);
@@ -67,6 +61,15 @@ export default async function CaseDetailPage({
   const casePayments = await listCasePayments(id);
   const urgentRoom = await activeUrgentCall(id);
   const offers = legalCase.status === 'DISTRIBUTED' ? await listCaseOffers(id) : [];
+
+  const notices: Record<string, string> = {
+    'case-submitted': labels.noticeSubmitted,
+    'case-under-review': labels.noticeUnderReview,
+    'case-assigned': labels.noticeAssigned,
+    'case-declined': labels.noticeDeclined,
+    'case-in-progress': labels.noticeInProgress,
+    'case-completed': labels.noticeCompleted,
+  };
 
   // A firm holding a case it has not released yet may send it to its lawyers.
   const canDistribute =
@@ -84,19 +87,39 @@ export default async function CaseDetailPage({
     ? { id: legalCase.lawyer.user.id, email: legalCase.lawyer.user.email, profile: legalCase.lawyer.user.profile }
     : null;
   const professionalName =
-    professionalUser?.profile?.fullName?.trim() || legalCase.firm?.legalName || 'Not yet assigned';
+    professionalUser?.profile?.fullName?.trim() || legalCase.firm?.legalName || labels.notYetAssigned;
 
   const closed = legalCase.status === 'COMPLETED' || legalCase.status === 'DECLINED';
 
+  const feeStatusText = (payment: (typeof casePayments)[number]) =>
+    payment.status === 'PAID'
+      ? payment.method === 'CARD'
+        ? labels.paidByCard
+        : payment.method
+          ? labels.paidByTransfer
+          : labels.paid
+      : payment.status === 'CANCELLED'
+        ? labels.withdrawn
+        : labels.awaitingPayment;
+
+  const offerStatusText = (status: string) =>
+    status === 'PENDING'
+      ? labels.offerNotAnswered
+      : status === 'ACCEPTED'
+        ? labels.offerAccepted
+        : status === 'PASSED'
+          ? labels.offerPassed
+          : labels.offerWithdrawn;
+
   return (
     <div className="space-y-6">
-      <nav className="text-sm" aria-label="Breadcrumb">
+      <nav className="text-sm" aria-label={t.memberCases.breadcrumb}>
         <Link href={isClient ? '/cases' : '/dashboard'} className="text-brand-700 hover:underline">
-          ← Back to {isClient ? 'my cases' : 'my dashboard'}
+          {isClient ? labels.backToMyCases : labels.backToMyDashboard}
         </Link>
       </nav>
 
-      {notice && NOTICES[notice] ? <Alert tone="success">{NOTICES[notice]}</Alert> : null}
+      {notice && notices[notice] ? <Alert tone="success">{notices[notice]}</Alert> : null}
 
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -104,8 +127,8 @@ export default async function CaseDetailPage({
             <p className="font-mono text-xs text-slate-500">{legalCase.reference}</p>
             <h1 className="mt-1 text-xl font-semibold text-slate-900">{legalCase.title}</h1>
             <p className="mt-1 text-sm text-slate-600">
-              {LEGAL_AREA_LABEL[legalCase.caseType]} · submitted{' '}
-              {formatDateTime(legalCase.submittedAt)}
+              {legalAreaLabel(t, legalCase.caseType)} ·{' '}
+              {labels.submittedOn.replace('{date}', formatDateTime(legalCase.submittedAt))}
             </p>
           </div>
           <CaseStatusChip status={legalCase.status} />
@@ -116,19 +139,18 @@ export default async function CaseDetailPage({
         </div>
 
         {legalCase.status === 'DECLINED' && legalCase.declineReason ? (
-          <Alert tone="error" className="mt-4" title="Why this case was declined">
+          <Alert tone="error" className="mt-4" title={labels.declinedTitle}>
             <p className="whitespace-pre-line">{legalCase.declineReason}</p>
           </Alert>
         ) : null}
 
         {access.role === 'FIRM_OWNER' && !closed ? (
-          <Alert tone="info" className="mt-4" title="One of your lawyers must accept this case">
-            This case is addressed to your firm. Only a registered lawyer can review and accept it —
-            invite your lawyers from{' '}
+          <Alert tone="info" className="mt-4" title={labels.firmAcceptTitle}>
+            {labels.firmAcceptBodyBefore}
             <Link href="/firm/lawyers" className="font-medium underline">
-              Lawyers registered
+              {t.items.firmLawyers}
             </Link>
-            .
+            {labels.firmAcceptBodyAfter}
           </Alert>
         ) : null}
       </Card>
@@ -145,19 +167,17 @@ export default async function CaseDetailPage({
                 <div className="min-w-0">
                   <h2 className="flex items-center gap-2 font-semibold text-slate-900">
                     <Icon name="phoneCall" size={18} className="text-domain-emergency" />
-                    {isClient ? 'Your urgent call is open' : 'Your client is asking for a call'}
+                    {isClient ? labels.urgentOpenClient : labels.urgentOpenProfessional}
                   </h2>
                   <p className="mt-1 max-w-xl text-sm text-slate-700">
-                    {isClient
-                      ? 'The room is open and the professional has been alerted. Join it and wait a moment — they may take a call before this one.'
-                      : 'The client asked for an urgent call about this case and is waiting in the room. Joining answers it.'}
+                    {isClient ? labels.urgentBodyClient : labels.urgentBodyProfessional}
                   </p>
                 </div>
                 <Link
                   href={`/rooms/${urgentRoom.roomCode}`}
                   className={buttonClasses('primary', 'md')}
                 >
-                  Join the call now
+                  {labels.joinCallNow}
                 </Link>
               </div>
             </Card>
@@ -165,18 +185,18 @@ export default async function CaseDetailPage({
 
           {/* ── The case as submitted ───────────────────────────────────── */}
           <Card>
-            <h2 className="font-semibold text-slate-900">Case description</h2>
+            <h2 className="font-semibold text-slate-900">{labels.caseDescription}</h2>
             <p className="mt-2 whitespace-pre-line text-sm text-slate-700">
               {legalCase.description}
             </p>
 
-            <EncryptionNotice subject="Case papers" className="mt-6" />
+            <EncryptionNotice subject={labels.casePapers} className="mt-6" />
 
             <h3 className="mt-6 text-sm font-semibold text-slate-900">
-              Attachments ({legalCase.files.length})
+              {labels.attachments.replace('{count}', String(legalCase.files.length))}
             </h3>
             {legalCase.files.length === 0 ? (
-              <p className="mt-1 text-sm text-slate-500">No files were attached.</p>
+              <p className="mt-1 text-sm text-slate-500">{labels.noFiles}</p>
             ) : (
               <ul className="mt-2 divide-y divide-slate-100">
                 {legalCase.files.map((file) => (
@@ -184,7 +204,8 @@ export default async function CaseDetailPage({
                     <span className="min-w-0">
                       <span className="block truncate text-sm text-slate-800">{file.fileName}</span>
                       <span className="block text-xs text-slate-500">
-                        {formatFileSize(file.sizeBytes)} · uploaded {formatDateTime(file.createdAt)}
+                        {formatFileSize(file.sizeBytes)} ·{' '}
+                        {labels.uploaded.replace('{date}', formatDateTime(file.createdAt))}
                       </span>
                     </span>
                     <a
@@ -193,7 +214,7 @@ export default async function CaseDetailPage({
                       rel="noopener noreferrer"
                       className="shrink-0 text-xs font-medium text-brand-700 hover:underline"
                     >
-                      Open
+                      {t.common.open}
                     </a>
                   </li>
                 ))}
@@ -203,11 +224,9 @@ export default async function CaseDetailPage({
 
           {/* ── Conversation ────────────────────────────────────────────── */}
           <Card>
-            <h2 className="mb-1 font-semibold text-slate-900">Messages</h2>
+            <h2 className="mb-1 font-semibold text-slate-900">{labels.messages}</h2>
             <p className="mb-4 text-sm text-slate-600">
-              {access.canMessage
-                ? 'Both sides of this case can read and post here.'
-                : 'You can read this conversation but not post to it.'}
+              {access.canMessage ? labels.canMessage : labels.cannotMessage}
             </p>
             <CaseChat
               caseId={legalCase.id}
@@ -215,11 +234,16 @@ export default async function CaseDetailPage({
               hasMoreInitially={hasMore}
               viewerId={user.id}
               isClient={isClient}
+              labels={{ ...t.memberCases.caseChat, you: t.room.you, payment: t.memberCases.feeBubble }}
               payments={casePayments.map((payment) => ({
                 id: payment.id,
                 caseId: payment.caseId,
                 amountFils: payment.amountFils,
                 purpose: payment.purpose,
+                purposeLabel:
+                  payment.purpose === 'OTHER'
+                    ? t.memberCases.feeBubble.reasonOther
+                    : paymentPurposeLabel(t, payment.purpose),
                 details: payment.details,
                 status: payment.status,
                 method: payment.method,
@@ -227,7 +251,7 @@ export default async function CaseDetailPage({
                 cardBrand: payment.cardBrand,
                 currency: payment.currency,
                 cardLast4: payment.cardLast4,
-                bankLines: bankTransferLines({
+                bankLines: localiseBankLines(t, bankTransferLines({
                   bankAccountName: payment.bankAccountName,
                   bankName: payment.bankName,
                   bankIban: payment.bankIban,
@@ -235,7 +259,7 @@ export default async function CaseDetailPage({
                   bankSwift: payment.bankSwift,
                   bankBranch: payment.bankBranch,
                   bankInstructions: payment.bankInstructions,
-                }),
+                })),
                 bankInstructions: payment.bankInstructions,
                 receiptNumber: payment.receiptNumber,
                 hasProof: Boolean(payment.proofDocumentId),
@@ -248,8 +272,8 @@ export default async function CaseDetailPage({
               disabled={!access.canMessage || legalCase.status === 'DECLINED'}
               disabledReason={
                 legalCase.status === 'DECLINED'
-                  ? 'This case was declined, so the conversation is closed.'
-                  : 'You cannot post in this case.'
+                  ? labels.declinedConversationClosed
+                  : labels.cannotPost
               }
             />
           </Card>
@@ -257,7 +281,7 @@ export default async function CaseDetailPage({
           {offers.length > 0 ? (
             <Card>
               <h2 className="font-semibold text-slate-900">
-                Offered to the firm&rsquo;s lawyers ({offers.length})
+                {labels.offeredHeading.replace('{count}', String(offers.length))}
               </h2>
               <ul className="mt-3 divide-y divide-slate-100">
                 {offers.map((offer) => (
@@ -279,9 +303,7 @@ export default async function CaseDetailPage({
                               : 'bg-brand-50 text-brand-800 ring-brand-200'
                       }`}
                     >
-                      {offer.status === 'PENDING'
-                        ? 'Not answered yet'
-                        : offer.status.toLowerCase()}
+                      {offerStatusText(offer.status)}
                     </span>
                   </li>
                 ))}
@@ -291,46 +313,49 @@ export default async function CaseDetailPage({
 
           {canRequestPayment ? (
             <Card>
-              <h2 className="mb-3 font-semibold text-slate-900">Fees on this case</h2>
+              <h2 className="mb-3 font-semibold text-slate-900">{labels.feesHeading}</h2>
               {casePayments.length > 0 ? (
                 <ul className="mb-4 divide-y divide-slate-100">
                   {casePayments.map((payment) => (
                     <li key={payment.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="text-sm text-slate-800">
-                        {formatMoney(payment.amountFils, payment.currency)} · {payment.purpose.toLowerCase().replace('_', ' ')}
+                        {formatMoney(payment.amountFils, payment.currency)} ·{' '}
+                        {purposeLower[payment.purpose] ?? payment.purpose}
                       </span>
-                      <span className="text-xs text-slate-500">
-                        {payment.status === 'PAID'
-                          ? `paid${payment.method ? ` by ${payment.method === 'CARD' ? 'card' : 'transfer'}` : ''}`
-                          : payment.status === 'CANCELLED'
-                            ? 'withdrawn'
-                            : 'awaiting payment'}
-                      </span>
+                      <span className="text-xs text-slate-500">{feeStatusText(payment)}</span>
                       {payment.status === 'PAID' ? (
                         <Link
                           href={`/payments/${payment.id}/receipt`}
                           className="text-xs font-medium text-brand-700 hover:underline"
                         >
-                          Receipt
+                          {labels.receipt}
                         </Link>
                       ) : null}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mb-4 text-sm text-slate-600">No fees have been requested on this case.</p>
+                <p className="mb-4 text-sm text-slate-600">{labels.noFees}</p>
               )}
               <PaymentRequestForm
                 caseId={legalCase.id}
-                bankLines={bankTransferLines(ownBank ?? EMPTY_BANK)}
+                bankLines={localiseBankLines(t, bankTransferLines(ownBank ?? EMPTY_BANK))}
                 bankReady={bankReady}
+                labels={t.memberCases.feeRequest}
+                purposeOptions={[
+                  { value: 'CONSULTATION', label: paymentPurposeLabel(t, 'CONSULTATION') },
+                  { value: 'CASE_ASSISTANCE', label: paymentPurposeLabel(t, 'CASE_ASSISTANCE') },
+                  { value: 'COURT_FEES', label: paymentPurposeLabel(t, 'COURT_FEES') },
+                  { value: 'OTHER', label: paymentPurposeLabel(t, 'OTHER') },
+                ]}
+                legalDetailsLabel={t.items.legalDetails}
               />
             </Card>
           ) : null}
 
           {/* ── History ─────────────────────────────────────────────────── */}
           <Card>
-            <h2 className="font-semibold text-slate-900">History</h2>
+            <h2 className="font-semibold text-slate-900">{labels.history}</h2>
             <ol className="mt-3 divide-y divide-slate-100">
               {legalCase.events.map((event) => (
                 <li key={event.id} className="py-2.5">
@@ -339,7 +364,7 @@ export default async function CaseDetailPage({
                     {event.toStatus}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {event.actor?.email ?? 'System'} · {formatDateTime(event.createdAt)}
+                    {event.actor?.email ?? labels.system} · {formatDateTime(event.createdAt)}
                     {event.note ? ` · ${event.note}` : ''}
                   </p>
                 </li>
@@ -352,7 +377,7 @@ export default async function CaseDetailPage({
         <aside className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {!isClient ? (
             <Card>
-              <h2 className="font-semibold text-slate-900">Your actions</h2>
+              <h2 className="font-semibold text-slate-900">{labels.yourActions}</h2>
               <div className="mt-4">
                 <CaseActionPanel
                   caseId={legalCase.id}
@@ -362,6 +387,7 @@ export default async function CaseDetailPage({
                   canProgress={access.canProgress}
                   canDecline={(access.canReview || access.canAccept) && !closed}
                   canDistribute={canDistribute}
+                  labels={t.memberCases.caseActions}
                 />
               </div>
             </Card>
@@ -369,7 +395,7 @@ export default async function CaseDetailPage({
 
           <Card>
             <h2 className="font-semibold text-slate-900">
-              {isClient ? 'Your professional' : 'Client'}
+              {isClient ? labels.yourProfessional : labels.client}
             </h2>
 
             {isClient ? (
@@ -386,12 +412,12 @@ export default async function CaseDetailPage({
                     <p className="text-xs text-slate-500">{professionalUser.email}</p>
                     {legalCase.firm ? (
                       <p className="mt-1 text-xs text-slate-500">
-                        Registered with {legalCase.firm.legalName}
+                        {labels.registeredWith.replace('{name}', legalCase.firm.legalName)}
                       </p>
                     ) : null}
                     {legalCase.lawyer ? (
                       <p className="mt-1 text-xs text-slate-500">
-                        Licence {legalCase.lawyer.licenseNumber} ·{' '}
+                        {labels.licence} {legalCase.lawyer.licenseNumber} ·{' '}
                         {legalCase.lawyer.licensingAuthority}
                       </p>
                     ) : null}
@@ -400,8 +426,8 @@ export default async function CaseDetailPage({
               ) : (
                 <p className="mt-2 text-sm text-slate-600">
                   {legalCase.firm
-                    ? `Sent to ${legalCase.firm.legalName}. A lawyer from the firm will review and accept it.`
-                    : 'No professional is assigned yet.'}
+                    ? labels.sentToFirm.replace('{name}', legalCase.firm.legalName)
+                    : labels.noProfessional}
                 </p>
               )
             ) : (
@@ -419,7 +445,10 @@ export default async function CaseDetailPage({
                   <p className="text-xs text-slate-500">{legalCase.client.email}</p>
                   {legalCase.client.profile?.countryOfResidence ? (
                     <p className="mt-1 text-xs text-slate-500">
-                      Resident in {legalCase.client.profile.countryOfResidence}
+                      {labels.residentIn.replace(
+                        '{country}',
+                        legalCase.client.profile.countryOfResidence,
+                      )}
                     </p>
                   ) : null}
                 </div>
@@ -430,22 +459,22 @@ export default async function CaseDetailPage({
               <DescriptionList
                 items={[
                   {
-                    term: 'Assigned lawyer',
+                    term: labels.assignedLawyer,
                     detail: legalCase.lawyer
                       ? `${legalCase.lawyer.user.profile?.fullName?.trim() || legalCase.lawyer.user.email}`
-                      : 'Not yet assigned',
+                      : labels.notYetAssigned,
                   },
                   {
-                    term: 'Firm',
-                    detail: legalCase.firm?.legalName ?? 'None — sent to a named lawyer',
+                    term: labels.firm,
+                    detail: legalCase.firm?.legalName ?? labels.noneNamedLawyer,
                   },
                   {
-                    term: 'Reviewed',
-                    detail: legalCase.reviewedAt ? formatUaeDateTime(legalCase.reviewedAt) : 'Not yet',
+                    term: labels.reviewed,
+                    detail: legalCase.reviewedAt ? formatUaeDateTime(legalCase.reviewedAt) : labels.notYet,
                   },
                   {
-                    term: 'Assigned',
-                    detail: legalCase.assignedAt ? formatUaeDateTime(legalCase.assignedAt) : 'Not yet',
+                    term: labels.assigned,
+                    detail: legalCase.assignedAt ? formatUaeDateTime(legalCase.assignedAt) : labels.notYet,
                   },
                 ]}
               />
@@ -454,27 +483,27 @@ export default async function CaseDetailPage({
 
           {isClient && legalCase.lawyer && !urgentRoom ? (
             <Card>
-              <h2 className="font-semibold text-slate-900">Talk to your lawyer now</h2>
+              <h2 className="font-semibold text-slate-900">{labels.talkNow}</h2>
               <p className="mt-1 mb-3 text-sm text-slate-600">
-                Ask for an urgent call and you go straight into a conference room while{' '}
-                {professionalName} is alerted. Meetings they schedule are booked from their diary.
+                {labels.talkNowBody.replace('{name}', professionalName)}
               </p>
-              <RequestUrgentCallButton caseId={legalCase.id} professionalName={professionalName} />
+              <RequestUrgentCallButton
+                caseId={legalCase.id}
+                professionalName={professionalName}
+                labels={t.memberCases.urgentCall}
+              />
               <Link href="/rooms" className={buttonClasses('secondary', 'md', 'mt-3 w-full')}>
-                All my conference rooms
+                {labels.allRooms}
               </Link>
             </Card>
           ) : null}
 
           {isClient && legalCase.lawyer && urgentRoom ? (
             <Card>
-              <h2 className="font-semibold text-slate-900">Book a meeting</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Your lawyer schedules meetings from their diary. You are alerted here as soon as one is
-                booked with you.
-              </p>
+              <h2 className="font-semibold text-slate-900">{labels.bookMeeting}</h2>
+              <p className="mt-1 text-sm text-slate-600">{labels.bookMeetingBody}</p>
               <Link href="/rooms" className={buttonClasses('secondary', 'md', 'mt-3 w-full')}>
-                See my meetings and rooms
+                {labels.seeMeetings}
               </Link>
             </Card>
           ) : null}

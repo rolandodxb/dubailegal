@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireReviewer } from '@/lib/auth';
 import { emergencyOverview } from '@/server/services/admin-service';
-import { LEGAL_AREA_LABEL } from '@/lib/constants';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
 import { formatDateTime } from '@/lib/format';
 import { Alert, Card } from '@/components/ui/primitives';
 
@@ -27,7 +28,9 @@ const STATUS_STYLE: Record<string, string> = {
  */
 export default async function AdminEmergencyPage() {
   await requireReviewer();
-  const overview = await emergencyOverview();
+  const [{ t }, overview] = await Promise.all([getI18n(), emergencyOverview()]);
+
+  const statusLabel: Record<string, string> = t.admin.emergency.status;
 
   const answered = overview.accepted;
   const total = answered + overview.expired + overview.open;
@@ -36,28 +39,23 @@ export default async function AdminEmergencyPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Emergencies</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Urgent requests raised by clients, and how they were answered. Watch the unanswered count
-          and the number of professionals available: if availability drops to zero, urgent requests
-          fall back to reaching every registered lawyer and firm.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.emergencies}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{t.admin.emergency.intro}</p>
       </header>
 
       {overview.availableLawyers === 0 && overview.designatedContacts === 0 ? (
-        <Alert tone="warning" title="Nobody is available for emergencies">
-          No lawyer has turned emergency availability on and no firm has named an emergency contact.
-          Urgent requests raised now are sent to every registered lawyer and firm instead.
+        <Alert tone="warning" title={t.admin.emergency.alertTitle}>
+          {t.admin.emergency.alertBody}
         </Alert>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
-          { label: 'Open, unanswered', value: overview.open },
-          { label: 'Taken', value: overview.accepted },
-          { label: 'Expired unanswered', value: overview.expired },
-          { label: 'Lawyers on call', value: overview.availableLawyers },
-          { label: 'Firm emergency contacts', value: overview.designatedContacts },
+          { label: t.admin.emergency.stats.open, value: overview.open },
+          { label: t.admin.emergency.stats.taken, value: overview.accepted },
+          { label: t.admin.emergency.stats.expired, value: overview.expired },
+          { label: t.admin.emergency.stats.lawyersOnCall, value: overview.availableLawyers },
+          { label: t.admin.emergency.stats.firmContacts, value: overview.designatedContacts },
         ].map((stat) => (
           <Card key={stat.label}>
             <p className="text-sm text-slate-600">{stat.label}</p>
@@ -68,19 +66,22 @@ export default async function AdminEmergencyPage() {
 
       {answerRate !== null ? (
         <Card>
-          <p className="text-sm text-slate-600">Answer rate</p>
+          <p className="text-sm text-slate-600">{t.admin.emergency.answerRate}</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">{answerRate}%</p>
           <p className="mt-1 text-xs text-slate-500">
-            Of {total} request{total === 1 ? '' : 's'} raised, {answered} were taken before they
-            expired.
+            {(total === 1 ? t.admin.emergency.answerRateOne : t.admin.emergency.answerRateMany)
+              .replace('{total}', String(total))
+              .replace('{answered}', String(answered))}
           </p>
         </Card>
       ) : null}
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Recent requests ({overview.recent.length})</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {t.admin.emergency.recentRequests.replace('{count}', String(overview.recent.length))}
+        </h2>
         {overview.recent.length === 0 ? (
-          <p className="text-sm text-slate-600">No urgent requests have been raised.</p>
+          <p className="text-sm text-slate-600">{t.admin.emergency.empty}</p>
         ) : (
           <ul className="space-y-3">
             {overview.recent.map((item) => (
@@ -89,18 +90,19 @@ export default async function AdminEmergencyPage() {
                   <div className="min-w-0">
                     <h3 className="font-medium text-slate-900">{item.title}</h3>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {LEGAL_AREA_LABEL[item.caseType] ?? item.caseType} · raised{' '}
-                      {formatDateTime(item.createdAt)} · call-back {maskPhone(item.contactPhone)}
+                      {legalAreaLabel(t, item.caseType)} · {t.admin.emergency.raised}{' '}
+                      {formatDateTime(item.createdAt)} · {t.admin.emergency.callBack}{' '}
+                      {maskPhone(item.contactPhone)}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
-                      By{' '}
+                      {t.admin.emergency.by}{' '}
                       {item.client
                         ? item.client.profile?.fullName?.trim() || item.client.email
-                        : `${item.guestName ?? 'A member of the public'} (no account)`}
+                        : `${item.guestName ?? t.admin.emergency.memberOfPublic} ${t.admin.emergency.noAccount}`}
                       {item.acceptedBy
-                        ? ` · taken by ${
+                        ? ` · ${t.admin.emergency.takenBy} ${
                             item.acceptedBy.profile?.fullName?.trim() || item.acceptedBy.email
-                          } at ${formatDateTime(item.acceptedAt)}`
+                          } ${t.admin.emergency.at} ${formatDateTime(item.acceptedAt)}`
                         : ''}
                     </p>
                   </div>
@@ -118,7 +120,7 @@ export default async function AdminEmergencyPage() {
                         STATUS_STYLE[item.status] ?? 'bg-slate-100 text-slate-700 ring-slate-200'
                       }`}
                     >
-                      {item.status.toLowerCase()}
+                      {statusLabel[item.status] ?? item.status.toLowerCase()}
                     </span>
                   </div>
                 </div>

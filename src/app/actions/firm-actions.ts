@@ -12,10 +12,11 @@ import {
   revokeInvitation,
 } from '@/server/services/firm-service';
 import { markAllNotificationsRead, markNotificationRead } from '@/server/services/notification-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 // ── Firm roster ──────────────────────────────────────────────────────────────
 
-export async function inviteLawyerAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function inviteLawyerActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
 
@@ -46,7 +47,7 @@ export async function inviteLawyerAction(_prev: FormState, formData: FormData): 
  * The generated credentials are returned once so the firm can pass them on —
  * there is no mail provider, so the firm is the delivery channel.
  */
-export async function createLawyerAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function createLawyerActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const meta = await requestMeta();
 
@@ -97,7 +98,7 @@ export async function createLawyerAction(_prev: FormState, formData: FormData): 
   };
 }
 
-export async function revokeInvitationAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function revokeInvitationActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const result = await revokeInvitation(user.id, String(formData.get('invitationId') ?? ''));
   revalidatePath('/firm/lawyers');
@@ -105,7 +106,7 @@ export async function revokeInvitationAction(_prev: FormState, formData: FormDat
   return { ok: true, message: 'Invitation withdrawn.' };
 }
 
-export async function removeLawyerAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function removeLawyerActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const result = await removeLawyerFromFirm(user.id, String(formData.get('lawyerProfileId') ?? ''));
   revalidatePath('/firm/lawyers');
@@ -116,7 +117,7 @@ export async function removeLawyerAction(_prev: FormState, formData: FormData): 
   };
 }
 
-export async function respondToInvitationAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function respondToInvitationActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const invitationId = String(formData.get('invitationId') ?? '');
   const accept = String(formData.get('accept') ?? '') === 'true';
@@ -131,16 +132,67 @@ export async function respondToInvitationAction(_prev: FormState, formData: Form
 
 // ── Alerts ───────────────────────────────────────────────────────────────────
 
-export async function markNotificationReadAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function markNotificationReadActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   await markNotificationRead(user.id, String(formData.get('notificationId') ?? ''));
   revalidatePath('/notifications');
   return { ok: true, message: 'Alert marked as read.' };
 }
 
-export async function markAllNotificationsReadAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+async function markAllNotificationsReadActionImpl(_prev: FormState, _formData: FormData): Promise<FormState> {
   const user = await requireActiveUser();
   const count = await markAllNotificationsRead(user.id);
   revalidatePath('/notifications');
   return { ok: true, message: `${count} alert${count === 1 ? '' : 's'} marked as read.` };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function inviteLawyerAction(
+  ...args: Parameters<typeof inviteLawyerActionImpl>
+): Promise<Awaited<ReturnType<typeof inviteLawyerActionImpl>>> {
+  return localiseFormState(await inviteLawyerActionImpl(...args));
+}
+
+export async function createLawyerAction(
+  ...args: Parameters<typeof createLawyerActionImpl>
+): Promise<Awaited<ReturnType<typeof createLawyerActionImpl>>> {
+  return localiseFormState(await createLawyerActionImpl(...args));
+}
+
+export async function revokeInvitationAction(
+  ...args: Parameters<typeof revokeInvitationActionImpl>
+): Promise<Awaited<ReturnType<typeof revokeInvitationActionImpl>>> {
+  return localiseFormState(await revokeInvitationActionImpl(...args));
+}
+
+export async function removeLawyerAction(
+  ...args: Parameters<typeof removeLawyerActionImpl>
+): Promise<Awaited<ReturnType<typeof removeLawyerActionImpl>>> {
+  return localiseFormState(await removeLawyerActionImpl(...args));
+}
+
+export async function respondToInvitationAction(
+  ...args: Parameters<typeof respondToInvitationActionImpl>
+): Promise<Awaited<ReturnType<typeof respondToInvitationActionImpl>>> {
+  return localiseFormState(await respondToInvitationActionImpl(...args));
+}
+
+export async function markNotificationReadAction(
+  ...args: Parameters<typeof markNotificationReadActionImpl>
+): Promise<Awaited<ReturnType<typeof markNotificationReadActionImpl>>> {
+  return localiseFormState(await markNotificationReadActionImpl(...args));
+}
+
+export async function markAllNotificationsReadAction(
+  ...args: Parameters<typeof markAllNotificationsReadActionImpl>
+): Promise<Awaited<ReturnType<typeof markAllNotificationsReadActionImpl>>> {
+  return localiseFormState(await markAllNotificationsReadActionImpl(...args));
 }

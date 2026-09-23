@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireProfessional } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { emirateLabel } from '@/lib/i18n/labels';
 import { listFirmLawyers } from '@/server/services/firm-service';
-import { EMIRATE_LABEL } from '@/lib/constants';
+import { MIN_PASSWORD_LENGTH } from '@/lib/constants';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/Avatar';
 import { VerificationStatusPill } from '@/components/VerificationBadge';
@@ -25,19 +27,16 @@ export const metadata: Metadata = { title: 'Lawyers registered' };
  * installation cannot send email.
  */
 export default async function FirmLawyersPage() {
-  const user = await requireProfessional();
+  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
 
   if (user.accountType !== 'FIRM') {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Lawyers registered</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.firmLawyers}</h1>
         <Card>
-          <p className="text-sm text-slate-700">
-            This page belongs to legal-firm accounts. If you are a lawyer and want to join a firm,
-            check your invitations.
-          </p>
+          <p className="text-sm text-slate-700">{t.memberPro.firmLawyers.wrongAccountBody}</p>
           <Link href="/invitations" className={buttonClasses('secondary', 'md', 'mt-4')}>
-            My invitations
+            {t.memberPro.firmLawyers.myInvitations}
           </Link>
         </Card>
       </div>
@@ -48,59 +47,90 @@ export default async function FirmLawyersPage() {
 
   if (!firm) {
     return (
-      <Alert tone="error" title="Firm record missing">
-        Your firm registration details could not be loaded. Please add them under Legal details.
+      <Alert tone="error" title={t.memberPro.firm.recordTitle}>
+        {t.memberPro.firm.recordBody}
       </Alert>
     );
   }
 
+  const emergencyContact = lawyers.find((row) => row.isFirmEmergency);
+
   return (
     <div className="space-y-8">
       {lawyers.some((row) => row.isFirmEmergency) ? (
-        <Alert tone="info" title="Emergency contact designated">
-          Urgent requests that reach your firm are assigned directly to{' '}
-          {lawyers.find((row) => row.isFirmEmergency)?.user.profile?.fullName?.trim() ||
-            lawyers.find((row) => row.isFirmEmergency)?.user.email}
-          . You can change this under any lawyer below.
+        <Alert tone="info" title={t.memberPro.firmLawyers.emergencyContactTitle}>
+          {t.memberPro.firmLawyers.emergencyContactBody.replace(
+            '{name}',
+            emergencyContact?.user.profile?.fullName?.trim() || emergencyContact?.user.email || '',
+          )}
         </Alert>
       ) : null}
 
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Lawyers registered</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.firmLawyers}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          The professionals who may act for {firm.legalName}. Only a lawyer registered here can
-          review and accept a case submitted to the firm.
+          {t.memberPro.firmLawyers.intro.replace('{firm}', firm.legalName)}
         </p>
       </header>
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Create a lawyer account</h2>
+        <h2 className="font-semibold text-slate-900">{t.memberPro.firmLawyers.createTitle}</h2>
         <p className="mt-1 mb-4 max-w-2xl text-sm text-slate-600">
-          Use this when you are hiring and want the lawyer on your roster now. The account is created
-          active and affiliated to {firm.legalName} immediately, and can be listed in the public
-          directory straight away. You are given a password once to pass on.
+          {t.memberPro.firmLawyers.createBody.replace('{firm}', firm.legalName)}
         </p>
-        <CreateLawyerForm />
+        <CreateLawyerForm
+          labels={{
+            createdTitle: t.memberPro.firmForms.createdTitle,
+            notCreatedTitle: t.memberPro.firmForms.notCreatedTitle,
+            fullName: t.memberPro.firmForms.fullName,
+            emailAddress: t.memberPro.firmForms.emailAddress,
+            emailHint: t.memberPro.firmForms.emailHint,
+            tempPassword: t.memberPro.firmForms.tempPassword,
+            tempPasswordHint: t.memberPro.firmForms.tempPasswordHint.replace(
+              '{min}',
+              String(MIN_PASSWORD_LENGTH),
+            ),
+            phone: t.common.phone,
+            licenceNumber: t.memberPro.credentials.licenceNumber,
+            licensingAuthority: t.memberPro.credentials.licensingAuthority,
+            licenceExpires: t.memberPro.firmForms.licenceExpires,
+            yearsOfExperience: t.memberPro.credentials.yearsOfExperience,
+            whereAppearsTitle: t.memberPro.firmForms.whereAppearsTitle,
+            whereAppearsBefore: t.memberPro.firmForms.whereAppearsBefore,
+            lawyersAtThisFirm: t.memberPro.firm.lawyersAtThisFirm,
+            whereAppearsAfter: t.memberPro.firmForms.whereAppearsAfter,
+            creatingAccount: t.memberPro.firmForms.creatingAccount,
+            createLawyerAccount: t.memberPro.firmForms.createLawyerAccount,
+            createLawyerNote: t.memberPro.firmForms.createLawyerNote,
+          }}
+        />
       </Card>
 
       <Card>
         <details>
           <summary className="cursor-pointer text-sm font-semibold text-slate-900">
-            Or invite an existing lawyer by email
+            {t.memberPro.firmLawyers.inviteSummary}
           </summary>
           <p className="mt-2 mb-4 max-w-2xl text-sm text-slate-600">
-            Use this when the lawyer already has a Dubai Legal account. If they do, the invitation
-            appears in their dashboard to accept. If they do not, you are given a registration link
-            to send them, because this installation cannot send email itself.
+            {t.memberPro.firmLawyers.inviteBody}
           </p>
-          <InviteLawyerForm />
+          <InviteLawyerForm
+            labels={{
+              lawyerEmail: t.memberPro.firmForms.lawyerEmail,
+              inviting: t.memberPro.firmForms.inviting,
+              registerProfessional: t.memberPro.firmForms.registerProfessional,
+            }}
+          />
         </details>
       </Card>
 
       {invitations.length > 0 ? (
         <section>
           <h2 className="mb-3 font-semibold text-slate-900">
-            Pending invitations ({invitations.length})
+            {t.memberPro.firmLawyers.pendingInvitations.replace(
+              '{count}',
+              String(invitations.length),
+            )}
           </h2>
           <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
             {invitations.map((invitation) => (
@@ -108,14 +138,20 @@ export default async function FirmLawyersPage() {
                 <div>
                   <p className="text-sm font-medium text-slate-900">{invitation.email}</p>
                   <p className="text-xs text-slate-500">
-                    Invited {formatDateTime(invitation.createdAt)} by {invitation.invitedBy.email}
+                    {t.memberPro.firmLawyers.invitedBy
+                      .replace('{date}', formatDateTime(invitation.createdAt))
+                      .replace('{email}', invitation.invitedBy.email)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-slate-500">
-                    Share link: <span className="font-mono">/register?type=LAWYER&amp;invite=…</span>
+                    {t.memberPro.firmLawyers.shareLink}{' '}
+                    <span className="font-mono">/register?type=LAWYER&amp;invite=…</span>
                   </span>
-                  <RevokeInvitationButton invitationId={invitation.id} />
+                  <RevokeInvitationButton
+                    invitationId={invitation.id}
+                    labels={{ withdraw: t.memberPro.firmForms.withdraw }}
+                  />
                 </div>
               </li>
             ))}
@@ -124,17 +160,21 @@ export default async function FirmLawyersPage() {
       ) : null}
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Registered lawyers ({lawyers.length})</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {t.memberPro.firmLawyers.registeredLawyers.replace('{count}', String(lawyers.length))}
+        </h2>
         {lawyers.length === 0 ? (
           <EmptyState
-            title="No lawyers registered yet"
-            description="Until a lawyer joins, cases submitted to your firm will sit unaccepted, because a firm account cannot accept them itself."
+            title={t.memberPro.firm.noLawyersTitle}
+            description={t.memberPro.firmLawyers.noLawyersDescription}
           />
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2">
             {lawyers.map((lawyer) => {
               const name =
-                lawyer.user.profile?.fullName?.trim() || lawyer.user.email || 'Unnamed lawyer';
+                lawyer.user.profile?.fullName?.trim() ||
+                lawyer.user.email ||
+                t.memberPro.firmLawyers.unnamedLawyer;
               return (
                 <Card as="li" key={lawyer.id}>
                   <div className="flex items-start gap-3">
@@ -150,17 +190,19 @@ export default async function FirmLawyersPage() {
                         <VerificationStatusPill
                           accountType="LAWYER"
                           status={lawyer.user.verificationStatus}
+                          label={t.badges.LAWYER}
+                          statusLabel={t.verificationStatus[lawyer.user.verificationStatus]}
                         />
                       </div>
                       <p className="mt-0.5 text-xs text-slate-500">{lawyer.user.email}</p>
                       <p className="mt-0.5 text-xs text-slate-500">
                         {lawyer.createdByFirmId
-                          ? 'Account created by your firm'
-                          : 'Joined through an invitation'}
+                          ? t.memberPro.firmLawyers.createdByFirm
+                          : t.memberPro.firmLawyers.joinedByInvitation}
                       </p>
                       {lawyer.user.profile?.phone ? (
                         <p className="mt-0.5 text-xs text-slate-500">
-                          Phone {lawyer.user.profile.phone}
+                          {t.common.phone} {lawyer.user.profile.phone}
                         </p>
                       ) : null}
                     </div>
@@ -168,21 +210,31 @@ export default async function FirmLawyersPage() {
 
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
                     <div>
-                      <dt className="font-medium text-slate-700">Licence</dt>
+                      <dt className="font-medium text-slate-700">
+                        {t.memberPro.firmLawyers.licence}
+                      </dt>
                       <dd>{lawyer.licenseNumber}</dd>
                     </div>
                     <div>
-                      <dt className="font-medium text-slate-700">Authority</dt>
+                      <dt className="font-medium text-slate-700">
+                        {t.memberPro.firmLawyers.authority}
+                      </dt>
                       <dd>{lawyer.licensingAuthority}</dd>
                     </div>
                     <div>
-                      <dt className="font-medium text-slate-700">Valid until</dt>
+                      <dt className="font-medium text-slate-700">
+                        {t.memberPro.firmLawyers.validUntil}
+                      </dt>
                       <dd>
-                        {lawyer.licenseExpiresOn ? formatDate(lawyer.licenseExpiresOn) : 'Not stated'}
+                        {lawyer.licenseExpiresOn
+                          ? formatDate(lawyer.licenseExpiresOn)
+                          : t.memberPro.credentials.notStated}
                       </dd>
                     </div>
                     <div>
-                      <dt className="font-medium text-slate-700">Cases with the firm</dt>
+                      <dt className="font-medium text-slate-700">
+                        {t.memberPro.firmLawyers.casesWithFirm}
+                      </dt>
                       <dd>{lawyer._count.cases}</dd>
                     </div>
                   </dl>
@@ -193,15 +245,24 @@ export default async function FirmLawyersPage() {
                         href="/calendar"
                         className="text-xs font-medium text-brand-700 hover:underline"
                       >
-                        Calendar
+                        {t.items.calendar}
                       </Link>
                       <FirmEmergencyForm
                         lawyerProfileId={lawyer.id}
                         lawyerName={name}
                         active={lawyer.isFirmEmergency}
+                        labels={t.emergency.firm}
                       />
                     </div>
-                    <RemoveLawyerButton lawyerProfileId={lawyer.id} name={name} />
+                    <RemoveLawyerButton
+                      lawyerProfileId={lawyer.id}
+                      name={name}
+                      labels={{
+                        confirm: t.memberPro.firmForms.removeConfirm,
+                        removeFromFirm: t.memberPro.firmForms.removeFromFirm,
+                        removing: t.memberPro.firmForms.removing,
+                      }}
+                    />
                   </div>
                 </Card>
               );
@@ -210,10 +271,11 @@ export default async function FirmLawyersPage() {
         )}
       </section>
 
-      {EMIRATE_LABEL[firm.registeredEmirate ?? 'DUBAI'] ? (
+      {firm.registeredEmirate ?? 'DUBAI' ? (
         <p className="text-xs text-slate-500">
-          Firm registered in {EMIRATE_LABEL[firm.registeredEmirate ?? 'DUBAI']} · trade licence{' '}
-          {firm.tradeLicenseNumber}
+          {t.memberPro.firmLawyers.firmRegisteredIn
+            .replace('{emirate}', emirateLabel(t, firm.registeredEmirate ?? 'DUBAI'))
+            .replace('{number}', firm.tradeLicenseNumber)}
         </p>
       ) : null}
     </div>

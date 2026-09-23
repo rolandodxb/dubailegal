@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react';
 
+// `Field` needs the reader's language for its "(optional)" suffix, which a
+// component shared by server and client code cannot look up itself — it lives in
+// its own client module and is re-exported here so every existing import works.
+export { Field, OptionalLabelProvider, useOptionalLabel } from './Field';
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Presentational primitives. Server-safe: no hooks, no event handlers, so they
    can be used from Server Components without pulling a client boundary in.
@@ -105,42 +110,6 @@ export function SectionTitle({
 
 // ── Form controls ────────────────────────────────────────────────────────────
 
-export function Field({
-  label,
-  htmlFor,
-  hint,
-  error,
-  required,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  hint?: ReactNode;
-  error?: string;
-  required?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-800">
-        {label}
-        {required ? (
-          <span className="ml-1 text-brand-700" aria-hidden="true">
-            *
-          </span>
-        ) : null}
-        {!required ? <span className="ml-1 text-xs font-normal text-slate-500">(optional)</span> : null}
-      </label>
-      {children}
-      {hint && !error ? <p className="text-xs text-slate-500">{hint}</p> : null}
-      {error ? (
-        <p className="text-xs font-medium text-red-600" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
 const CONTROL_BASE =
   'w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-500';

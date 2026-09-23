@@ -4,7 +4,8 @@ import {
   summariseReviews,
   type ReviewSummary,
 } from '@/server/services/review-service';
-import { LEGAL_AREA_LABEL } from '@/lib/constants';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
 import { formatDate } from '@/lib/format';
 import { Avatar } from '@/components/Avatar';
 import { VerificationBadge } from '@/components/VerificationBadge';
@@ -50,13 +51,15 @@ export async function ReviewSection({
   reviewsEnabled: boolean;
   reviewableCases: ReviewableCaseOption[];
 }) {
+  const { t } = await getI18n();
+  const labels = t.memberCases.reviewSection;
   const { reviews, summary } = await getReviewData(targetUserId);
   const canWrite = reviewsEnabled && isSignedIn && !isSelf && reviewableCases.length > 0;
 
   return (
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-semibold text-slate-900">Reviews</h2>
+        <h2 className="font-semibold text-slate-900">{labels.title}</h2>
         {summary.count > 0 && summary.average !== null ? (
           <span className="inline-flex items-center gap-2">
             <StarRating value={summary.average} size={15} />
@@ -64,7 +67,10 @@ export async function ReviewSection({
               {summary.average.toFixed(1)}
             </span>
             <span className="text-xs text-slate-500">
-              ({summary.count} review{summary.count === 1 ? '' : 's'})
+              {(summary.count === 1 ? labels.count : labels.countPlural).replace(
+                '{count}',
+                String(summary.count),
+              )}
             </span>
           </span>
         ) : null}
@@ -80,24 +86,23 @@ export async function ReviewSection({
       <div className={summary.count > 0 ? 'mt-5' : 'mt-4'}>
         {!reviewsEnabled ? (
           <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Reviews are currently switched off by the administrators of this installation.
+            {labels.switchedOff}
           </p>
         ) : isSelf ? (
           <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            This is your own profile, so you cannot review yourself.
+            {labels.selfProfile}
           </p>
         ) : !isSignedIn ? (
           <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
             <p className="text-sm text-brand-900">
-              Sign in to leave a review of {targetName}. Reviews can only be written by a client
-              whose case this professional accepted.
+              {labels.signInToReview.replace('{name}', targetName)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link href="/login" className={buttonClasses('primary', 'sm')}>
-                Sign in
+                {t.nav.signIn}
               </Link>
               <Link href="/register" className={buttonClasses('secondary', 'sm')}>
-                Create an account
+                {t.nav.createAccount}
               </Link>
             </div>
           </div>
@@ -109,25 +114,20 @@ export async function ReviewSection({
               </span>
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">
-                  Write a review of {targetName}
+                  {labels.writeReviewOf.replace('{name}', targetName)}
                 </h3>
-                <p className="mt-0.5 text-xs text-slate-600">
-                  Choose a case you had with them and give it a rating from one to five stars.
-                </p>
+                <p className="mt-0.5 text-xs text-slate-600">{labels.chooseCase}</p>
               </div>
             </div>
-            <ReviewForm cases={reviewableCases} />
+            <ReviewForm cases={reviewableCases} labels={t.memberCases.reviewForm} />
           </div>
         ) : (
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h3 className="text-sm font-semibold text-slate-900">You cannot review yet</h3>
+            <h3 className="text-sm font-semibold text-slate-900">{labels.cannotYet}</h3>
             <p className="mt-1 text-sm text-slate-600">
-              A review can only be written against a case this professional accepted, and each case
-              can be reviewed once. You have no unreviewed accepted case with {targetName} yet.
+              {labels.cannotYetBody.replace('{name}', targetName)}
             </p>
-            <p className="mt-2 text-xs text-slate-500">
-              Once they accept a case of yours, the review form appears here.
-            </p>
+            <p className="mt-2 text-xs text-slate-500">{labels.cannotYetTail}</p>
           </div>
         )}
       </div>
@@ -135,12 +135,13 @@ export async function ReviewSection({
       {/* ── What others said ───────────────────────────────────────────── */}
       {reviews.length === 0 ? (
         <p className="mt-5 border-t border-slate-100 pt-5 text-sm text-slate-600">
-          No reviews yet for {targetName}.
+          {labels.noReviewsFor.replace('{name}', targetName)}
         </p>
       ) : (
         <ul className="mt-5 divide-y divide-slate-100 border-t border-slate-100">
           {reviews.map((review) => {
-            const authorName = review.author.profile?.fullName?.trim() || 'A Dubai Legal member';
+            const authorName =
+              review.author.profile?.fullName?.trim() || labels.member;
             return (
               <li key={review.id} className="py-5">
                 <div className="flex items-start gap-3">
@@ -154,7 +155,11 @@ export async function ReviewSection({
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-medium text-slate-900">{authorName}</span>
                       {review.author.verificationStatus === 'APPROVED' ? (
-                        <VerificationBadge accountType={review.author.accountType} size="sm" />
+                        <VerificationBadge
+                          accountType={review.author.accountType}
+                          size="sm"
+                          label={t.badges[review.author.accountType]}
+                        />
                       ) : null}
                       <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
                     </div>
@@ -172,8 +177,9 @@ export async function ReviewSection({
                     <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{review.body}</p>
 
                     <p className="mt-2 text-xs text-slate-500">
-                      About case {review.case.reference} ·{' '}
-                      {LEGAL_AREA_LABEL[review.case.caseType] ?? review.case.caseType}
+                      {labels.aboutCase
+                        .replace('{reference}', review.case.reference)
+                        .replace('{area}', legalAreaLabel(t, review.case.caseType))}
                     </p>
                   </div>
                 </div>

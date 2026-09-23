@@ -152,7 +152,7 @@ async function main(): Promise<void> {
         password: 'HiredLawyer2026!',
         phone: '+971 50 777 8888',
         licenseNumber: `HIRE-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2031-06-30',
         yearsOfExperience: '5',
       },
@@ -271,7 +271,7 @@ async function main(): Promise<void> {
       independent.userId,
       {
         licenseNumber: `IND-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2031-01-01',
         yearsOfExperience: '9',
       },
@@ -339,7 +339,7 @@ async function main(): Promise<void> {
         email: newLawyerEmail,
         password: 'Another2026Pass!',
         licenseNumber: `DUP-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
       },
       meta,
     );
@@ -374,7 +374,7 @@ async function main(): Promise<void> {
       soloLawyer.userId,
       {
         licenseNumber: `SOLO-${runId}`,
-        licensingAuthority: 'Dubai Legal Affairs Department',
+        licensingAuthority: 'Legal Dash Affairs Department',
         licenseExpiresOn: '2031-01-01',
         yearsOfExperience: '4',
       },

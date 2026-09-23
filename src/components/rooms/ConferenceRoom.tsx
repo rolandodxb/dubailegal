@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatUaeDateTime } from '@/lib/time';
+import { memberCasesEn, type MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 import { CallRecorder } from './CallRecorder';
 import { Icon } from '@/components/icons';
@@ -69,9 +70,16 @@ export function ConferenceRoom({
    * setting a variable rather than by rebuilding the client.
    */
   iceServers?: RTCIceServer[];
-  /** The words this room shows, in the reader's language. */
-  labels: { you: string; recording: string; recordingNow: string };
+  /**
+   * The words this room shows, in the reader's language. The room's own words
+   * fall back to the English dictionary so a caller that has not been converted
+   * yet still renders — the public emergency room passes only the shared three.
+   */
+  labels: { you: string; recording: string; recordingNow: string } &
+    Partial<MemberCasesDict['conference']> & { recorder?: MemberCasesDict['recorder'] };
 }) {
+  const words: MemberCasesDict['conference'] = { ...memberCasesEn.conference, ...labels };
+  const recorderWords = labels.recorder ?? memberCasesEn.recorder;
   const [joined, setJoined] = useState(false);
   /** Set once the camera is live, so the recorder can attach to it. */
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
@@ -172,9 +180,7 @@ export function ConferenceRoom({
       peer.onconnectionstatechange = () => {
         if (peer.connectionState === 'connected') setConnectionState('live');
         if (peer.connectionState === 'failed') {
-          setError(
-            'The call could not be established on this network. A direct connection needs both sides to allow it; a relay (TURN) server is required on restrictive networks.',
-          );
+          setError(words.networkError);
           setConnectionState('ended');
         }
         if (peer.connectionState === 'disconnected' || peer.connectionState === 'closed') {
@@ -293,11 +299,7 @@ export function ConferenceRoom({
     setError(null);
 
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setError(
-        'This page cannot use the camera or microphone because it was opened over an insecure ' +
-          'address. Browsers only allow them over https:// or on localhost. Open the site at its ' +
-          'https:// address — the one that names this machine — and the call will work.',
-      );
+      setError(words.insecureError);
       setConnectionState('idle');
       return;
     }
@@ -340,10 +342,10 @@ export function ConferenceRoom({
       const name = mediaError instanceof Error ? mediaError.name : '';
       setError(
         name === 'NotAllowedError'
-          ? 'The browser blocked access to your camera and microphone. Allow them for this site, then try again.'
+          ? words.blockedError
           : name === 'NotFoundError'
-            ? 'No camera or microphone was found on this device. You can still follow the case in the chat.'
-            : 'Your camera and microphone could not be started.',
+            ? words.notFoundError
+            : words.startFailedError,
       );
       setConnectionState('idle');
     }
@@ -414,16 +416,14 @@ export function ConferenceRoom({
 
   return (
     <div className="space-y-4">
-      {context ? <Alert tone="warning" title="Urgent call">{context}</Alert> : null}
+      {context ? <Alert tone="warning" title={words.urgentCall}>{context}</Alert> : null}
 
       {mediaBlockedByAddress && !joined ? (
-        <Alert tone="warning" title="The camera needs a secure address">
-          This page was opened over http://, and browsers only allow the camera and microphone over
-          https:// or on localhost. Open the same room at the https:// address for this machine —
-          the certificate warning is expected once, and after accepting it the call works normally.
+        <Alert tone="warning" title={words.secureAddressTitle}>
+          {words.secureAddressBody}
         </Alert>
       ) : null}
-      {error ? <Alert tone="error" title="The call could not start">{error}</Alert> : null}
+      {error ? <Alert tone="error" title={words.callCouldNotStart}>{error}</Alert> : null}
 
       <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
         {/* The other party, filling the frame. */}
@@ -439,19 +439,21 @@ export function ConferenceRoom({
             <Icon name="video" size={28} className="text-slate-500" />
             <p className="text-sm font-medium text-slate-200">
               {connectionState === 'connecting'
-                ? `Connecting to ${otherPartyName}…`
+                ? words.connectingTo.replace('{name}', otherPartyName)
                 : connectionState === 'ended'
-                  ? 'The call has ended.'
+                  ? words.callEnded
                   : othersPresent > 0
                     ? // Being in the room is not the same as being connected, and the
                       // difference matters: this used to read as though the call were up
                       // while nothing was being negotiated.
-                      `${otherPartyName} is in the room — join the call to see them.`
-                    : 'Nobody else is in the room yet.'}
+                      words.inRoomJoin.replace('{name}', otherPartyName)
+                    : words.nobodyElse}
             </p>
             <p className="text-xs text-slate-400">
-              {role === 'CLIENT' ? 'Your professional' : 'Your client'} can join from the same
-              meeting link.
+              {words.canJoin.replace(
+                '{who}',
+                role === 'CLIENT' ? words.yourProfessional : words.yourClient,
+              )}
             </p>
           </div>
         ) : null}
@@ -468,19 +470,19 @@ export function ConferenceRoom({
         {!joined ? (
           <div className="absolute inset-x-0 bottom-0 flex justify-center pb-4">
             <button type="button" onClick={() => void join()} className={buttonClasses('primary', 'md')}>
-              Join the call
+              {words.joinCall}
             </button>
           </div>
         ) : (
           <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 pb-4">
             <button type="button" onClick={toggleMute} className={buttonClasses('secondary', 'sm')}>
-              {muted ? 'Unmute' : 'Mute'}
+              {muted ? words.unmute : words.mute}
             </button>
             <button type="button" onClick={toggleCamera} className={buttonClasses('secondary', 'sm')}>
-              {cameraOff ? 'Camera on' : 'Camera off'}
+              {cameraOff ? words.cameraOn : words.cameraOff}
             </button>
             <button type="button" onClick={() => void leave()} className={buttonClasses('danger', 'sm')}>
-              Leave
+              {words.leave}
             </button>
           </div>
         )}
@@ -495,37 +497,36 @@ export function ConferenceRoom({
         active={joined}
         localLabel={labels.you}
         remoteLabel={otherPartyName}
+        labels={recorderWords}
       />
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Meeting details</h2>
+        <h2 className="font-semibold text-slate-900">{words.meetingDetails}</h2>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-slate-600">With</dt>
+            <dt className="text-slate-600">{words.with}</dt>
             <dd className="font-medium text-slate-900">{otherPartyName}</dd>
           </div>
           {startsAt ? (
             <div>
-              <dt className="text-slate-600">Scheduled</dt>
+              <dt className="text-slate-600">{words.scheduled}</dt>
               <dd className="font-medium text-slate-900">{formatUaeDateTime(new Date(startsAt))}</dd>
             </div>
           ) : null}
           <div>
-            <dt className="text-slate-600">Room code</dt>
+            <dt className="text-slate-600">{words.roomCode}</dt>
             <dd className="font-mono font-medium text-slate-900">{roomCode}</dd>
           </div>
           <div>
-            <dt className="text-slate-600">In the room now</dt>
+            <dt className="text-slate-600">{words.inRoomNow}</dt>
             <dd className="font-medium text-slate-900">
-              {othersPresent > 0 ? `${otherParticipantsLabel(othersPresent)}` : 'Only you'}
+              {othersPresent > 0 ? otherParticipantsLabel(othersPresent, words) : words.onlyYou}
             </dd>
           </div>
         </dl>
 
         <p className="mt-4 border-t border-slate-100 pt-4 text-xs text-slate-500">
-          The call is made directly between the two of you; the video does not pass through Dubai
-          Legal. On a restrictive network a direct connection may not be possible without a relay
-          server.
+          {words.directNote}
           {providerUrl ? (
             <>
               {' '}
@@ -535,9 +536,9 @@ export function ConferenceRoom({
                 rel="noopener noreferrer"
                 className="font-medium text-brand-700 hover:underline"
               >
-                Open the backup video room
-              </a>{' '}
-              if this one will not connect.
+                {words.openBackupRoom}
+              </a>
+              {words.ifNoConnect}
             </>
           ) : null}
         </p>
@@ -546,8 +547,8 @@ export function ConferenceRoom({
   );
 }
 
-function otherParticipantsLabel(count: number): string {
-  return count === 1 ? '1 other person' : `${count} other people`;
+function otherParticipantsLabel(count: number, words: MemberCasesDict['conference']): string {
+  return count === 1 ? words.otherPersonOne : words.otherPeople.replace('{count}', String(count));
 }
 
 /** The signalling endpoint, carrying the guest token when there is one. */

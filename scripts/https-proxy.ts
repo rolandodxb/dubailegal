@@ -40,7 +40,7 @@ for (const file of [CERT, KEY]) {
         `  Create a certificate that names this machine's address:\n\n` +
         `    mkdir -p var/tls && openssl req -x509 -newkey rsa:2048 -nodes -days 825 \\\n` +
         `      -keyout var/tls/key.pem -out var/tls/cert.pem \\\n` +
-        `      -subj "/CN=Dubai Legal (local)" \\\n` +
+        `      -subj "/CN=Legal Dash (local)" \\\n` +
         `      -addext "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:<this machine>"\n`,
     );
     process.exit(1);

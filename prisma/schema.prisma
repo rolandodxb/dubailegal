@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Dubai Legal — data model
+// Legal Dash — data model
 //
 // Principles enforced here, not just in the UI:
 //  · A "verified" badge can only exist if a named human reviewer recorded a
@@ -1635,12 +1635,12 @@ model BlogCommentVote {
 
 /// Which letterhead a professional's receipts carry.
 enum ReceiptLayout {
-  /// The Dubai Legal layout, with the platform mark. What every account starts
+  /// The Legal Dash layout, with the platform mark. What every account starts
   /// with, and what an account without a template of its own uses.
   STANDARD
   /// The professional's own letterhead: their name, their mark, their colour.
   /// The platform mark stays on the receipt, at the foot, because a receipt is
-  /// issued through Dubai Legal.
+  /// issued through Legal Dash.
   CUSTOM
 }
 

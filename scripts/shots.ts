@@ -5,6 +5,9 @@
  *   npm run shots                    every page, three widths
  *   npm run shots -- receipt room     only pages whose name matches
  *   npm run shots -- --keep           leave the fixture accounts behind
+ *   SHOT_LOCALE=es npm run shots      the same pages, in Spanish
+ *   npm run shots -- --audit          do not screenshot: report English left on
+ *                                     a non-English render, page by page
  *
  * It builds a throwaway installation's worth of content — a verified lawyer and
  * firm, a client with a case, a booked meeting, a paid fee with its receipt, an
@@ -14,6 +17,11 @@
  * The HTML is saved with a <base> pointing at the running app, so the stylesheet,
  * the mark and the fonts all load exactly as they would in a browser. Output goes
  * to `var/shots/`.
+ *
+ * `--audit` reuses all of that — the same accounts, the same real pages — but
+ * reads the server-rendered text instead of photographing it, and lists the
+ * English words still showing. A translation can then be finished by looking at
+ * what a reader would actually see rather than at what the source contains.
  *
  * This is a development tool. It is not part of the application, it is never
  * imported by it, and it refuses to run when NODE_ENV is production.
@@ -31,6 +39,33 @@ const run = promisify(execFile);
 const BASE_URL = process.env.APP_URL ?? 'http://localhost:3100';
 const OUT_DIR = path.resolve('var/shots');
 const CHROME = process.env.CHROME_PATH ?? 'google-chrome';
+
+/**
+ * The language to fetch the pages in. Empty means whatever the app defaults to,
+ * which is English — so an ordinary `npm run shots` is unchanged.
+ */
+const LOCALE = process.env.SHOT_LOCALE ?? '';
+
+/**
+ * English function words that Spanish does not use.
+ *
+ * The audit is a smoke alarm, not a proof-reader: it flags a line for a person to
+ * read, and a curly-quoted apostrophe or a word like "email" is not on the list
+ * because both languages use it. Anything genuinely shared between the two —
+ * "no", "van", "has" — is left off deliberately, because a false alarm costs more
+ * attention than a missed one when the list is this short.
+ */
+const ENGLISH_MARKERS = [
+  'the', 'and', 'your', 'with', 'from', 'this', 'that', 'these', 'those',
+  'are', 'was', 'were', 'will', 'would', 'should', 'could', 'been', 'being',
+  'they', 'their', 'them', 'its', "it's", 'our', 'you', 'not', 'but', 'for',
+  'please', 'within', 'without', 'about', 'before', 'after', 'while', 'when',
+  'which', 'what', 'where', 'who', 'how', 'any', 'more', 'most', 'other',
+  'some', 'such', 'only', 'also', 'than', 'then', 'there', 'here', 'into',
+  'over', 'under', 'between', 'each', 'every', 'still', 'just', 'must',
+  'cannot', "don't", "doesn't", "isn't", 'nothing', 'something', 'everything',
+  'someone', 'anyone', 'everyone', 'because', 'however', 'therefore', 'yet',
+];
 
 /** A phone, a tablet and a laptop. */
 const WIDTHS = [
@@ -68,9 +103,14 @@ const SHOTS: Shot[] = [
   { name: 'directory', path: '/directory', as: 'guest' },
   { name: 'emergency-public', path: '/emergency', as: 'guest' },
   { name: 'how-verification-works', path: '/how-verification-works', as: 'guest' },
+  { name: 'enquiry', path: '/enquiry', as: 'guest' },
   { name: 'login', path: '/login', as: 'guest' },
   { name: 'register', path: '/register', as: 'guest' },
+  { name: 'forgot-password', path: '/forgot-password', as: 'guest' },
+  { name: 'not-found', path: '/nothing-here', as: 'guest' },
   { name: 'dashboard-client', path: '/dashboard', as: 'client' },
+  { name: 'cases-client', path: '/cases', as: 'client' },
+  { name: 'case-new', path: '/cases/new', as: 'client' },
   { name: 'case-chat', path: '', as: 'client', resolve: (ids) => `/cases/${ids.caseId}` },
   { name: 'payments-client', path: '/payments', as: 'client' },
   { name: 'receipt', path: '', as: 'client', resolve: (ids) => `/payments/${ids.receiptPaymentId}/receipt` },
@@ -82,8 +122,16 @@ const SHOTS: Shot[] = [
     resolve: (ids) => `/payments/${ids.paymentId}/pay?method=card`,
   },
   { name: 'rooms-client', path: '/rooms', as: 'client' },
+  { name: 'room', path: '', as: 'client', resolve: (ids) => `/rooms/${ids.roomCode}` },
   { name: 'support-client', path: '/support', as: 'client' },
   { name: 'support-ticket', path: '', as: 'client', resolve: (ids) => `/support?ticket=${ids.ticketId}` },
+  { name: 'notifications', path: '/notifications', as: 'client' },
+  { name: 'profile-client', path: '/profile', as: 'client' },
+  { name: 'account-client', path: '/account', as: 'client' },
+  { name: 'enquiries-client', path: '/enquiries', as: 'client' },
+  { name: 'inquiries-client', path: '/inquiries', as: 'client' },
+  { name: 'invitations-client', path: '/invitations', as: 'client' },
+  { name: 'verification-client', path: '/verification', as: 'client' },
   { name: 'landing-community', path: '/?tab=community', as: 'guest' },
   {
     name: 'landing-community-joined',
@@ -93,6 +141,23 @@ const SHOTS: Shot[] = [
   { name: 'community', path: '/blog', as: 'client' },
   { name: 'community-board', path: '/blog?topic=LABOUR_EMPLOYMENT', as: 'guest' },
   { name: 'community-post', path: '', as: 'client', resolve: (ids) => `/blog/${ids.postId}` },
+  { name: 'profile-page', path: '', as: 'guest', resolve: (ids) => `/directory/${ids.listingId}` },
+  { name: 'profile-about', path: '', as: 'guest', resolve: (ids) => `/directory/${ids.listingId}?tab=about` },
+  { name: 'calendar', path: '/calendar?view=day', as: 'lawyer' },
+  { name: 'calendar-week', path: '/calendar?view=week', as: 'lawyer' },
+  { name: 'portfolio', path: '/portfolio', as: 'lawyer' },
+  { name: 'receipt-template', path: '/receipt-template', as: 'lawyer' },
+  { name: 'listing-lawyer', path: '/listing', as: 'lawyer' },
+  { name: 'credentials-lawyer', path: '/credentials', as: 'lawyer' },
+  { name: 'verification-lawyer', path: '/verification', as: 'lawyer' },
+  { name: 'pending-lawyer', path: '/pending', as: 'lawyer' },
+  { name: 'clients-lawyer', path: '/clients', as: 'lawyer' },
+  { name: 'reviews-lawyer', path: '/reviews', as: 'lawyer' },
+  { name: 'rooms-lawyer', path: '/rooms', as: 'lawyer' },
+  { name: 'emergency-desk', path: '/emergency/desk', as: 'lawyer' },
+  { name: 'firm-lawyers', path: '/firm/lawyers', as: 'firm' },
+  { name: 'firm-oversight', path: '/firm/oversight', as: 'firm' },
+  { name: 'firm-calendar', path: '/calendar?view=day', as: 'firm' },
   { name: 'admin-community', path: '/admin/blog', as: 'admin' },
   {
     name: 'admin-community-review',
@@ -100,22 +165,58 @@ const SHOTS: Shot[] = [
     as: 'admin',
     resolve: (ids) => `/admin/blog/${ids.pendingPostId}`,
   },
-  { name: 'profile-page', path: '', as: 'guest', resolve: (ids) => `/directory/${ids.listingId}` },
-  { name: 'profile-about', path: '', as: 'guest', resolve: (ids) => `/directory/${ids.listingId}?tab=about` },
-  { name: 'calendar', path: '/calendar?view=day', as: 'lawyer' },
-  { name: 'portfolio', path: '/portfolio', as: 'lawyer' },
-  { name: 'receipt-template', path: '/receipt-template', as: 'lawyer' },
-  { name: 'rooms-lawyer', path: '/rooms', as: 'lawyer' },
-  { name: 'emergency-desk', path: '/emergency/desk', as: 'lawyer' },
-  { name: 'firm-lawyers', path: '/firm/lawyers', as: 'firm' },
-  { name: 'firm-calendar', path: '/calendar?view=day', as: 'firm' },
   { name: 'admin-verifications', path: '/admin/verifications', as: 'admin' },
+  { name: 'admin-cases', path: '/admin/cases', as: 'admin' },
+  { name: 'admin-users', path: '/admin/users', as: 'admin' },
+  { name: 'admin-payments', path: '/admin/payments', as: 'admin' },
+  { name: 'admin-meetings', path: '/admin/meetings', as: 'admin' },
+  { name: 'admin-enquiries', path: '/admin/enquiries', as: 'admin' },
+  { name: 'admin-emergency', path: '/admin/emergency', as: 'admin' },
+  { name: 'admin-reviews', path: '/admin/reviews', as: 'admin' },
+  { name: 'admin-recordings', path: '/admin/recordings', as: 'admin' },
   { name: 'admin-support', path: '/admin/support', as: 'admin' },
   { name: 'admin-support-ticket', path: '', as: 'admin', resolve: (ids) => `/admin/support/${ids.ticketId}` },
+  { name: 'admin-traffic', path: '/admin/traffic', as: 'admin' },
+  { name: 'admin-outbox', path: '/admin/outbox', as: 'admin' },
+  { name: 'admin-notifications', path: '/admin/notifications', as: 'admin' },
   { name: 'admin-settings', path: '/admin/settings', as: 'admin' },
   { name: 'admin-profile', path: '/profile', as: 'admin' },
   { name: 'admin-account', path: '/account', as: 'admin' },
 ];
+
+/** The readable text of a server-rendered page, with the markup and code removed. */
+function visibleText(html: string): string {
+  return html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/[ \t]+/g, ' ');
+}
+
+/**
+ * The lines of a page that still look English.
+ *
+ * Lines, not words, because a flagged line is what somebody has to go and read.
+ * The page's own data is in there too — a member's name, a case title, a message
+ * somebody wrote — so a hit is a question, never a verdict.
+ */
+function englishLines(html: string): string[] {
+  const found: string[] = [];
+  for (const raw of visibleText(html).split(/[.\n]|(?<=[a-z)])\s{2,}/)) {
+    const line = raw.trim();
+    if (line.length < 8) continue;
+    const words = line.toLowerCase().match(/[a-z][a-z'’]+/g) ?? [];
+    const hits = words.filter((word) => ENGLISH_MARKERS.includes(word));
+    if (hits.length === 0) continue;
+    found.push(`${line.slice(0, 150)}${line.length > 150 ? '…' : ''}`);
+  }
+  return found;
+}
+
 
 async function main(): Promise<void> {
   if (process.env.NODE_ENV === 'production') {
@@ -128,6 +229,13 @@ async function main(): Promise<void> {
   const tall = process.argv.includes('--tall');
   /** Leave the fixtures on the standard receipt layout instead of a custom one. */
   const standardLayout = process.argv.includes('--standard');
+  /** Read the rendered text instead of photographing it. */
+  const audit = process.argv.includes('--audit');
+
+  const cookieFor = (sessionToken: string | null): string =>
+    [sessionToken ? `dl_session=${sessionToken}` : '', LOCALE ? `dl_locale=${LOCALE}` : '']
+      .filter(Boolean)
+      .join('; ');
 
   const { prisma } = await import('../src/lib/db');
   const { createSession } = await import('../src/lib/auth');
@@ -219,7 +327,7 @@ async function main(): Promise<void> {
     lawyerId,
     {
       licenseNumber: 'DIFC-ADV-4412',
-      licensingAuthority: 'Dubai Legal Affairs Department',
+      licensingAuthority: 'Legal Dash Affairs Department',
       licenseExpiresOn: '2032-06-30',
       yearsOfExperience: '12',
       // A fee is paid by bank transfer, so the fixture practice banks somewhere.
@@ -507,16 +615,28 @@ async function main(): Promise<void> {
 
   console.info(`Taking ${chosen.length} page(s) at ${WIDTHS.length} widths…\n`);
 
+  /** Page name → the English lines still showing on it. */
+  const leftovers = new Map<string, string[]>();
+
   for (const shot of chosen) {
     const url = shot.resolve ? shot.resolve(ids) : shot.path;
     const sessionToken = tokenFor[shot.as];
+    const cookie = cookieFor(sessionToken);
     const response = await fetch(`${BASE_URL}${url}`, {
-      headers: sessionToken ? { cookie: `dl_session=${sessionToken}` } : {},
+      headers: cookie ? { cookie } : {},
       redirect: 'manual',
     });
     const body = await response.text();
     if (response.status !== 200) {
       console.error(`  ${shot.name}: the app answered ${response.status} for ${url}`);
+      continue;
+    }
+
+    if (audit) {
+      const lines = englishLines(body);
+      leftovers.set(shot.name, lines);
+      const verdict = lines.length === 0 ? 'clean' : `${lines.length} English line(s)`;
+      console.info(`  ${verdict.padEnd(22)} ${shot.name}`);
       continue;
     }
 
@@ -527,7 +647,7 @@ async function main(): Promise<void> {
     let inlined = body;
     for (const match of new Set(body.match(/\/api\/(?:documents|avatar)\/[A-Za-z0-9_-]+/g) ?? [])) {
       const image = await fetch(`${BASE_URL}${match}`, {
-        headers: sessionToken ? { cookie: `dl_session=${sessionToken}` } : {},
+        headers: cookie ? { cookie } : {},
       });
       if (!image.ok) continue;
       const type = image.headers.get('content-type') ?? 'image/png';
@@ -563,6 +683,18 @@ async function main(): Promise<void> {
       );
       console.info(`  ${path.relative(process.cwd(), out)}`);
     }
+  }
+
+  if (audit) {
+    const dirty = [...leftovers].filter(([, lines]) => lines.length > 0);
+    console.info(
+      `\n── English left on a ${LOCALE || 'default'} render: ${dirty.length} of ${leftovers.size} page(s) ${'─'.repeat(6)}`,
+    );
+    for (const [name, lines] of dirty) {
+      console.info(`\n  ${name}`);
+      for (const line of lines) console.info(`    · ${line}`);
+    }
+    if (dirty.length === 0) console.info('  Nothing. Every page read as the chosen language.');
   }
 
   } finally {

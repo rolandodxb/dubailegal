@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getSessionUser } from '@/lib/auth';
 import { getI18n } from '@/lib/i18n';
+import { accountTypeLabel, emirateLabel, legalAreaLabel } from '@/lib/i18n/labels';
 import {
   buildDirectoryUrl,
   hasActiveFilters,
@@ -16,11 +17,13 @@ import { DirectoryFilters } from '@/components/directory/DirectoryFilters';
 import { ListingCard } from '@/components/directory/ListingCard';
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 
-export const metadata: Metadata = {
-  title: 'Directory of lawyers and legal firms',
-  description:
-    'Browse lawyers and legal firms in the UAE, filtered by area of law and emirate. Verification badges show which profiles have had their documents reviewed.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: t.directory.title,
+    description: t.publicPages.directoryPage.metaDescription,
+  };
+}
 
 export default async function DirectoryPage({
   searchParams,
@@ -28,6 +31,7 @@ export default async function DirectoryPage({
   searchParams: Promise<RawSearchParams>;
 }) {
   const [{ t }, params] = await Promise.all([getI18n(), searchParams]);
+  const page = t.publicPages.directoryPage;
   const query = parseDirectoryParams(params);
 
   const [results, facets, viewer, availability] = await Promise.all([
@@ -43,10 +47,7 @@ export default async function DirectoryPage({
   if (!isEnabled(availability.settings, 'feature.directory')) {
     return (
       <div className="dl-container py-16">
-        <EmptyState
-          title={t.directory.switchedOff}
-          description="An administrator has temporarily disabled the public directory. It will be back once they switch it on again."
-        />
+        <EmptyState title={t.directory.switchedOff} description={page.switchedOffBody} />
       </div>
     );
   }
@@ -67,15 +68,11 @@ export default async function DirectoryPage({
   return (
     <div className="dl-container py-8 sm:py-12">
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Directory of lawyers and legal firms
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{t.directory.title}</h1>
         <p className="mt-2 max-w-3xl text-sm text-slate-600">
-          Every profile below belongs to a real registered member. Use the filters to narrow by area
-          of law and emirate. A coloured check means a reviewer approved that member&rsquo;s
-          documents; profiles without one are labelled clearly.{' '}
+          {page.introLead}
           <Link href="/how-verification-works" className="font-medium text-brand-700 hover:underline">
-            What the badges mean
+            {page.badgesMean}
           </Link>
         </p>
       </header>
@@ -85,17 +82,17 @@ export default async function DirectoryPage({
         <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:border-slate-300">
           <span className="inline-flex items-center gap-2">
             <Icon name="sliders" size={18} className="text-slate-500" />
-            Filter the directory
+            {t.directory.filterHeading}
             {activeFilterCount > 0 ? (
               <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white">
-                {activeFilterCount} active
+                {page.activeCount.replace('{count}', String(activeFilterCount))}
               </span>
             ) : null}
           </span>
           <span className="inline-flex items-center gap-3">
             {filtered ? (
               <Link href="/directory" className="text-xs font-medium text-brand-700 hover:underline">
-                Clear all
+                {page.clearAll}
               </Link>
             ) : null}
             <Icon name="chevronDown" size={18} className="text-slate-400" />
@@ -112,47 +109,45 @@ export default async function DirectoryPage({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-600">
             {facets.totalPublished === 0 ? (
-              'No published profiles yet'
+              page.noPublishedProfiles
             ) : (
               <>
                 <strong className="text-slate-900">{results.total}</strong>{' '}
-                {results.total === 1 ? 'profile' : 'profiles'}
-                {filtered ? ' match your filters' : ' in the directory'}
+                {results.total === 1 ? page.profileOne : page.profileOther}
+                {filtered ? ` ${t.directory.matching}` : ` ${t.directory.inDirectory}`}
               </>
             )}
           </p>
           {filtered ? (
             <Link href="/directory" className={buttonClasses('ghost', 'sm')}>
-              Clear filters
+              {page.clearFilters}
             </Link>
           ) : null}
         </div>
 
           {showUnverified && unverifiedInResults > 0 ? (
             <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-              {unverifiedInResults === 1 ? 'One profile in these results has' : `${unverifiedInResults} profiles in these results have`}{' '}
-              not had documents reviewed yet. Tick <em>{t.directory.verifiedOnly}</em> to hide them.
+              {unverifiedInResults === 1
+                ? page.unverifiedOne
+                : page.unverifiedMany.replace('{count}', String(unverifiedInResults))}{' '}
+              {page.unverifiedLead}
+              <em>{t.directory.verifiedOnly}</em>
+              {page.unverifiedTail}
             </p>
           ) : null}
 
           {results.rows.length === 0 ? (
             facets.totalPublished === 0 ? (
               <EmptyState
-                title="The directory is empty because nobody has published a profile yet"
-                description={
-                  <>
-                    Dubai Legal does not invent placeholder lawyers or firms. Profiles appear here
-                    once a lawyer or legal firm registers, completes their legal information and
-                    publishes their listing.
-                  </>
-                }
+                title={page.emptyTitle}
+                description={<>{page.emptyBody}</>}
                 action={
                   <div className="flex flex-wrap justify-center gap-3">
                     <Link href="/register?type=LAWYER" className={buttonClasses('primary', 'md')}>
-                      Register as a lawyer
+                      {page.registerAsLawyer}
                     </Link>
                     <Link href="/register?type=FIRM" className={buttonClasses('secondary', 'md')}>
-                      Register a legal firm
+                      {page.registerFirm}
                     </Link>
                   </div>
                 }
@@ -163,7 +158,7 @@ export default async function DirectoryPage({
                 description={t.directory.nothingMatchesBody}
                 action={
                   <Link href="/directory" className={buttonClasses('secondary', 'md')}>
-                    Clear all filters
+                    {page.clearAllFilters}
                   </Link>
                 }
               />
@@ -180,6 +175,22 @@ export default async function DirectoryPage({
                       experience: t.directory.experience,
                       years: t.directory.years,
                       noReviewsYet: t.directory.noReviewsYet,
+                      phone: t.common.phone,
+                      email: t.common.email,
+                      address: t.publicPages.listingCard.address,
+                      published: t.publicPages.listingCard.published,
+                      notPublished: t.publicPages.listingCard.notPublished,
+                      areasOfLaw: t.directory.areasOfLaw,
+                      moreCount: t.publicPages.listingCard.moreCount,
+                      notAcceptingNewClients: t.publicPages.listing.notAcceptingNewClients,
+                      viewProfile: t.directory.viewProfile,
+                      getInTouch: t.directory.getInTouch,
+                      notReviewed: t.publicPages.listingCard.notReviewed,
+                      badges: t.badges,
+                      verificationStatus: t.verificationStatus,
+                      accountType: (code) => accountTypeLabel(t, code),
+                      emirate: (code) => emirateLabel(t, code),
+                      legalArea: (code) => legalAreaLabel(t, code),
                     }}
                     key={listing.id}
                     listing={listing}
@@ -198,20 +209,22 @@ export default async function DirectoryPage({
                       href={buildDirectoryUrl(query, results.page - 1)}
                       className={buttonClasses('secondary', 'md')}
                     >
-                      ← Previous
+                      {page.previous}
                     </Link>
                   ) : (
                     <span />
                   )}
                   <span className="text-sm text-slate-600">
-                    Page {results.page} of {results.pageCount}
+                    {page.pageOf
+                      .replace('{page}', String(results.page))
+                      .replace('{pageCount}', String(results.pageCount))}
                   </span>
                   {results.page < results.pageCount ? (
                     <Link
                       href={buildDirectoryUrl(query, results.page + 1)}
                       className={buttonClasses('secondary', 'md')}
                     >
-                      Next →
+                      {page.next}
                     </Link>
                   ) : (
                     <span />
@@ -225,11 +238,13 @@ export default async function DirectoryPage({
             <Card className="mt-8">
               <h2 className="font-medium text-slate-900">{t.directory.areYouListed}</h2>
               <p className="mt-1 text-sm text-slate-600">
-                You are signed in as a {viewer.accountType === 'FIRM' ? 'legal firm' : 'lawyer'}.
-                Manage how your profile appears, or publish it if it is still a draft.
+                {page.signedInAs.replace(
+                  '{kind}',
+                  viewer.accountType === 'FIRM' ? page.kindFirm : page.kindLawyer,
+                )}
               </p>
               <Link href="/listing" className={buttonClasses('secondary', 'md', 'mt-3')}>
-                Manage my listing
+                {page.manageListing}
               </Link>
             </Card>
           ) : null}

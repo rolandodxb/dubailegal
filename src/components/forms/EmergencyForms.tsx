@@ -11,33 +11,58 @@ import {
   setFirmEmergencyLawyerAction,
 } from '@/app/actions/emergency-actions';
 import { initialFormState } from '@/lib/form-state';
-import { LEGAL_AREAS } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Checkbox, Field, Input, Select, Textarea } from '@/components/ui/primitives';
 
+/**
+ * The words come from the page that renders each form: this is a client
+ * component, so it cannot read the dictionary itself.
+ */
+
 /** Raises an urgent request. Deliberately blunt about what it does. */
-export function EmergencyRequestForm({ defaultPhone }: { defaultPhone: string }) {
+export function EmergencyRequestForm({
+  defaultPhone,
+  labels,
+}: {
+  defaultPhone: string;
+  labels: {
+    sentTitle: string;
+    failedTitle: string;
+    title: string;
+    titleHint: string;
+    areaOfLaw: string;
+    areaOptions: { value: string; label: string }[];
+    description: string;
+    descriptionHint: string;
+    phone: string;
+    phoneHint: string;
+    dangerTitle: string;
+    dangerBody: string;
+    pending: string;
+    submit: string;
+  };
+}) {
   const [state, formAction] = useActionState(raiseEmergencyAction, initialFormState);
 
   return (
     <form action={formAction} className="space-y-5" noValidate>
       {state?.ok && state.message ? (
-        <Alert tone="success" title="Your request is out">
+        <Alert tone="success" title={labels.sentTitle}>
           {state.message}
         </Alert>
       ) : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="The request was not sent">
+        <Alert tone="error" title={labels.failedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <Field
-        label="What has happened?"
+        label={labels.title}
         htmlFor="em-title"
         required
         error={state?.fieldErrors?.title}
-        hint="A few words — for example “Police questioning tonight”."
+        hint={labels.titleHint}
       >
         <Input
           id="em-title"
@@ -50,7 +75,12 @@ export function EmergencyRequestForm({ defaultPhone }: { defaultPhone: string })
         />
       </Field>
 
-      <Field label="Area of law" htmlFor="em-type" required error={state?.fieldErrors?.caseType}>
+      <Field
+        label={labels.areaOfLaw}
+        htmlFor="em-type"
+        required
+        error={state?.fieldErrors?.caseType}
+      >
         <Select
           id="em-type"
           name="caseType"
@@ -58,7 +88,7 @@ export function EmergencyRequestForm({ defaultPhone }: { defaultPhone: string })
           defaultValue={state?.values?.caseType ?? 'CRIMINAL_PENAL'}
           error={state?.fieldErrors?.caseType}
         >
-          {LEGAL_AREAS.map((area) => (
+          {labels.areaOptions.map((area) => (
             <option key={area.value} value={area.value}>
               {area.label}
             </option>
@@ -67,11 +97,11 @@ export function EmergencyRequestForm({ defaultPhone }: { defaultPhone: string })
       </Field>
 
       <Field
-        label="What do you need right now?"
+        label={labels.description}
         htmlFor="em-description"
         required
         error={state?.fieldErrors?.description}
-        hint="At least 30 characters. A professional reads this before calling you back."
+        hint={labels.descriptionHint}
       >
         <Textarea
           id="em-description"
@@ -86,11 +116,11 @@ export function EmergencyRequestForm({ defaultPhone }: { defaultPhone: string })
       </Field>
 
       <Field
-        label="Number to call you back on"
+        label={labels.phone}
         htmlFor="em-phone"
         required
         error={state?.fieldErrors?.contactPhone}
-        hint="This is shared with the professionals who take emergencies. It may differ from your profile number."
+        hint={labels.phoneHint}
       >
         <Input
           id="em-phone"
@@ -102,37 +132,45 @@ export function EmergencyRequestForm({ defaultPhone }: { defaultPhone: string })
         />
       </Field>
 
-      <Alert tone="warning" title="Before you send">
-        Your request goes to every professional who takes emergencies. It is not a substitute for
-        the police, an ambulance or emergency services — if somebody is in danger, call 999 first.
+      <Alert tone="warning" title={labels.dangerTitle}>
+        {labels.dangerBody}
       </Alert>
 
-      <SubmitButton size="lg" pendingLabel="Sending to every emergency lawyer…">
-        Send my urgent request
+      <SubmitButton size="lg" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
     </form>
   );
 }
 
 /** A professional takes an urgent request, which opens and assigns a case. */
-export function AcceptEmergencyForm({ requestId }: { requestId: string }) {
+export function AcceptEmergencyForm({
+  requestId,
+  labels,
+}: {
+  requestId: string;
+  labels: { pending: string; confirm: string; submit: string };
+}) {
   const [state, formAction] = useActionState(acceptEmergencyAction, initialFormState);
 
   return (
     <form action={formAction} className="space-y-2">
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
       <input type="hidden" name="requestId" value={requestId} />
-      <SubmitButton
-        pendingLabel="Taking it…"
-        confirm="Take this urgent request? A case will be opened and assigned to you."
-      >
-        Take this case
+      <SubmitButton pendingLabel={labels.pending} confirm={labels.confirm}>
+        {labels.submit}
       </SubmitButton>
     </form>
   );
 }
 
-export function CancelEmergencyForm({ requestId }: { requestId: string }) {
+export function CancelEmergencyForm({
+  requestId,
+  labels,
+}: {
+  requestId: string;
+  labels: { confirm: string; submit: string };
+}) {
   const [state, formAction] = useActionState(cancelEmergencyAction, initialFormState);
 
   return (
@@ -144,8 +182,8 @@ export function CancelEmergencyForm({ requestId }: { requestId: string }) {
         <p className="text-xs font-medium text-red-700">{state.message}</p>
       ) : null}
       <input type="hidden" name="requestId" value={requestId} />
-      <SubmitButton variant="ghost" size="sm" confirm="Withdraw your urgent request?" pendingLabel="…">
-        Withdraw
+      <SubmitButton variant="ghost" size="sm" confirm={labels.confirm} pendingLabel="…">
+        {labels.submit}
       </SubmitButton>
     </form>
   );
@@ -155,9 +193,17 @@ export function CancelEmergencyForm({ requestId }: { requestId: string }) {
 export function EmergencyAvailabilityForm({
   accepts,
   note,
+  labels,
 }: {
   accepts: boolean;
   note: string | null;
+  labels: {
+    available: string;
+    notAvailable: string;
+    pending: string;
+    stop: string;
+    start: string;
+  };
 }) {
   const [state, formAction] = useActionState(setEmergencyAvailabilityAction, initialFormState);
 
@@ -176,17 +222,27 @@ export function EmergencyAvailabilityForm({
               : 'bg-slate-100 text-slate-700 ring-slate-200'
           }`}
         >
-          {accepts ? 'Available for emergencies' : 'Not available for emergencies'}
+          {accepts ? labels.available : labels.notAvailable}
         </span>
-        <SubmitButton variant={accepts ? 'danger' : 'primary'} size="sm" pendingLabel="Saving…">
-          {accepts ? 'Stop taking emergencies' : 'Make me available'}
+        <SubmitButton
+          variant={accepts ? 'danger' : 'primary'}
+          size="sm"
+          pendingLabel={labels.pending}
+        >
+          {accepts ? labels.stop : labels.start}
         </SubmitButton>
       </div>
     </form>
   );
 }
 
-export function EmergencyNoteForm({ note }: { note: string | null }) {
+export function EmergencyNoteForm({
+  note,
+  labels,
+}: {
+  note: string | null;
+  labels: { label: string; hint: string; pending: string; submit: string };
+}) {
   const [state, formAction] = useActionState(setEmergencyAvailabilityAction, initialFormState);
 
   return (
@@ -195,15 +251,11 @@ export function EmergencyNoteForm({ note }: { note: string | null }) {
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
       <input type="hidden" name="accepts" value="true" />
-      <Field
-        label="What you cover, and when"
-        htmlFor="em-note"
-        hint="Shown with your availability, for example “Criminal matters, 24/7” or “Urgent injunctions, weekdays”."
-      >
+      <Field label={labels.label} htmlFor="em-note" hint={labels.hint}>
         <Input id="em-note" name="note" maxLength={160} defaultValue={note ?? ''} />
       </Field>
-      <SubmitButton variant="secondary" size="sm" pendingLabel="Saving…">
-        Save availability note
+      <SubmitButton variant="secondary" size="sm" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
     </form>
   );
@@ -215,11 +267,19 @@ export function FirmEmergencyForm({
   lawyerName,
   active,
   disabled,
+  labels,
 }: {
   lawyerProfileId: string;
   lawyerName: string;
   active: boolean;
   disabled?: boolean;
+  labels: {
+    pending: string;
+    removeConfirm: string;
+    makeConfirm: string;
+    active: string;
+    make: string;
+  };
 }) {
   const [state, formAction] = useActionState(setFirmEmergencyLawyerAction, initialFormState);
 
@@ -239,14 +299,14 @@ export function FirmEmergencyForm({
         variant={active ? 'primary' : 'secondary'}
         size="sm"
         disabled={disabled}
-        pendingLabel="Saving…"
+        pendingLabel={labels.pending}
         confirm={
           active
-            ? `Remove ${lawyerName} as your firm's emergency contact?`
-            : `Make ${lawyerName} your firm's emergency contact? Urgent requests will be assigned to them directly.`
+            ? labels.removeConfirm.replace('{name}', lawyerName)
+            : labels.makeConfirm.replace('{name}', lawyerName)
         }
       >
-        {active ? 'Emergency contact' : 'Make emergency contact'}
+        {active ? labels.active : labels.make}
       </SubmitButton>
     </form>
   );
@@ -262,9 +322,11 @@ export function FirmEmergencyForm({
 export function CancelGuestEmergencyForm({
   roomCode,
   token,
+  labels,
 }: {
   roomCode: string;
   token: string;
+  labels: { confirm: string; pending: string; submit: string; note: string };
 }) {
   const [state, formAction] = useActionState(cancelGuestEmergencyAction, initialFormState);
 
@@ -276,20 +338,24 @@ export function CancelGuestEmergencyForm({
       <input type="hidden" name="token" value={token} />
       <SubmitButton
         variant="danger"
-        confirm="Cancel this urgent request? Every lawyer who saw it is told it is over, and the room closes."
-        pendingLabel="Cancelling…"
+        confirm={labels.confirm}
+        pendingLabel={labels.pending}
       >
-        Cancel this urgent request
+        {labels.submit}
       </SubmitButton>
-      <p className="text-xs text-slate-500">
-        Pressed it by mistake, or no longer need a lawyer? This stops the request immediately.
-      </p>
+      <p className="text-xs text-slate-500">{labels.note}</p>
     </form>
   );
 }
 
 /** The professional who answered ends the call. */
-export function CloseEmergencyForm({ requestId }: { requestId: string }) {
+export function CloseEmergencyForm({
+  requestId,
+  labels,
+}: {
+  requestId: string;
+  labels: { confirm: string; pending: string; submit: string };
+}) {
   const [state, formAction] = useActionState(closeEmergencyAction, initialFormState);
 
   return (
@@ -304,10 +370,10 @@ export function CloseEmergencyForm({ requestId }: { requestId: string }) {
       <SubmitButton
         variant="secondary"
         size="sm"
-        confirm="End this call and mark the request as dealt with? The caller is told."
-        pendingLabel="Closing…"
+        confirm={labels.confirm}
+        pendingLabel={labels.pending}
       >
-        End the call
+        {labels.submit}
       </SubmitButton>
     </form>
   );

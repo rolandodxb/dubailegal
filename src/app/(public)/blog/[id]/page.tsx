@@ -2,21 +2,17 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { communityTopicHint, communityTopicLabel } from '@/lib/i18n/labels';
 import { getPost } from '@/server/services/blog-service';
-import { COMMUNITY_TOPIC_HINT, COMMUNITY_TOPIC_LABEL } from '@/lib/community';
-import { minutesLabel } from '@/lib/time';
 import { DeletePostButton } from '@/components/forms/BlogForms';
 import { CommunityPostCard } from '@/components/community/CommunityPostCard';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
-import { Icon } from '@/components/icons';
 
-export const metadata: Metadata = { title: 'Post' };
-
-const KIND_LABEL: Record<string, string> = {
-  RECOMMENDATION: 'Recommendation',
-  QUESTION: 'Question',
-  NOTE: 'Experience',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.publicPages.blogPost.metaTitle };
+}
 
 /**
  * One thread.
@@ -29,7 +25,8 @@ const KIND_LABEL: Record<string, string> = {
  * it is waiting, and to nobody else.
  */
 export default async function CommunityPostPage({ params }: { params: Promise<{ id: string }> }) {
-  const [user, { id }] = await Promise.all([getSessionUser(), params]);
+  const [{ t }, user, { id }] = await Promise.all([getI18n(), getSessionUser(), params]);
+  const labels = t.publicPages.blogPost;
 
   const post = await getPost(id, user?.id ?? null);
   if (!post) notFound();
@@ -41,32 +38,33 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
 
   return (
     <div className="dl-container max-w-3xl py-8">
-      <nav className="flex flex-wrap items-center gap-2 text-sm" aria-label="Breadcrumb">
+      <nav
+        className="flex flex-wrap items-center gap-2 text-sm"
+        aria-label={t.publicPages.shell.breadcrumb}
+      >
         <Link href="/blog" className="text-brand-700 hover:underline">
-          ← Community
+          {labels.backToCommunity}
         </Link>
         <span className="text-slate-300">/</span>
         <Link href={`/blog?topic=${post.topic}`} className="text-brand-700 hover:underline">
-          {COMMUNITY_TOPIC_LABEL[post.topic] ?? post.topic}
+          {communityTopicLabel(t, post.topic)}
         </Link>
       </nav>
 
       {awaitingReview ? (
-        <Alert tone="info" className="mt-4" title="Waiting for a moderator">
-          This post is not on the board yet. A moderator reads it first, mostly to check whether the
-          question has been asked and answered already — in which case they will point you at that
-          thread rather than leaving you with nothing.
-          {mine ? ' Only you and the moderators can see it.' : null}
+        <Alert tone="info" className="mt-4" title={t.publicPages.blog.waitingTitle}>
+          {labels.waitingBody}
+          {mine ? labels.mineOnly : null}
         </Alert>
       ) : null}
 
       {closedAsDuplicate && post.duplicateOf ? (
-        <Alert tone="warning" className="mt-4" title="This has been asked already">
-          A moderator closed this as a repeat of{' '}
+        <Alert tone="warning" className="mt-4" title={labels.duplicateTitle}>
+          {labels.duplicateLead}
           <Link href={`/blog/${post.duplicateOf.id}`} className="font-medium underline">
             {post.duplicateOf.title}
           </Link>
-          . The answers are there.
+          {labels.duplicateTail}
         </Alert>
       ) : null}
 
@@ -74,12 +72,9 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
         <Alert
           tone="warning"
           className="mt-4"
-          title={
-            post.status === 'HIDDEN' ? 'This post is hidden from the board' : 'This post was removed'
-          }
+          title={post.status === 'HIDDEN' ? labels.hiddenTitle : labels.removedTitle}
         >
-          {post.moderationNote ?? 'A moderator decided this post should not appear on the board.'}{' '}
-          {mine ? 'Only you and the moderators can see it.' : null}
+          {post.moderationNote ?? labels.removedBody} {mine ? labels.mineOnly : null}
         </Alert>
       ) : null}
 
@@ -119,14 +114,14 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
         <Card className="mt-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-wider text-slate-500">Recommended</p>
+              <p className="text-xs uppercase tracking-wider text-slate-500">{labels.recommended}</p>
               <p className="mt-0.5 font-medium text-slate-900">{post.listing.displayName}</p>
               {post.listing.headline ? (
                 <p className="text-xs text-slate-500">{post.listing.headline}</p>
               ) : null}
             </div>
             <Link href={`/directory/${post.listing.id}`} className={buttonClasses('secondary', 'md')}>
-              Open their profile
+              {labels.openProfile}
             </Link>
           </div>
         </Card>
@@ -136,19 +131,19 @@ export default async function CommunityPostPage({ params }: { params: Promise<{ 
       {!user ? (
         <Card className="mt-4">
           <p className="text-sm text-slate-700">
-            Anyone can read the community.{' '}
+            {labels.readOnlyLead}
             <Link
               href={`/login?next=${encodeURIComponent(`/blog/${post.id}`)}`}
               className="font-medium text-brand-700 hover:underline"
             >
-              Sign in
-            </Link>{' '}
-            to react, comment or ask your own question — it comes back to this thread.
+              {t.nav.signIn}
+            </Link>
+            {labels.readOnlyTail}
           </p>
         </Card>
       ) : null}
 
-      <p className="mt-8 text-xs text-slate-500">{COMMUNITY_TOPIC_HINT[post.topic] ?? ''}</p>
+      <p className="mt-8 text-xs text-slate-500">{communityTopicHint(t, post.topic)}</p>
     </div>
   );
 }

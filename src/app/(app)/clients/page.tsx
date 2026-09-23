@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireProfessional } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
 import { listClientsForLawyer } from '@/server/services/case-service';
-import { LEGAL_AREA_LABEL } from '@/lib/constants';
 import { formatDateTime } from '@/lib/format';
 import { Avatar } from '@/components/Avatar';
 import { CaseStatusChip } from '@/components/cases/CaseStatusChip';
@@ -16,26 +17,23 @@ export const metadata: Metadata = { title: 'Clients' };
  * here.
  */
 export default async function ClientsPage() {
-  const user = await requireProfessional();
+  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
   const clients = await listClientsForLawyer(user.id);
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Clients</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Everyone you have an accepted case with. Open a client to see their details and the cases
-          you share, or book a meeting from the calendar.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.clients}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.memberCore.clients.intro}</p>
       </header>
 
       {clients.length === 0 ? (
         <EmptyState
-          title="No clients yet"
-          description="A client appears here once you accept a case from them."
+          title={t.memberCore.clients.emptyTitle}
+          description={t.memberCore.clients.emptyBody}
           action={
             <Link href="/pending" className={buttonClasses('primary', 'md')}>
-              Cases pending review
+              {t.items.pending}
             </Link>
           }
         />
@@ -57,12 +55,18 @@ export default async function ClientsPage() {
                     <p className="text-xs text-slate-500">{entry.client.email}</p>
                     {entry.client.profile?.phone ? (
                       <p className="mt-0.5 text-xs text-slate-500">
-                        Phone {entry.client.profile.phone}
+                        {t.memberCore.clients.phone.replace(
+                          '{phone}',
+                          entry.client.profile.phone,
+                        )}
                       </p>
                     ) : null}
                     {entry.client.profile?.countryOfResidence ? (
                       <p className="mt-0.5 text-xs text-slate-500">
-                        Resident in {entry.client.profile.countryOfResidence}
+                        {t.memberCore.clients.residentIn.replace(
+                          '{country}',
+                          entry.client.profile.countryOfResidence,
+                        )}
                       </p>
                     ) : null}
                   </div>
@@ -70,13 +74,15 @@ export default async function ClientsPage() {
 
                 {entry.client.profile?.workDescription ? (
                   <p className="mt-3 text-xs text-slate-600">
-                    <span className="font-medium text-slate-700">Work: </span>
+                    <span className="font-medium text-slate-700">
+                      {t.memberCore.clients.work}{' '}
+                    </span>
                     {entry.client.profile.workDescription}
                   </p>
                 ) : null}
 
                 <h3 className="mt-4 text-xs font-medium text-slate-700">
-                  Cases ({entry.cases.length})
+                  {t.memberCore.clients.casesCount.replace('{count}', String(entry.cases.length))}
                 </h3>
                 <ul className="mt-2 divide-y divide-slate-100">
                   {entry.cases.map((item) => (
@@ -84,10 +90,8 @@ export default async function ClientsPage() {
                       <span className="min-w-0">
                         <span className="block truncate text-sm text-slate-800">{item.title}</span>
                         <span className="block text-xs text-slate-500">
-                          {item.reference} ·{' '}
-                          {LEGAL_AREA_LABEL[item.caseType as keyof typeof LEGAL_AREA_LABEL] ??
-                            item.caseType}{' '}
-                          · updated {formatDateTime(item.updatedAt)}
+                          {item.reference} · {legalAreaLabel(t, item.caseType)} ·{' '}
+                          {t.memberCore.clients.updated} {formatDateTime(item.updatedAt)}
                         </span>
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
@@ -96,7 +100,7 @@ export default async function ClientsPage() {
                           href={`/cases/${item.id}`}
                           className="text-xs font-medium text-brand-700 hover:underline"
                         >
-                          Open
+                          {t.common.open}
                         </Link>
                       </span>
                     </li>

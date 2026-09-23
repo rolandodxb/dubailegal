@@ -4,7 +4,6 @@ import { useActionState } from 'react';
 import type { DocumentKind } from '@prisma/client';
 import { deleteDocumentAction, uploadDocumentAction } from '@/app/actions/profile-actions';
 import { initialFormState } from '@/lib/form-state';
-import { DOCUMENT_KIND_HINT, DOCUMENT_KIND_LABEL } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input, Select } from '@/components/ui/primitives';
 
@@ -26,11 +25,37 @@ const STATUS_STYLES: Record<DocumentStatus, string> = {
   SUPERSEDED: 'bg-slate-100 text-slate-600 ring-slate-200',
 };
 
-const STATUS_LABELS: Record<DocumentStatus, string> = {
-  AWAITING_REVIEW: 'Waiting to be reviewed',
-  APPROVED: 'Accepted',
-  REJECTED: 'Not accepted',
-  SUPERSEDED: 'Replaced',
+/** The words the upload form shows, in the reader's language. */
+export type DocumentUploadFormLabels = {
+  notUploadedTitle: string;
+  type: string;
+  requiredMark: string;
+  optionalMark: string;
+  file: string;
+  fileHint: string;
+  documentNumber: string;
+  documentNumberHint: string;
+  expiryDate: string;
+  uploading: string;
+  upload: string;
+  /** The name of each document kind, keyed by the stored code. */
+  kindLabels: Record<string, string>;
+};
+
+/** The words the document list shows, in the reader's language. */
+export type DocumentListLabels = {
+  empty: string;
+  statusAwaitingReview: string;
+  statusApproved: string;
+  statusRejected: string;
+  statusSuperseded: string;
+  view: string;
+  reviewerSaid: string;
+  remove: string;
+  removeConfirm: string;
+  removing: string;
+  /** The name of each document kind, keyed by the stored code. */
+  kindLabels: Record<string, string>;
 };
 
 /**
@@ -41,9 +66,11 @@ const STATUS_LABELS: Record<DocumentStatus, string> = {
 export function DocumentUploadForm({
   kinds,
   requiredKinds,
+  labels,
 }: {
   kinds: DocumentKind[];
   requiredKinds: DocumentKind[];
+  labels: DocumentUploadFormLabels;
 }) {
   const [state, formAction] = useActionState(uploadDocumentAction, initialFormState);
 
@@ -51,28 +78,28 @@ export function DocumentUploadForm({
     <form action={formAction} className="space-y-5" noValidate>
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="The document was not uploaded">
+        <Alert tone="error" title={labels.notUploadedTitle}>
           {state.message}
         </Alert>
       ) : null}
 
-      <Field label="Document type" htmlFor="kind" required error={state?.fieldErrors?.kind}>
+      <Field label={labels.type} htmlFor="kind" required error={state?.fieldErrors?.kind}>
         <Select id="kind" name="kind" required error={state?.fieldErrors?.kind}>
           {kinds.map((kind) => (
             <option key={kind} value={kind}>
-              {DOCUMENT_KIND_LABEL[kind]}
-              {requiredKinds.includes(kind) ? ' — required' : ' — optional'}
+              {labels.kindLabels[kind]}
+              {requiredKinds.includes(kind) ? labels.requiredMark : labels.optionalMark}
             </option>
           ))}
         </Select>
       </Field>
 
       <Field
-        label="File"
+        label={labels.file}
         htmlFor="file"
         required
         error={state?.fieldErrors?.file}
-        hint="PDF, JPEG, PNG or WebP, up to 10 MB. The type is confirmed from the file's contents, not its name."
+        hint={labels.fileHint}
       >
         <input
           id="file"
@@ -86,32 +113,40 @@ export function DocumentUploadForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
-          label="Number on the document"
+          label={labels.documentNumber}
           htmlFor="documentNumber"
           error={state?.fieldErrors?.documentNumber}
-          hint="Optional. Helps the reviewer match it."
+          hint={labels.documentNumberHint}
         >
           <Input id="documentNumber" name="documentNumber" maxLength={80} />
         </Field>
 
-        <Field label="Expiry date" htmlFor="expiresOn" error={state?.fieldErrors?.expiresOn}>
+        <Field label={labels.expiryDate} htmlFor="expiresOn" error={state?.fieldErrors?.expiresOn}>
           <Input id="expiresOn" name="expiresOn" type="date" />
         </Field>
       </div>
 
-      <SubmitButton pendingLabel="Uploading…">Upload document</SubmitButton>
+      <SubmitButton pendingLabel={labels.uploading}>{labels.upload}</SubmitButton>
     </form>
   );
 }
 
-export function DocumentList({ documents }: { documents: DocumentRow[] }) {
+export function DocumentList({
+  documents,
+  labels,
+}: {
+  documents: DocumentRow[];
+  labels: DocumentListLabels;
+}) {
+  const statusLabels: Record<DocumentStatus, string> = {
+    AWAITING_REVIEW: labels.statusAwaitingReview,
+    APPROVED: labels.statusApproved,
+    REJECTED: labels.statusRejected,
+    SUPERSEDED: labels.statusSuperseded,
+  };
+
   if (documents.length === 0) {
-    return (
-      <p className="text-sm text-slate-600">
-        No documents uploaded yet. Every account must upload an Emirates ID before it can be
-        verified.
-      </p>
-    );
+    return <p className="text-sm text-slate-600">{labels.empty}</p>;
   }
 
   return (
@@ -120,16 +155,14 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
         <li key={document.id} className="py-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-900">
-                {DOCUMENT_KIND_LABEL[document.kind]}
-              </p>
+              <p className="text-sm font-medium text-slate-900">{labels.kindLabels[document.kind]}</p>
               <p className="truncate text-xs text-slate-500">{document.fileName}</p>
             </div>
             <div className="flex items-center gap-3">
               <span
                 className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_STYLES[document.status]}`}
               >
-                {STATUS_LABELS[document.status]}
+                {statusLabels[document.status]}
               </span>
               <a
                 href={`/api/documents/${document.id}`}
@@ -137,14 +170,14 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
                 rel="noopener noreferrer"
                 className="text-xs font-medium text-brand-700 hover:underline"
               >
-                View
+                {labels.view}
               </a>
-              <DeleteDocumentButton documentId={document.id} />
+              <DeleteDocumentButton documentId={document.id} labels={labels} />
             </div>
           </div>
           {document.status === 'REJECTED' && document.reviewNotes ? (
             <p className="mt-1.5 rounded-md bg-red-50 px-2 py-1 text-xs text-red-800">
-              Reviewer said: {document.reviewNotes}
+              {labels.reviewerSaid.replace('{notes}', document.reviewNotes)}
             </p>
           ) : null}
         </li>
@@ -153,7 +186,13 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
   );
 }
 
-function DeleteDocumentButton({ documentId }: { documentId: string }) {
+function DeleteDocumentButton({
+  documentId,
+  labels,
+}: {
+  documentId: string;
+  labels: DocumentListLabels;
+}) {
   const [state, formAction] = useActionState(deleteDocumentAction, initialFormState);
 
   return (
@@ -166,10 +205,10 @@ function DeleteDocumentButton({ documentId }: { documentId: string }) {
         variant="ghost"
         size="sm"
         className="text-red-700 hover:bg-red-50"
-        confirm="Remove this document? You will need to upload it again."
-        pendingLabel="Removing…"
+        confirm={labels.removeConfirm}
+        pendingLabel={labels.removing}
       >
-        Remove
+        {labels.remove}
       </SubmitButton>
     </form>
   );

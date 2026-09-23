@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { requestPaymentAction } from '@/app/actions/payment-actions';
 import { initialFormState } from '@/lib/form-state';
-import { PAYMENT_PURPOSES } from '@/lib/payment-purposes';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { Alert, Field, Input, Select, Textarea } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 
@@ -18,25 +18,33 @@ export function PaymentRequestForm({
   caseId,
   bankLines,
   bankReady,
+  labels,
+  purposeOptions,
+  legalDetailsLabel,
 }: {
   caseId: string;
   /** The account the money will go to, as it will appear on the request. */
   bankLines: { label: string; value: string }[];
   /** False when the professional has not filled their bank details in yet. */
   bankReady: boolean;
+  labels: MemberCasesDict['feeRequest'];
+  /** The fee reasons, already in the reader's language. */
+  purposeOptions: { value: string; label: string }[];
+  /** The link text to the page where bank details are filled in. */
+  legalDetailsLabel: string;
 }) {
   const [state, formAction] = useActionState(requestPaymentAction, initialFormState);
 
   return (
     <details className="rounded-lg border border-slate-200">
       <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-900">
-        Request a fee
+        {labels.summary}
       </summary>
 
       <form action={formAction} className="space-y-4 border-t border-slate-100 p-4" noValidate>
         {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
         {state && !state.ok && state.message ? (
-          <Alert tone="error" title="The request was not sent">
+          <Alert tone="error" title={labels.notSent}>
             {state.message}
           </Alert>
         ) : null}
@@ -48,7 +56,7 @@ export function PaymentRequestForm({
         {bankReady ? (
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Paid by bank transfer to
+              {labels.paidByBankTransferTo}
             </p>
             <dl className="mt-2 space-y-1 text-xs">
               {bankLines.map((line) => (
@@ -60,23 +68,22 @@ export function PaymentRequestForm({
             </dl>
           </div>
         ) : (
-          <Alert tone="warning" title="Add your bank details first">
-            A client cannot pay a fee with nowhere to send it. Add your account name, bank and IBAN on
-            the{' '}
+          <Alert tone="warning" title={labels.addBankFirst}>
+            {labels.addBankBodyBefore}
             <a href="/credentials" className="font-medium underline">
-              Legal details
-            </a>{' '}
-            page, then raise the fee.
+              {legalDetailsLabel}
+            </a>
+            {labels.addBankBodyAfter}
           </Alert>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
-            label="Amount (AED)"
+            label={labels.amountLabel}
             htmlFor="pay-amount"
             required
             error={state?.fieldErrors?.amountAed}
-            hint="Whole dirhams or fils, for example 750 or 750.50."
+            hint={labels.amountHint}
           >
             <Input
               id="pay-amount"
@@ -91,7 +98,12 @@ export function PaymentRequestForm({
             />
           </Field>
 
-          <Field label="What for" htmlFor="pay-purpose" required error={state?.fieldErrors?.purpose}>
+          <Field
+            label={labels.whatFor}
+            htmlFor="pay-purpose"
+            required
+            error={state?.fieldErrors?.purpose}
+          >
             <Select
               id="pay-purpose"
               name="purpose"
@@ -99,7 +111,7 @@ export function PaymentRequestForm({
               defaultValue={state?.values?.purpose ?? 'CONSULTATION'}
               error={state?.fieldErrors?.purpose}
             >
-              {PAYMENT_PURPOSES.map((option) => (
+              {purposeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -109,10 +121,10 @@ export function PaymentRequestForm({
         </div>
 
         <Field
-          label="Details"
+          label={labels.details}
           htmlFor="pay-details"
           error={state?.fieldErrors?.details}
-          hint="What the fee covers, so the client knows what they are paying for."
+          hint={labels.detailsHint}
         >
           <Textarea
             id="pay-details"
@@ -124,13 +136,11 @@ export function PaymentRequestForm({
           />
         </Field>
 
-        <Alert tone="neutral">
-          This is a simulated payment. Dubai Legal has no payment provider connected, so no card is
-          charged and no money moves — the request records what is owed and the client records that
-          they paid.
-        </Alert>
+        <Alert tone="neutral">{labels.simulated}</Alert>
 
-        <SubmitButton pendingLabel="Sending…" disabled={!bankReady}>Send fee request</SubmitButton>
+        <SubmitButton pendingLabel={labels.sending} disabled={!bankReady}>
+          {labels.sendRequest}
+        </SubmitButton>
       </form>
     </details>
   );

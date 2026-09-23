@@ -3,10 +3,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { requireActiveUser } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { paymentPurposeLabel } from '@/lib/i18n/labels';
 import { getReceiptForViewer } from '@/server/services/payment-service';
 import { receiptPresentationForPayment } from '@/server/services/receipt-template-service';
-import { PAYMENT_PURPOSES } from '@/lib/payment-purposes';
-import { formatMoney, formatAed, maskCard } from '@/lib/payment-format';
+import { formatMoney, maskCard } from '@/lib/payment-format';
 import { formatUaeDateTime } from '@/lib/time';
 import { ReceiptActions } from '@/components/forms/ReceiptActions';
 import { BrandLockup, LogoMark } from '@/components/layout/Logo';
@@ -14,17 +15,13 @@ import { Alert, Card, DescriptionList } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'Receipt' };
 
-const PURPOSE_LABEL: Map<string, string> = new Map(
-  PAYMENT_PURPOSES.map((entry) => [entry.value, entry.label]),
-);
-
 /**
  * The receipt for a paid fee.
  *
  * It carries exactly what a receipt should: what was paid, for what, to whom,
  * when, with what card, and the case it belongs to. The letterhead is the
- * professional's choice — the standard Dubai Legal layout, or their own — and the
- * Dubai Legal mark is on the document either way, because a receipt issued
+ * professional's choice — the standard Legal Dash layout, or their own — and the
+ * Legal Dash mark is on the document either way, because a receipt issued
  * through this platform should say so.
  *
  * It is printable, so the browser's "Save as PDF" turns it into a file, after
@@ -37,7 +34,8 @@ export default async function PaymentReceiptPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ paid?: string }>;
 }) {
-  const user = await requireActiveUser();
+  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
+  const labels = t.memberCases.receipt;
   const [{ id }, { paid }] = await Promise.all([params, searchParams]);
 
   const payment = await getReceiptForViewer(id, user.id);
@@ -47,30 +45,27 @@ export default async function PaymentReceiptPage({
   const presentation = await receiptPresentationForPayment(payment);
   const custom = presentation.mode === 'CUSTOM';
 
-  const receiptNumber = payment.receiptNumber ?? 'Not issued';
+  const receiptNumber = payment.receiptNumber ?? labels.notIssued;
   const isClient = legalCase.clientId === user.id;
   const accent = presentation.accentColor ?? '#132E4C';
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <nav className="text-sm print:hidden" aria-label="Breadcrumb">
+      <nav className="text-sm print:hidden" aria-label={t.memberCases.breadcrumb}>
         <Link href={`/cases/${legalCase.id}`} className="text-brand-700 hover:underline">
-          ← Back to case {legalCase.reference}
+          {labels.backToCase.replace('{reference}', legalCase.reference)}
         </Link>
       </nav>
 
       {paid === '1' && payment.status === 'PAID' ? (
-        <Alert tone="success" title="Payment complete" className="print:hidden">
-          {isClient
-            ? 'The payment is recorded and the professional has been told. Download or print the receipt below, then send your proof of payment so it is in the case file too.'
-            : 'The client has completed the payment for this fee.'}
+        <Alert tone="success" title={labels.paymentComplete} className="print:hidden">
+          {isClient ? labels.paymentCompleteClient : labels.paymentCompleteProfessional}
         </Alert>
       ) : null}
 
       {payment.status !== 'PAID' ? (
-        <Alert tone="warning" title="This fee has not been paid" className="print:hidden">
-          There is no receipt to print, because this request is{' '}
-          {payment.status === 'CANCELLED' ? 'withdrawn' : 'still awaiting payment'}.
+        <Alert tone="warning" title={labels.notPaid} className="print:hidden">
+          {payment.status === 'CANCELLED' ? labels.notPaidBodyWithdrawn : labels.notPaidBodyPending}
         </Alert>
       ) : null}
 
@@ -111,7 +106,7 @@ export default async function PaymentReceiptPage({
               className="text-xs font-semibold uppercase tracking-wider"
               style={{ color: custom ? accent : '#64748B' }}
             >
-              Receipt
+              {labels.receipt}
             </p>
             <p className="font-mono text-sm text-slate-900">{receiptNumber}</p>
           </div>
@@ -119,50 +114,63 @@ export default async function PaymentReceiptPage({
 
         <div className="flex flex-wrap items-end justify-between gap-4 py-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Amount paid</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              {labels.amountPaid}
+            </p>
             <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">
               {formatMoney(payment.amountFils, payment.currency)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Status</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              {labels.status}
+            </p>
             <p className="mt-1 text-sm font-medium text-slate-900">
               {payment.status === 'PAID'
-                ? 'Paid'
+                ? labels.paid
                 : payment.status === 'CANCELLED'
-                  ? 'Withdrawn'
-                  : 'Awaiting payment'}
+                  ? labels.withdrawn
+                  : labels.awaitingPayment}
             </p>
           </div>
         </div>
 
         <DescriptionList
           items={[
-            { term: 'Reason', detail: PURPOSE_LABEL.get(payment.purpose) ?? payment.purpose },
-            ...(payment.details ? [{ term: 'Details', detail: payment.details }] : []),
+            { term: labels.reason, detail: paymentPurposeLabel(t, payment.purpose) },
+            ...(payment.details ? [{ term: labels.details, detail: payment.details }] : []),
             ...(custom
-              ? [{ term: 'Paid to', detail: presentation.brandName }]
-              : [{ term: 'Paid to', detail: presentation.professionalName }]),
+              ? [{ term: labels.paidTo, detail: presentation.brandName }]
+              : [{ term: labels.paidTo, detail: presentation.professionalName }]),
             ...(presentation.showLicence && legalCase.lawyer
               ? [
                   {
-                    term: 'Lawyer',
-                    detail: `${legalCase.lawyer.user.profile?.fullName?.trim() || legalCase.lawyer.user.email} · licence ${legalCase.lawyer.licenseNumber} (${legalCase.lawyer.licensingAuthority})`,
+                    term: labels.lawyer,
+                    detail: labels.licenceDetail
+                      .replace(
+                        '{name}',
+                        legalCase.lawyer.user.profile?.fullName?.trim() ||
+                          legalCase.lawyer.user.email,
+                      )
+                      .replace('{number}', legalCase.lawyer.licenseNumber)
+                      .replace('{authority}', legalCase.lawyer.licensingAuthority),
                   },
                 ]
               : []),
             ...(presentation.showFirm && legalCase.firm
               ? [
                   {
-                    term: 'Firm',
-                    detail: `${legalCase.firm.legalName} · trade licence ${legalCase.firm.tradeLicenseNumber}`,
+                    term: labels.firm,
+                    detail: labels.firmDetail
+                      .replace('{name}', legalCase.firm.legalName)
+                      .replace('{number}', legalCase.firm.tradeLicenseNumber),
                   },
                 ]
               : []),
             ...(presentation.showContact
               ? [
                   {
-                    term: 'Contact',
+                    term: labels.contact,
                     detail: [payment.requestedBy.email, payment.requestedBy.profile?.phone]
                       .filter(Boolean)
                       .join(' · '),
@@ -170,20 +178,25 @@ export default async function PaymentReceiptPage({
                 ]
               : []),
             {
-              term: 'Paid by',
+              term: labels.paidBy,
               detail: payment.paidBy?.profile?.fullName?.trim() || payment.paidBy?.email || '—',
             },
             {
-              term: 'Method',
+              term: labels.method,
               detail:
                 payment.method === 'CARD'
                   ? maskCard(payment.cardBrand, payment.cardLast4)
                   : payment.method === 'BANK_TRANSFER'
-                    ? 'Bank transfer'
-                    : 'Not recorded',
+                    ? labels.bankTransfer
+                    : labels.notRecorded,
             },
-            { term: 'Paid on', detail: payment.paidAt ? formatUaeDateTime(payment.paidAt) : 'Not paid' },
-            { term: 'Case', detail: `${legalCase.reference} — ${legalCase.title}` },
+            {
+              term: labels.paidOn,
+              detail: payment.paidAt
+                ? formatUaeDateTime(payment.paidAt)
+                : labels.notPaidDetail,
+            },
+            { term: labels.case, detail: `${legalCase.reference} — ${legalCase.title}` },
           ]}
         />
 
@@ -201,23 +214,25 @@ export default async function PaymentReceiptPage({
         <div className="mt-6 border-t border-slate-200 pt-4">
           {custom ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <LogoMark size={30} title="Dubai Legal" />
+              <LogoMark size={30} title="Legal Dash" />
               <p className="text-xs text-slate-500">
-                Issued through Dubai Legal · receipt {receiptNumber}
+                {labels.issuedThrough.replace('{number}', receiptNumber)}
               </p>
             </div>
           ) : null}
 
           <p className={`text-xs leading-relaxed text-slate-500 ${custom ? 'mt-3' : ''}`}>
-            <strong className="font-medium text-slate-700">Simulated payment.</strong> Dubai Legal has
-            no payment provider connected. No card was charged and no money moved between these
-            parties; this receipt records what the client and the professional agreed and confirmed
-            inside the application. It is not a tax invoice.
+            <strong className="font-medium text-slate-700">{labels.simulatedTitle}</strong>
+            {labels.simulatedBody}
           </p>
         </div>
       </Card>
 
-      <ReceiptActions caseId={legalCase.id} receiptNumber={receiptNumber} />
+      <ReceiptActions
+        caseId={legalCase.id}
+        receiptNumber={receiptNumber}
+        labels={t.memberCases.receiptActions}
+      />
     </div>
   );
 }

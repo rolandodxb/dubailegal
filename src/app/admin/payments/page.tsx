@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { requireReviewer } from '@/lib/auth';
 import { paymentOverview } from '@/server/services/payment-service';
+import { getI18n } from '@/lib/i18n';
 import { formatAed } from '@/lib/payment-format';
 import { formatDateTime } from '@/lib/format';
 import { Alert, Card } from '@/components/ui/primitives';
@@ -23,30 +24,30 @@ const STATUS_STYLE: Record<string, string> = {
  */
 export default async function AdminPaymentsPage() {
   await requireReviewer();
-  const overview = await paymentOverview();
+  const [{ t }, overview] = await Promise.all([getI18n(), paymentOverview()]);
+
+  const statusLabel: Record<string, string> = t.admin.payments.status;
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Payments</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Fees requested by professionals and recorded as paid by clients, with the proof they
-          attached.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.payments}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{t.admin.payments.intro}</p>
       </header>
 
-      <Alert tone="warning" title="These are simulated payments">
-        Dubai Legal has no card processor and no bank integration. No card is charged and no money
-        moves. A row marked paid means the client recorded that they paid and attached evidence —
-        nothing more. Do not reconcile real accounts against this screen.
+      <Alert tone="warning" title={t.admin.payments.alertTitle}>
+        {t.admin.payments.alertBody}
       </Alert>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Awaiting payment', value: String(overview.requested) },
-          { label: 'Marked paid', value: String(overview.paid) },
-          { label: 'Withdrawn', value: String(overview.cancelled) },
-          { label: 'Simulated value paid', value: formatAed(overview.paidValueFils) },
+          { label: t.admin.payments.stats.awaiting, value: String(overview.requested) },
+          { label: t.admin.payments.stats.paid, value: String(overview.paid) },
+          { label: t.admin.payments.stats.withdrawn, value: String(overview.cancelled) },
+          {
+            label: t.admin.payments.stats.simulatedValue,
+            value: formatAed(overview.paidValueFils),
+          },
         ].map((stat) => (
           <Card key={stat.label}>
             <p className="text-sm text-slate-600">{stat.label}</p>
@@ -56,27 +57,29 @@ export default async function AdminPaymentsPage() {
       </div>
 
       <Card>
-        <p className="text-sm text-slate-600">Requested but not yet paid</p>
+        <p className="text-sm text-slate-600">{t.admin.payments.requestedNotPaid}</p>
         <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
           {formatAed(overview.requestedValueFils)}
         </p>
       </Card>
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Fee requests ({overview.rows.length})</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {t.admin.payments.feeRequests.replace('{count}', String(overview.rows.length))}
+        </h2>
         {overview.rows.length === 0 ? (
-          <p className="text-sm text-slate-600">No fees have been requested.</p>
+          <p className="text-sm text-slate-600">{t.admin.payments.empty}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full min-w-4xl text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Requested</th>
-                  <th className="px-3 py-2 font-medium">Case</th>
-                  <th className="px-3 py-2 font-medium">By</th>
-                  <th className="px-3 py-2 font-medium">Amount</th>
-                  <th className="px-3 py-2 font-medium">State</th>
-                  <th className="px-3 py-2 font-medium">Proof</th>
+                  <th className="px-3 py-2 font-medium">{t.admin.payments.requested}</th>
+                  <th className="px-3 py-2 font-medium">{t.admin.payments.case}</th>
+                  <th className="px-3 py-2 font-medium">{t.admin.payments.by}</th>
+                  <th className="px-3 py-2 font-medium">{t.common.amount}</th>
+                  <th className="px-3 py-2 font-medium">{t.admin.payments.state}</th>
+                  <th className="px-3 py-2 font-medium">{t.admin.payments.proof}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -100,17 +103,17 @@ export default async function AdminPaymentsPage() {
                           STATUS_STYLE[row.status] ?? 'bg-slate-100 text-slate-700 ring-slate-200'
                         }`}
                       >
-                        {row.status.toLowerCase()}
+                        {statusLabel[row.status] ?? row.status.toLowerCase()}
                       </span>
                       {row.method ? (
                         <span className="mt-1 block text-xs text-slate-500">
-                          {row.method === 'CARD' ? 'card' : 'transfer'}
+                          {row.method === 'CARD' ? t.admin.payments.card : t.admin.payments.transfer}
                           {row.reference ? ` · ${row.reference}` : ''}
                         </span>
                       ) : null}
                     </td>
                     <td className="px-3 py-2 text-xs text-slate-600">
-                      {row.proofDocumentId ? 'Attached' : '—'}
+                      {row.proofDocumentId ? t.admin.payments.attached : '—'}
                     </td>
                   </tr>
                 ))}

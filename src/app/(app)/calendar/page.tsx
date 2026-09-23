@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireProfessional } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import {
   BOOKABLE_HOURS,
   diaryScope,
@@ -37,14 +38,6 @@ export const metadata: Metadata = { title: 'Calendar' };
 
 type View = 'month' | 'week' | 'day';
 
-const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-const MODE_LABEL: Record<string, string> = {
-  VIDEO_CALL: 'Video call',
-  OFFICE_VISIT: 'Office visit',
-  PHONE_CALL: 'Phone call',
-};
-
 function shell(view: View, anchorKey: string): string {
   return `/calendar?view=${view}&date=${anchorKey}`;
 }
@@ -67,7 +60,23 @@ export default async function CalendarPage({
 }: {
   searchParams: Promise<{ view?: string; date?: string }>;
 }) {
-  const user = await requireProfessional();
+  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
+  const labels = t.memberCases.calendar;
+  const modeLabel = t.memberCases.appointmentMode as Record<string, string>;
+  const modeLabels = {
+    VIDEO_CALL: t.memberCases.appointmentMode.VIDEO_CALL,
+    OFFICE_VISIT: t.memberCases.appointmentMode.OFFICE_VISIT,
+    PHONE_CALL: t.memberCases.appointmentMode.PHONE_CALL,
+  };
+  const weekdayLabels = [
+    labels.weekdays.mon,
+    labels.weekdays.tue,
+    labels.weekdays.wed,
+    labels.weekdays.thu,
+    labels.weekdays.fri,
+    labels.weekdays.sat,
+    labels.weekdays.sun,
+  ];
   const [params, availability, scope] = await Promise.all([
     searchParams,
     getAvailability(),
@@ -82,20 +91,17 @@ export default async function CalendarPage({
   if (scope.lawyerIds.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Calendar</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
         <Card>
           <p className="text-sm text-slate-700">
-            A diary belongs to a lawyer profile. {scope.isFirm ? 'Your firm has no lawyer registered yet, so' : 'This account does not have one, so'} there is nothing
-            to schedule here.{' '}
-            {scope.isFirm
-              ? 'Register a lawyer and their diary appears on this calendar.'
-              : 'Meetings are booked by the lawyers registered with your firm.'}
+            {scope.isFirm ? labels.noDiaryFirm : labels.noDiarySolo}{' '}
+            {scope.isFirm ? labels.noDiaryFirmTail : labels.noDiarySoloTail}
           </p>
           <Link
             href={scope.isFirm ? '/firm/lawyers' : '/dashboard'}
             className={buttonClasses('secondary', 'md', 'mt-4')}
           >
-            {scope.isFirm ? 'Manage lawyers registered' : 'Back to my dashboard'}
+            {scope.isFirm ? labels.manageLawyers : labels.backToDashboard}
           </Link>
         </Card>
       </div>
@@ -172,14 +178,12 @@ export default async function CalendarPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Calendar</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            {scope.isFirm
-              ? `Every diary held by your firm\u2019s lawyers, in UAE time. You can move, cancel or delete any of these meetings — the client is told about everything except a deletion.`
-              : 'Your diary in UAE time. Pick a day, choose a free hour and register the booking — the client is alerted straight away. You can also move, cancel or delete a meeting you already have.'}
+            {scope.isFirm ? labels.introFirm : labels.introSolo}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Calendar view">
+        <div className="flex flex-wrap gap-2" role="group" aria-label={labels.viewGroupLabel}>
           {(['month', 'week', 'day'] as View[]).map((option) => (
             <Link
               key={option}
@@ -187,7 +191,7 @@ export default async function CalendarPage({
               aria-current={view === option ? 'page' : undefined}
               className={buttonClasses(view === option ? 'primary' : 'secondary', 'sm')}
             >
-              {option[0].toUpperCase() + option.slice(1)}
+              {labels.views[option]}
             </Link>
           ))}
         </div>
@@ -197,13 +201,13 @@ export default async function CalendarPage({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Link href={shell(view, previousAnchor)} className={buttonClasses('secondary', 'sm')}>
-              ← Previous
+              {labels.previous}
             </Link>
             <Link href={shell(view, today)} className={buttonClasses('ghost', 'sm')}>
-              Today
+              {labels.today}
             </Link>
             <Link href={shell(view, nextAnchor)} className={buttonClasses('secondary', 'sm')}>
-              Next →
+              {labels.next}
             </Link>
           </div>
           <h2 className="font-semibold text-slate-900">{heading}</h2>
@@ -212,7 +216,7 @@ export default async function CalendarPage({
         {view === 'month' ? (
           <div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-500">
-              {WEEKDAY_LABELS.map((label) => (
+              {weekdayLabels.map((label) => (
                 <div key={label} className="py-2">
                   {label}
                 </div>
@@ -257,7 +261,7 @@ export default async function CalendarPage({
                       ))}
                       {items.length > 2 ? (
                         <span className="block text-[10px] text-slate-500">
-                          +{items.length - 2} more
+                          {labels.more.replace('{count}', String(items.length - 2))}
                         </span>
                       ) : null}
                     </span>
@@ -275,7 +279,7 @@ export default async function CalendarPage({
               return (
                 <div key={key} className="rounded-lg border border-slate-200 p-2">
                   <Link href={shell('day', key)} className="block">
-                    <p className="text-xs font-medium text-slate-500">{WEEKDAY_LABELS[index]}</p>
+                    <p className="text-xs font-medium text-slate-500">{weekdayLabels[index]}</p>
                     <p
                       className={cx(
                         'text-sm font-semibold',
@@ -287,7 +291,7 @@ export default async function CalendarPage({
                   </Link>
                   <ul className="mt-2 space-y-1">
                     {items.length === 0 ? (
-                      <li className="text-[11px] text-slate-400">Free</li>
+                      <li className="text-[11px] text-slate-400">{labels.free}</li>
                     ) : (
                       items.map((appointment) => (
                         <li
@@ -310,7 +314,7 @@ export default async function CalendarPage({
           <div className="grid gap-6 lg:grid-cols-2">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">
-                {scope.isFirm ? 'Availability by lawyer' : 'Slots'}
+                {scope.isFirm ? labels.availabilityByLawyer : labels.slots}
               </h3>
 
               {scope.isFirm ? (
@@ -318,9 +322,12 @@ export default async function CalendarPage({
                   {slotsByLawyer.map((entry) => (
                     <details key={entry.lawyerId} className="rounded-lg border border-slate-200">
                       <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-slate-800">
-                        {entry.name ?? 'Lawyer'} ·{' '}
+                        {entry.name ?? labels.lawyer} ·{' '}
                         <span className="font-normal text-slate-500">
-                          {entry.slots.filter((slot) => !slot.taken).length} free
+                          {labels.freeCount.replace(
+                            '{count}',
+                            String(entry.slots.filter((slot) => !slot.taken).length),
+                          )}
                         </span>
                       </summary>
                       <ul className="divide-y divide-slate-100 border-t border-slate-200 px-3">
@@ -329,10 +336,15 @@ export default async function CalendarPage({
                             <span className="text-sm text-slate-700">{slot.label}</span>
                             {slot.taken ? (
                               <span className="text-xs text-slate-600">
-                                Booked · {slot.appointment?.clientName}
+                                {labels.booked.replace(
+                                  '{name}',
+                                  slot.appointment?.clientName ?? '',
+                                )}
                               </span>
                             ) : (
-                              <span className="text-xs font-medium text-green-700">Available</span>
+                              <span className="text-xs font-medium text-green-700">
+                                {labels.available}
+                              </span>
                             )}
                           </li>
                         ))}
@@ -347,11 +359,11 @@ export default async function CalendarPage({
                       <span className="text-sm text-slate-800">{slot.label}</span>
                       {slot.taken ? (
                         <span className="text-xs text-slate-600">
-                          Booked · {slot.appointment?.clientName}
+                          {labels.booked.replace('{name}', slot.appointment?.clientName ?? '')}
                           {slot.appointment?.caseReference ? ` · ${slot.appointment.caseReference}` : ''}
                         </span>
                       ) : (
-                        <span className="text-xs font-medium text-green-700">Available</span>
+                        <span className="text-xs font-medium text-green-700">{labels.available}</span>
                       )}
                     </li>
                   ))}
@@ -359,15 +371,16 @@ export default async function CalendarPage({
               )}
 
               <p className="mt-3 text-xs text-slate-500">
-                Working hours {BOOKABLE_HOURS[0]}:00–{BOOKABLE_HOURS[BOOKABLE_HOURS.length - 1] + 1}:00
-                UAE time.
+                {labels.workingHours
+                  .replace('{from}', String(BOOKABLE_HOURS[0]))
+                  .replace('{to}', String(BOOKABLE_HOURS[BOOKABLE_HOURS.length - 1] + 1))}
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Bookings on this day</h3>
+              <h3 className="text-sm font-semibold text-slate-900">{labels.bookingsOnDay}</h3>
               {selectedAppointments.length === 0 ? (
-                <p className="mt-2 text-sm text-slate-600">Nothing booked yet.</p>
+                <p className="mt-2 text-sm text-slate-600">{labels.nothingBooked}</p>
               ) : (
                 <ul className="mt-2 divide-y divide-slate-100">
                   {selectedAppointments.map((appointment) => (
@@ -376,21 +389,23 @@ export default async function CalendarPage({
                         {formatUaeTime(appointment.startsAt)} · {clientName(appointment)}
                         {scope.isFirm ? (
                           <span className="ml-2 text-xs font-normal text-slate-500">
-                            with{' '}
-                            {appointment.lawyer.user.profile?.fullName?.trim() ||
-                              lawyerName.get(appointment.lawyer.id) ||
-                              'your lawyer'}
+                            {labels.withLawyer.replace(
+                              '{name}',
+                              appointment.lawyer.user.profile?.fullName?.trim() ||
+                                lawyerName.get(appointment.lawyer.id) ||
+                                labels.yourLawyer,
+                            )}
                           </span>
                         ) : null}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {MODE_LABEL[appointment.mode] ?? appointment.mode}
+                        {modeLabel[appointment.mode] ?? appointment.mode}
                         {appointment.case
                           ? ` · ${appointment.case.reference} — ${appointment.case.title}`
-                          : ' · no case linked'}
-                        {appointment.status === 'CANCELLED' ? ' · cancelled' : ''}
-                        {appointment.confirmation === 'PENDING' ? ' · awaiting the client’s answer' : ''}
-                        {appointment.confirmation === 'DECLINED' ? ' · client declined to travel' : ''}
+                          : labels.noCaseLinked}
+                        {appointment.status === 'CANCELLED' ? labels.cancelledSuffix : ''}
+                        {appointment.confirmation === 'PENDING' ? labels.awaitingClient : ''}
+                        {appointment.confirmation === 'DECLINED' ? labels.clientDeclinedTravel : ''}
                       </p>
 
                       {appointment.status === 'BOOKED' ? (
@@ -401,14 +416,25 @@ export default async function CalendarPage({
                             defaultHour={toUaeHour(appointment.startsAt)}
                             defaultMode={appointment.mode}
                             defaultOfficeAddress={appointment.officeAddress}
+                            labels={t.memberCases.appointment}
+                            modeLabels={modeLabels}
                           />
                           <div className="mt-2 flex flex-wrap items-start gap-3">
-                            <CancelAppointmentButton appointmentId={appointment.id} />
-                            <DeleteAppointmentButton appointmentId={appointment.id} />
+                            <CancelAppointmentButton
+                              appointmentId={appointment.id}
+                              labels={t.memberCases.appointment}
+                            />
+                            <DeleteAppointmentButton
+                              appointmentId={appointment.id}
+                              labels={t.memberCases.appointment}
+                            />
                           </div>
                         </>
                       ) : (
-                        <DeleteAppointmentButton appointmentId={appointment.id} />
+                        <DeleteAppointmentButton
+                          appointmentId={appointment.id}
+                          labels={t.memberCases.appointment}
+                        />
                       )}
                     </li>
                   ))}
@@ -421,13 +447,17 @@ export default async function CalendarPage({
 
       {view === 'day' ? (
         <Card>
-          <h2 className="font-semibold text-slate-900">Register a booking</h2>
+          <h2 className="font-semibold text-slate-900">{labels.registerBooking}</h2>
           {scope.lawyerProfileId && booking?.lawyerProfileId ? (
             <>
               <p className="mt-1 mb-4 text-sm text-slate-600">
-                {formatDateKey(anchorKey)} · {freeHours.length} of {ownSlots.length} slots
-                available.
-                {takenSlots.length > 0 ? ` ${takenSlots.length} already booked.` : ''}
+                {labels.slotsAvailable
+                  .replace('{date}', formatDateKey(anchorKey))
+                  .replace('{free}', String(freeHours.length))
+                  .replace('{total}', String(ownSlots.length))}
+                {takenSlots.length > 0
+                  ? labels.slotsTaken.replace('{count}', String(takenSlots.length))
+                  : ''}
               </p>
               {canBook ? (
                 <BookingForm
@@ -435,20 +465,15 @@ export default async function CalendarPage({
                   dateKey={anchorKey}
                   freeHours={freeHours}
                   clients={booking.clients}
+                  labels={t.memberCases.booking}
+                  modeLabels={modeLabels}
                 />
               ) : (
-                <Alert tone="warning">
-                  Booking new meetings is currently switched off. Meetings already booked are
-                  unaffected.
-                </Alert>
+                <Alert tone="warning">{labels.bookingOff}</Alert>
               )}
             </>
           ) : (
-            <p className="mt-1 text-sm text-slate-600">
-              A booking is made by the lawyer whose diary it goes into, so a firm account does not
-              register meetings on a lawyer&rsquo;s behalf. Its lawyers book their own from their own
-              accounts; you can still move, cancel or delete what they have arranged.
-            </p>
+            <p className="mt-1 text-sm text-slate-600">{labels.firmCannotBook}</p>
           )}
         </Card>
       ) : null}

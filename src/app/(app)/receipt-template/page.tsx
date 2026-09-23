@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireProfessional } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { getReceiptTemplate } from '@/server/services/receipt-template-service';
 import { prisma } from '@/lib/db';
 import { ReceiptLayoutForm } from '@/components/forms/ReceiptLayoutForm';
@@ -14,11 +15,12 @@ export const metadata: Metadata = { title: 'Receipt layout' };
  *
  * Two choices, and the default is the one that needs no configuration. The
  * platform mark is always on the receipt, whichever layout is chosen: a receipt
- * is issued through Dubai Legal, and the person holding it should be able to see
+ * is issued through Legal Dash, and the person holding it should be able to see
  * where it came from.
  */
 export default async function ReceiptTemplatePage() {
-  const user = await requireProfessional();
+  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
+  const labels = t.memberCases.receiptTemplate;
 
   const [template, account] = await Promise.all([
     getReceiptTemplate(user.id),
@@ -37,36 +39,29 @@ export default async function ReceiptTemplatePage() {
     account?.firmProfile?.legalName ||
     account?.profile?.fullName?.trim() ||
     account?.email ||
-    'My practice';
+    labels.myPractice;
 
   return (
     <div className="space-y-6">
       <header>
         <div className="flex items-center gap-3">
           <LogoMark size={40} />
-          <h1 className="text-2xl font-semibold text-slate-900">Receipt layout</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
         </div>
-        <p className="mt-2 max-w-3xl text-sm text-slate-600">
-          Every fee you raise produces a receipt the client can print. Choose whether it carries the
-          standard Dubai Legal layout or a letterhead of your own. Your account starts on the standard
-          layout, and you can change your mind at any time.
-        </p>
+        <p className="mt-2 max-w-3xl text-sm text-slate-600">{labels.intro}</p>
       </header>
 
       <Card>
-        <h2 className="font-semibold text-slate-900">What is on every receipt</h2>
-        <p className="mt-1 mb-3 text-sm text-slate-600">
-          Whichever layout you choose, a receipt always carries these. They are facts about a payment,
-          not decoration.
-        </p>
+        <h2 className="font-semibold text-slate-900">{labels.whatIsOn}</h2>
+        <p className="mt-1 mb-3 text-sm text-slate-600">{labels.whatIsOnBody}</p>
         <DescriptionList
           items={[
-            { term: 'Amount', detail: 'In dirhams, from the fee you raised' },
-            { term: 'Reason', detail: 'What the fee was for, and your description of it' },
-            { term: 'Paid by', detail: 'The client, and the card used — never the full number' },
-            { term: 'Receipt number', detail: 'Unique, and quoted if the payment is ever queried' },
-            { term: 'Case', detail: 'The reference and title the fee belongs to' },
-            { term: 'Dubai Legal mark', detail: 'Always present, on either layout' },
+            { term: labels.amount, detail: labels.amountDetail },
+            { term: labels.reason, detail: labels.reasonDetail },
+            { term: labels.paidBy, detail: labels.paidByDetail },
+            { term: labels.receiptNumber, detail: labels.receiptNumberDetail },
+            { term: labels.case, detail: labels.caseDetail },
+            { term: labels.mark, detail: labels.markDetail },
           ]}
         />
       </Card>
@@ -82,21 +77,18 @@ export default async function ReceiptTemplatePage() {
         showFirm={template?.showFirm ?? true}
         showContact={template?.showContact ?? false}
         professionalName={professionalName}
+        labels={t.memberCases.receiptLayout}
       />
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Where this appears</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          The receipt a client sees after paying a fee, and the copy they print or save as a PDF.
-          Administrators use the standard layout and cannot change it — the platform mark is theirs by
-          definition.
-        </p>
+        <h2 className="font-semibold text-slate-900">{labels.whereAppears}</h2>
+        <p className="mt-1 text-sm text-slate-600">{labels.whereAppearsBody}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/payments" className={buttonClasses('secondary', 'md')}>
-            Receipts I have issued
+            {labels.issuedReceipts}
           </Link>
           <Link href="/account" className={buttonClasses('ghost', 'md')}>
-            Account and security
+            {labels.accountSecurity}
           </Link>
         </div>
         <div className="mt-5 border-t border-slate-100 pt-4">
@@ -105,9 +97,8 @@ export default async function ReceiptTemplatePage() {
       </Card>
 
       {!template || template.layout !== 'CUSTOM' ? (
-        <Alert tone="info" title="You are on the standard layout">
-          That is a complete, correct receipt and nothing is missing from it. A custom letterhead is
-          for practices that already have their own branding.
+        <Alert tone="info" title={labels.onStandard}>
+          {labels.onStandardBody}
         </Alert>
       ) : null}
     </div>

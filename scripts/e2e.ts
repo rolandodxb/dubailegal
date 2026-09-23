@@ -1,5 +1,5 @@
 /**
- * End-to-end verification of Dubai Legal against the real database and the
+ * End-to-end verification of Legal Dash against the real database and the
  * running server.
  *
  *   npm run e2e            # runs the whole flow, then removes the accounts it made
@@ -395,7 +395,7 @@ async function main(): Promise<void> {
     lawyer.userId,
     {
       licenseNumber: `DLAD-${runId}-4471`,
-      licensingAuthority: 'Dubai Legal Affairs Department',
+      licensingAuthority: 'Legal Dash Affairs Department',
       licenseIssuedOn: '2022-03-01',
       licenseExpiresOn: '2027-03-01',
       yearsOfExperience: '9',

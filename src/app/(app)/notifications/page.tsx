@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireActiveUser } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { listNotifications, unreadNotificationCount } from '@/server/services/notification-service';
 import { formatUaeDateTime } from '@/lib/time';
 import { Card, EmptyState, cx } from '@/components/ui/primitives';
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: 'Alerts' };
  * that a case moved or a meeting was booked.
  */
 export default async function NotificationsPage() {
-  const user = await requireActiveUser();
+  const [{ t }, user] = await Promise.all([getI18n(), requireActiveUser()]);
   const [notifications, unread] = await Promise.all([
     listNotifications(user.id),
     unreadNotificationCount(user.id),
@@ -23,21 +24,31 @@ export default async function NotificationsPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Alerts</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{t.items.alerts}</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {unread === 0
-              ? 'You have no unread alerts.'
-              : `${unread} unread alert${unread === 1 ? '' : 's'}.`}{' '}
-            Alerts are delivered here because this installation has no email provider configured.
+            {(unread === 0
+              ? t.memberCore.notifications.noUnread
+              : (unread === 1
+                  ? t.memberCore.notifications.unreadOne
+                  : t.memberCore.notifications.unreadMany
+                ).replace('{count}', String(unread)))}{' '}
+            {t.memberCore.notifications.deliveryNote}
           </p>
         </div>
-        {unread > 0 ? <MarkAllReadButton /> : null}
+        {unread > 0 ? (
+          <MarkAllReadButton
+            labels={{
+              markAllRead: t.memberCore.notificationButtons.markAllRead,
+              marking: t.memberCore.notificationButtons.marking,
+            }}
+          />
+        ) : null}
       </header>
 
       {notifications.length === 0 ? (
         <EmptyState
-          title="No alerts yet"
-          description="You will be told here when a case changes state, someone messages you, or a meeting is booked with you."
+          title={t.memberCore.notifications.emptyTitle}
+          description={t.memberCore.notifications.emptyBody}
         />
       ) : (
         <ul className="space-y-3">
@@ -55,7 +66,7 @@ export default async function NotificationsPage() {
                   ) : null}
                   <p className="mt-1 text-xs text-slate-500">
                     {formatUaeDateTime(notification.createdAt)}
-                    {notification.readAt ? '' : ' · unread'}
+                    {notification.readAt ? '' : t.memberCore.notifications.unreadSuffix}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
@@ -64,10 +75,15 @@ export default async function NotificationsPage() {
                       href={notification.link}
                       className="text-xs font-medium text-brand-700 hover:underline"
                     >
-                      Open
+                      {t.common.open}
                     </Link>
                   ) : null}
-                  {notification.readAt ? null : <MarkReadButton notificationId={notification.id} />}
+                  {notification.readAt ? null : (
+                    <MarkReadButton
+                      notificationId={notification.id}
+                      labels={{ markRead: t.memberCore.notificationButtons.markRead }}
+                    />
+                  )}
                 </div>
               </div>
             </Card>

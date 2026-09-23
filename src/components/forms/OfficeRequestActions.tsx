@@ -11,8 +11,17 @@ import { SubmitButton } from '@/components/ui/SubmitButton';
  *
  * Declining does not cancel the meeting: it tells the professional the client
  * will not travel, so they can offer a video call instead.
+ *
+ * The wording arrives from the server parent: a client component cannot read the
+ * dictionary itself.
  */
-export function OfficeRequestActions({ appointmentId }: { appointmentId: string }) {
+export function OfficeRequestActions({
+  appointmentId,
+  labels,
+}: {
+  appointmentId: string;
+  labels: { confirming: string; willAttend: string; sending: string; cannotCome: string };
+}) {
   const [state, formAction] = useActionState(respondToOfficeRequestAction, initialFormState);
 
   return (
@@ -24,15 +33,15 @@ export function OfficeRequestActions({ appointmentId }: { appointmentId: string 
         <form action={formAction}>
           <input type="hidden" name="appointmentId" value={appointmentId} />
           <input type="hidden" name="accept" value="true" />
-          <SubmitButton size="sm" pendingLabel="Confirming…">
-            I will attend
+          <SubmitButton size="sm" pendingLabel={labels.confirming}>
+            {labels.willAttend}
           </SubmitButton>
         </form>
         <form action={formAction}>
           <input type="hidden" name="appointmentId" value={appointmentId} />
           <input type="hidden" name="accept" value="false" />
-          <SubmitButton variant="secondary" size="sm" pendingLabel="Sending…">
-            I cannot come
+          <SubmitButton variant="secondary" size="sm" pendingLabel={labels.sending}>
+            {labels.cannotCome}
           </SubmitButton>
         </form>
       </div>

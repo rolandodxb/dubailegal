@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { getI18n } from '@/lib/i18n';
+import { legalAreaLabel } from '@/lib/i18n/labels';
 import { requireReviewer } from '@/lib/auth';
 import { enquiryOverview } from '@/server/services/enquiry-service';
-import { LEGAL_AREA_LABEL } from '@/lib/constants';
 import { formatDateTime } from '@/lib/format';
-import { minutesLabel } from '@/lib/time';
 import { Alert, Card } from '@/components/ui/primitives';
-import { DOMAINS, domainChip } from '@/lib/domains';
+import { domainChip } from '@/lib/domains';
 import { Icon } from '@/components/icons';
+import { relativeTime } from '@/lib/i18n/format';
 
 export const metadata: Metadata = { title: 'Enquiries' };
 
@@ -24,8 +25,10 @@ const STATUS_STYLE: Record<string, string> = {
  * details are masked — an operator has no reason to hold them.
  */
 export default async function AdminEnquiriesPage() {
-  await requireReviewer();
+  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
   const overview = await enquiryOverview();
+
+  const statusLabel: Record<string, string> = t.admin.enquiries.status;
 
   return (
     <div className="space-y-8">
@@ -36,32 +39,30 @@ export default async function AdminEnquiriesPage() {
           </span>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-domain-enquiry">
-              {DOMAINS.enquiry.label}
+              {t.labels.domain.enquiry}
             </p>
-            <h1 className="text-2xl font-semibold text-slate-900">Enquiry pool</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">{t.items.enquiryPool}</h1>
           </div>
         </div>
-        <p className="mt-2 max-w-3xl text-sm text-slate-600">
-          General enquiries sent from the landing page by people who did not create an account. They
-          are not addressed to anyone: every registered lawyer and firm sees the same pool and
-          whoever claims one takes it on.
-        </p>
+        <p className="mt-2 max-w-3xl text-sm text-slate-600">{t.admin.enquiries.intro}</p>
       </header>
 
       {overview.open > 5 ? (
-        <Alert tone="warning" title={`${overview.open} enquiries are still unclaimed`}>
-          The pool is filling up. Enquiries that nobody picks up are the clearest signal that
-          professionals are not watching it.
+        <Alert
+          tone="warning"
+          title={t.admin.enquiries.unclaimedAlert.replace('{count}', String(overview.open))}
+        >
+          {t.admin.enquiries.unclaimedBody}
         </Alert>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Open in the pool', value: String(overview.open) },
-          { label: 'Claimed', value: String(overview.claimed) },
-          { label: 'Closed', value: String(overview.closed) },
+          { label: t.admin.enquiries.statOpen, value: String(overview.open) },
+          { label: t.admin.enquiries.statClaimed, value: String(overview.claimed) },
+          { label: t.admin.enquiries.statClosed, value: String(overview.closed) },
           {
-            label: 'Claim rate',
+            label: t.admin.enquiries.statClaimRate,
             value: overview.claimRate === null ? '—' : `${overview.claimRate}%`,
           },
         ].map((stat) => (
@@ -73,9 +74,11 @@ export default async function AdminEnquiriesPage() {
       </div>
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Recent enquiries ({overview.recent.length})</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {t.admin.enquiries.recent.replace('{count}', String(overview.recent.length))}
+        </h2>
         {overview.recent.length === 0 ? (
-          <p className="text-sm text-slate-600">No general enquiries have been sent.</p>
+          <p className="text-sm text-slate-600">{t.admin.enquiries.empty}</p>
         ) : (
           <ul className="space-y-3">
             {overview.recent.map((enquiry) => (
@@ -84,18 +87,19 @@ export default async function AdminEnquiriesPage() {
                   <div className="min-w-0">
                     <h3 className="font-medium text-slate-900">{enquiry.subject}</h3>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {enquiry.caseType
-                        ? `${LEGAL_AREA_LABEL[enquiry.caseType] ?? enquiry.caseType} · `
-                        : ''}
-                      {minutesLabel(enquiry.createdAt)} · {maskEmail(enquiry.email)} ·{' '}
+                      {enquiry.caseType ? `${legalAreaLabel(t, enquiry.caseType)} · ` : ''}
+                      {relativeTime(t, enquiry.createdAt)} · {maskEmail(enquiry.email)} ·{' '}
                       {maskPhone(enquiry.phone)}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
                       {enquiry.claimedBy
-                        ? `Claimed by ${
-                            enquiry.claimedBy.profile?.fullName?.trim() || enquiry.claimedBy.email
-                          } at ${formatDateTime(enquiry.claimedAt)}`
-                        : 'Nobody has claimed it yet'}
+                        ? t.admin.enquiries.claimedBy
+                            .replace(
+                              '{name}',
+                              enquiry.claimedBy.profile?.fullName?.trim() || enquiry.claimedBy.email,
+                            )
+                            .replace('{date}', formatDateTime(enquiry.claimedAt))
+                        : t.admin.enquiries.unclaimed}
                     </p>
                   </div>
                   <span
@@ -103,7 +107,7 @@ export default async function AdminEnquiriesPage() {
                       STATUS_STYLE[enquiry.status] ?? 'bg-slate-100 text-slate-700 ring-slate-200'
                     }`}
                   >
-                    {enquiry.status.toLowerCase()}
+                    {statusLabel[enquiry.status] ?? enquiry.status.toLowerCase()}
                   </span>
                 </div>
               </Card>

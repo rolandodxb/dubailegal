@@ -16,9 +16,10 @@ import {
   regenerateRecoveryCodes,
   verifySecondFactor,
 } from '@/server/services/two-factor-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 /** Starts an enrolment and hands back everything needed to set the app up. */
-export async function beginTwoFactorAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+async function beginTwoFactorActionImpl(_prev: FormState, _formData: FormData): Promise<FormState> {
   const user = await requireSession();
 
   const result = await beginEnrolment(user.id);
@@ -38,7 +39,7 @@ export async function beginTwoFactorAction(_prev: FormState, _formData: FormData
 }
 
 /** Turns it on. The recovery codes are shown once and never again. */
-export async function confirmTwoFactorAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function confirmTwoFactorActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireSession();
   const meta = await requestMeta();
 
@@ -70,7 +71,7 @@ export async function confirmTwoFactorAction(_prev: FormState, formData: FormDat
   };
 }
 
-export async function disableTwoFactorAction(_prev: FormState, formData: FormData): Promise<FormState> {
+async function disableTwoFactorActionImpl(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireSession();
   const meta = await requestMeta();
 
@@ -82,7 +83,7 @@ export async function disableTwoFactorAction(_prev: FormState, formData: FormDat
   return { ok: true, message: 'Two-factor authentication is off. Your password alone now signs you in.' };
 }
 
-export async function regenerateRecoveryCodesAction(
+async function regenerateRecoveryCodesActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -107,7 +108,7 @@ export async function regenerateRecoveryCodesAction(
  * The session already exists but can reach nothing; this is what makes it usable.
  * A recovery code works too, and is consumed as it is used.
  */
-export async function verifyTwoFactorLoginAction(
+async function verifyTwoFactorLoginActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -147,7 +148,7 @@ export async function verifyTwoFactorLoginAction(
 }
 
 /** Abandons a half-finished sign-in. */
-export async function abandonTwoFactorLoginAction(): Promise<void> {
+async function abandonTwoFactorLoginActionImpl(): Promise<void> {
   const token = await currentSessionToken();
   if (token) {
     await prisma.session.updateMany({
@@ -156,4 +157,49 @@ export async function abandonTwoFactorLoginAction(): Promise<void> {
     });
   }
   redirect('/login');
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function beginTwoFactorAction(
+  ...args: Parameters<typeof beginTwoFactorActionImpl>
+): Promise<Awaited<ReturnType<typeof beginTwoFactorActionImpl>>> {
+  return localiseFormState(await beginTwoFactorActionImpl(...args));
+}
+
+export async function confirmTwoFactorAction(
+  ...args: Parameters<typeof confirmTwoFactorActionImpl>
+): Promise<Awaited<ReturnType<typeof confirmTwoFactorActionImpl>>> {
+  return localiseFormState(await confirmTwoFactorActionImpl(...args));
+}
+
+export async function disableTwoFactorAction(
+  ...args: Parameters<typeof disableTwoFactorActionImpl>
+): Promise<Awaited<ReturnType<typeof disableTwoFactorActionImpl>>> {
+  return localiseFormState(await disableTwoFactorActionImpl(...args));
+}
+
+export async function regenerateRecoveryCodesAction(
+  ...args: Parameters<typeof regenerateRecoveryCodesActionImpl>
+): Promise<Awaited<ReturnType<typeof regenerateRecoveryCodesActionImpl>>> {
+  return localiseFormState(await regenerateRecoveryCodesActionImpl(...args));
+}
+
+export async function verifyTwoFactorLoginAction(
+  ...args: Parameters<typeof verifyTwoFactorLoginActionImpl>
+): Promise<Awaited<ReturnType<typeof verifyTwoFactorLoginActionImpl>>> {
+  return localiseFormState(await verifyTwoFactorLoginActionImpl(...args));
+}
+
+export async function abandonTwoFactorLoginAction(
+  ...args: Parameters<typeof abandonTwoFactorLoginActionImpl>
+): Promise<Awaited<ReturnType<typeof abandonTwoFactorLoginActionImpl>>> {
+  return localiseFormState(await abandonTwoFactorLoginActionImpl(...args));
 }

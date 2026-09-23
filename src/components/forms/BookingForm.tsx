@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { bookAppointmentAction } from '@/app/actions/appointment-actions';
 import { initialFormState } from '@/lib/form-state';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { SLOT_MINUTES } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Select, Textarea } from '@/components/ui/primitives';
@@ -26,30 +27,26 @@ export function BookingForm({
   dateKey,
   freeHours,
   clients,
+  labels,
+  modeLabels,
 }: {
   lawyerProfileId: string;
   dateKey: string;
   freeHours: { hour: number; label: string }[];
   clients: BookableClient[];
+  labels: MemberCasesDict['booking'];
+  /** The three ways a meeting can happen, in the reader's language. */
+  modeLabels: { VIDEO_CALL: string; OFFICE_VISIT: string; PHONE_CALL: string };
 }) {
   const [state, formAction] = useActionState(bookAppointmentAction, initialFormState);
   const [clientId, setClientId] = useState(state?.values?.clientId ?? '');
 
   if (clients.length === 0) {
-    return (
-      <Alert tone="neutral">
-        You have no clients with an accepted case yet. A meeting can be booked once you have
-        accepted a case.
-      </Alert>
-    );
+    return <Alert tone="neutral">{labels.noClients}</Alert>;
   }
 
   if (freeHours.length === 0) {
-    return (
-      <Alert tone="warning">
-        Every slot on this day is taken. Choose another day in the calendar.
-      </Alert>
-    );
+    return <Alert tone="warning">{labels.noFreeSlots}</Alert>;
   }
 
   const selectedClient = clients.find((client) => client.id === clientId);
@@ -64,13 +61,13 @@ export function BookingForm({
 
       <fieldset>
         <legend className="text-sm font-medium text-slate-800">
-          Available time
+          {labels.availableTime}
           <span className="ml-1 text-brand-700" aria-hidden="true">
             *
           </span>
         </legend>
         <p className="mt-0.5 text-xs text-slate-500">
-          Meeting length {SLOT_MINUTES} minutes. Times are UAE time.
+          {labels.meetingLength.replace('{minutes}', String(SLOT_MINUTES))}
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           {freeHours.map((slot) => (
@@ -101,21 +98,18 @@ export function BookingForm({
 
       <fieldset>
         <legend className="text-sm font-medium text-slate-800">
-          How will you meet?
+          {labels.howMeet}
           <span className="ml-1 text-brand-700" aria-hidden="true">
             *
           </span>
         </legend>
-        <p className="mt-0.5 text-xs text-slate-500">
-          A video call opens a conference room. An office visit is a request the client has to
-          accept, because they have to travel.
-        </p>
+        <p className="mt-0.5 text-xs text-slate-500">{labels.modeHint}</p>
         <div className="mt-2 grid gap-2 sm:grid-cols-3">
           {(
             [
-              { value: 'VIDEO_CALL', label: 'Video call', hint: 'Conference room' },
-              { value: 'OFFICE_VISIT', label: 'Office visit', hint: 'Client must accept' },
-              { value: 'PHONE_CALL', label: 'Phone call', hint: 'No room needed' },
+              { value: 'VIDEO_CALL', label: modeLabels.VIDEO_CALL, hint: labels.modeVideoCallHint },
+              { value: 'OFFICE_VISIT', label: modeLabels.OFFICE_VISIT, hint: labels.modeOfficeVisitHint },
+              { value: 'PHONE_CALL', label: modeLabels.PHONE_CALL, hint: labels.modePhoneCallHint },
             ] as const
           ).map((option) => (
             <label
@@ -147,28 +141,28 @@ export function BookingForm({
       </fieldset>
 
       <Field
-        label="Office address"
+        label={labels.officeAddress}
         htmlFor="officeAddress"
         error={state?.fieldErrors?.officeAddress}
-        hint="Required for an office visit — this is what the client is asked to come to."
+        hint={labels.officeAddressHint}
       >
         <Textarea
           id="officeAddress"
           name="officeAddress"
           rows={2}
           maxLength={300}
-          placeholder="Office 1204, Sample Tower, Sheikh Zayed Road, Dubai"
+          placeholder={labels.officeAddressPlaceholder}
           defaultValue={state?.values?.officeAddress ?? ''}
           error={state?.fieldErrors?.officeAddress}
         />
       </Field>
 
       <Field
-        label="Client"
+        label={labels.client}
         htmlFor="booking-client"
         required
         error={state?.fieldErrors?.clientId}
-        hint="Only clients with an accepted case can be booked with."
+        hint={labels.clientHint}
       >
         <Select
           id="booking-client"
@@ -178,23 +172,25 @@ export function BookingForm({
           onChange={(event) => setClientId(event.target.value)}
           error={state?.fieldErrors?.clientId}
         >
-          <option value="">Choose a client…</option>
+          <option value="">{labels.chooseClient}</option>
           {clients.map((client) => (
             <option key={client.id} value={client.id}>
-              {client.name} ({client.cases.length} case{client.cases.length === 1 ? '' : 's'})
+              {(client.cases.length === 1 ? labels.clientCases : labels.clientCasesPlural)
+                .replace('{name}', client.name)
+                .replace('{count}', String(client.cases.length))}
             </option>
           ))}
         </Select>
       </Field>
 
       <Field
-        label="About which case"
+        label={labels.aboutWhichCase}
         htmlFor="booking-case"
         error={state?.fieldErrors?.caseId}
-        hint="Optional. Defaults to the client's most recent case."
+        hint={labels.aboutWhichCaseHint}
       >
         <Select id="booking-case" name="caseId" disabled={!selectedClient}>
-          <option value="">Most recent case</option>
+          <option value="">{labels.mostRecentCase}</option>
           {(selectedClient?.cases ?? []).map((item) => (
             <option key={item.id} value={item.id}>
               {item.reference} — {item.title}
@@ -203,25 +199,23 @@ export function BookingForm({
         </Select>
       </Field>
 
-      <Field label="Agenda" htmlFor="booking-note" error={state?.fieldErrors?.note}>
+      <Field label={labels.agenda} htmlFor="booking-note" error={state?.fieldErrors?.note}>
         <Textarea
           id="booking-note"
           name="note"
           rows={3}
           maxLength={1000}
-          placeholder="What will be discussed?"
+          placeholder={labels.agendaPlaceholder}
           defaultValue={state?.values?.note ?? ''}
           error={state?.fieldErrors?.note}
         />
       </Field>
 
-      <SubmitButton size="lg" pendingLabel="Booking…">
-        Register booking
+      <SubmitButton size="lg" pendingLabel={labels.booking}>
+        {labels.registerBooking}
       </SubmitButton>
 
-      <p className="text-xs text-slate-500">
-        The client is alerted immediately that they are expected to attend.
-      </p>
+      <p className="text-xs text-slate-500">{labels.alerted}</p>
     </form>
   );
 }

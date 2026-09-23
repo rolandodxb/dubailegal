@@ -31,8 +31,46 @@ export type ProfileFormValues = {
  *
  * Age is shown but never submitted: it is derived from the date of birth, so
  * the two can never contradict each other.
+ *
+ * Every word comes from the server parent, because a client component cannot
+ * read the dictionary for itself.
  */
-export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) {
+export function ProfileForm({
+  profile,
+  labels,
+}: {
+  profile: ProfileFormValues | null;
+  labels: {
+    errorTitle: string;
+    fullName: string;
+    dateOfBirth: string;
+    ageShown: string;
+    ageHint: string;
+    countryOfBirth: string;
+    countryOfBirthHint: string;
+    nationality: string;
+    nationalityHint: string;
+    countryOfResidence: string;
+    countryOfResidenceHint: string;
+    placeOfBirth: string;
+    placeOfBirthHint: string;
+    placeOfBirthPlaceholder: string;
+    phone: string;
+    phoneHint: string;
+    emiratesId: string;
+    emiratesIdBody: string;
+    emiratesIdNumber: string;
+    emiratesIdNumberHint: string;
+    emiratesIdNumberPlaceholder: string;
+    emiratesIdExpiry: string;
+    work: string;
+    workHint: string;
+    education: string;
+    educationHint: string;
+    saving: string;
+    saveProfile: string;
+  };
+}) {
   const [state, formAction] = useActionState(saveProfileAction, initialFormState);
 
   const value = (key: keyof ProfileFormValues, fallback = '') =>
@@ -56,14 +94,19 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
     <form action={formAction} className="space-y-6" noValidate>
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="Your profile was not saved">
+        <Alert tone="error" title={labels.errorTitle}>
           {state.message}
         </Alert>
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Field label="Full name" htmlFor="fullName" required error={state?.fieldErrors?.fullName}>
+          <Field
+            label={labels.fullName}
+            htmlFor="fullName"
+            required
+            error={state?.fieldErrors?.fullName}
+          >
             <Input
               id="fullName"
               name="fullName"
@@ -77,11 +120,13 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
         </div>
 
         <Field
-          label="Date of birth"
+          label={labels.dateOfBirth}
           htmlFor="dateOfBirth"
           required
           error={state?.fieldErrors?.dateOfBirth}
-          hint={age !== null ? `Your age is shown as ${age}.` : 'Used to show your age.'}
+          hint={
+            age !== null ? labels.ageShown.replace('{age}', String(age)) : labels.ageHint
+          }
         >
           <Input
             id="dateOfBirth"
@@ -96,44 +141,44 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
         <CountrySelect
           id="countryOfBirthCode"
           name="countryOfBirthCode"
-          label="Country of birth"
+          label={labels.countryOfBirth}
           required
           defaultValue={countryValue('countryOfBirthCode')}
-          hint="The country that issued your birth documents. This decides which identity document you are asked for."
+          hint={labels.countryOfBirthHint}
           error={state?.fieldErrors?.countryOfBirthCode}
         />
 
         <CountrySelect
           id="nationalityCode"
           name="nationalityCode"
-          label="Nationality"
+          label={labels.nationality}
           required
           defaultValue={countryValue('nationalityCode')}
-          hint="Whose passport you hold. It can differ from where you were born, and often does."
+          hint={labels.nationalityHint}
           error={state?.fieldErrors?.nationalityCode}
         />
 
         <CountrySelect
           id="countryOfResidenceCode"
           name="countryOfResidenceCode"
-          label="Country of residence"
+          label={labels.countryOfResidence}
           required
           defaultValue={countryValue('countryOfResidenceCode')}
-          hint="Where you actually live. If it is not where your nationality is from, a residence permit is asked for as well."
+          hint={labels.countryOfResidenceHint}
           error={state?.fieldErrors?.countryOfResidenceCode}
         />
 
         <Field
-          label="Place of birth, as written"
+          label={labels.placeOfBirth}
           htmlFor="placeOfBirth"
           error={state?.fieldErrors?.placeOfBirth}
-          hint="The town or city, shown to reviewers and never published."
+          hint={labels.placeOfBirthHint}
         >
           <Input
             id="placeOfBirth"
             name="placeOfBirth"
             maxLength={120}
-            placeholder="e.g. Rosario"
+            placeholder={labels.placeOfBirthPlaceholder}
             defaultValue={value('placeOfBirth')}
             error={state?.fieldErrors?.placeOfBirth}
           />
@@ -141,11 +186,11 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
 
         <div className="sm:col-span-2">
           <Field
-            label="Phone number"
+            label={labels.phone}
             htmlFor="phone"
             required
             error={state?.fieldErrors?.phone}
-            hint="Include the country code, for example +971 50 123 4567."
+            hint={labels.phoneHint}
           >
             <Input
               id="phone"
@@ -161,19 +206,16 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
 
       {/* ── Emirates ID ─────────────────────────────────────────────────── */}
       <fieldset className="rounded-xl border border-slate-200 p-4">
-        <legend className="px-1 text-sm font-semibold text-slate-900">Emirates ID</legend>
-        <p className="mb-4 text-xs text-slate-500">
-          Required for every account type. One Emirates ID can verify only one Dubai Legal account.
-          It is never shown publicly — reviewers see the full number, everyone else sees it masked.
-        </p>
+        <legend className="px-1 text-sm font-semibold text-slate-900">{labels.emiratesId}</legend>
+        <p className="mb-4 text-xs text-slate-500">{labels.emiratesIdBody}</p>
 
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
-            label="Emirates ID number"
+            label={labels.emiratesIdNumber}
             htmlFor="emiratesIdNumber"
             required
             error={state?.fieldErrors?.emiratesIdNumber}
-            hint="15 digits, in the form 784-YYYY-NNNNNNN-C."
+            hint={labels.emiratesIdNumberHint}
           >
             <Input
               id="emiratesIdNumber"
@@ -183,12 +225,16 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
               value={emiratesId}
               onChange={(event) => setEmiratesId(event.target.value)}
               onBlur={(event) => setEmiratesId(formatEmiratesId(event.target.value))}
-              placeholder="784-1990-1234567-1"
+              placeholder={labels.emiratesIdNumberPlaceholder}
               error={state?.fieldErrors?.emiratesIdNumber}
             />
           </Field>
 
-          <Field label="Emirates ID expiry" htmlFor="emiratesIdExpiry" error={state?.fieldErrors?.emiratesIdExpiry}>
+          <Field
+            label={labels.emiratesIdExpiry}
+            htmlFor="emiratesIdExpiry"
+            error={state?.fieldErrors?.emiratesIdExpiry}
+          >
             <Input
               id="emiratesIdExpiry"
               name="emiratesIdExpiry"
@@ -209,11 +255,11 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
 
       {/* ── Work and education ──────────────────────────────────────────── */}
       <Field
-        label="Your work"
+        label={labels.work}
         htmlFor="workDescription"
         required
         error={state?.fieldErrors?.workDescription}
-        hint="Briefly describe what you actually do. Lawyers and firms: describe your practice."
+        hint={labels.workHint}
       >
         <Textarea
           id="workDescription"
@@ -227,11 +273,11 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
       </Field>
 
       <Field
-        label="Education background"
+        label={labels.education}
         htmlFor="educationBackground"
         required
         error={state?.fieldErrors?.educationBackground}
-        hint="Degrees, institutions and years. This is shown on your public profile."
+        hint={labels.educationHint}
       >
         <Textarea
           id="educationBackground"
@@ -244,8 +290,8 @@ export function ProfileForm({ profile }: { profile: ProfileFormValues | null }) 
         />
       </Field>
 
-      <SubmitButton size="lg" pendingLabel="Saving…">
-        Save profile
+      <SubmitButton size="lg" pendingLabel={labels.saving}>
+        {labels.saveProfile}
       </SubmitButton>
     </form>
   );

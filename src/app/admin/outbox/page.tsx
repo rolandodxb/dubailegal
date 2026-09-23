@@ -3,13 +3,18 @@ import { requireReviewer } from '@/lib/auth';
 import { getAuditTrail, listOutbox } from '@/server/services/admin-service';
 import { env } from '@/lib/env';
 import { formatDateTime } from '@/lib/format';
+import { getI18n } from '@/lib/i18n';
 import { Alert, Card } from '@/components/ui/primitives';
 
 export const metadata: Metadata = { title: 'Outbox' };
 
 export default async function OutboxPage() {
-  await requireReviewer();
+  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
   const [{ rows, counts }, auditTrail] = await Promise.all([listOutbox(50), getAuditTrail(40)]);
+
+  const statusLabel: Record<string, string> = t.admin.outbox.status;
+  const purposeLabel: Record<string, string> = t.admin.outbox.purpose;
+  const actionLabel: Record<string, string> = t.admin.traffic.action;
 
   const queued = counts.find((entry) => entry.status === 'QUEUED')?._count._all ?? 0;
   const sent = counts.find((entry) => entry.status === 'SENT')?._count._all ?? 0;
@@ -18,25 +23,21 @@ export default async function OutboxPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Outbox</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Every message Dubai Legal has tried to send. Email confirmation and password reset links
-          appear here in full, which is how you can act on them on an installation with no mail
-          provider.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.admin.outbox.title}</h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">{t.admin.outbox.intro}</p>
       </header>
 
-      <Alert tone="warning" title={`Delivery provider: ${env.emailProvider}`}>
+      <Alert tone="warning" title={`${t.admin.outbox.deliveryProvider}: ${env.emailProvider}`}>
         {env.emailProvider === 'outbox'
-          ? 'No SMTP provider is configured. Messages below are recorded in the database and were NOT emailed to anyone. Users are told exactly this, so nothing claims a delivery that did not happen.'
-          : `Messages are handed to the "${env.emailProvider}" transport. Recorded failures are listed below.`}
+          ? t.admin.outbox.noProviderBody
+          : t.admin.outbox.transportBody.replace('{provider}', env.emailProvider)}
       </Alert>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Recorded, not sent', value: queued },
-          { label: 'Sent', value: sent },
-          { label: 'Failed', value: failed },
+          { label: t.admin.outbox.stats.recordedNotSent, value: queued },
+          { label: t.admin.outbox.stats.sent, value: sent },
+          { label: t.admin.outbox.stats.failed, value: failed },
         ].map((stat) => (
           <Card key={stat.label}>
             <p className="text-sm text-slate-600">{stat.label}</p>
@@ -46,9 +47,11 @@ export default async function OutboxPage() {
       </div>
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Messages ({rows.length})</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">
+          {t.admin.outbox.messagesHeading} ({rows.length})
+        </h2>
         {rows.length === 0 ? (
-          <p className="text-sm text-slate-600">No messages have been recorded yet.</p>
+          <p className="text-sm text-slate-600">{t.admin.outbox.noMessages}</p>
         ) : (
           <ul className="space-y-3">
             {rows.map((message) => (
@@ -57,8 +60,10 @@ export default async function OutboxPage() {
                   <div className="min-w-0">
                     <h3 className="font-medium text-slate-900">{message.subject}</h3>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      To {message.toEmail} · {message.purpose.replace(/_/g, ' ').toLowerCase()} ·{' '}
-                      {formatDateTime(message.createdAt)}
+                      {t.admin.outbox.to} {message.toEmail} ·{' '}
+                      {purposeLabel[message.purpose] ??
+                        message.purpose.replace(/_/g, ' ').toLowerCase()}{' '}
+                      · {formatDateTime(message.createdAt)}
                     </p>
                   </div>
                   <span
@@ -70,12 +75,12 @@ export default async function OutboxPage() {
                           : 'bg-amber-50 text-amber-900 ring-amber-200'
                     }`}
                   >
-                    {message.status === 'QUEUED' ? 'Recorded, not sent' : message.status.toLowerCase()}
+                    {statusLabel[message.status] ?? message.status.toLowerCase()}
                   </span>
                 </div>
                 <details className="mt-3">
                   <summary className="cursor-pointer text-sm font-medium text-brand-700">
-                    Show full message
+                    {t.admin.outbox.showFullMessage}
                   </summary>
                   <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800">
                     {message.bodyText}
@@ -88,27 +93,26 @@ export default async function OutboxPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Audit trail</h2>
-        <p className="mb-3 text-sm text-slate-600">
-          Consequential actions, most recent first. Reading a member&rsquo;s identity documents and
-          recording a decision both appear here.
-        </p>
+        <h2 className="mb-3 font-semibold text-slate-900">{t.admin.outbox.auditTrailHeading}</h2>
+        <p className="mb-3 text-sm text-slate-600">{t.admin.outbox.auditTrailIntro}</p>
         {auditTrail.length === 0 ? (
-          <p className="text-sm text-slate-600">Nothing recorded yet.</p>
+          <p className="text-sm text-slate-600">{t.admin.outbox.noAudit}</p>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
             {auditTrail.map((entry) => (
               <li key={entry.id} className="px-4 py-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-slate-900">
-                    <span className="font-mono text-xs">{entry.action}</span>
+                    <span className="font-mono text-xs">
+                      {actionLabel[entry.action] ?? entry.action}
+                    </span>
                     <span className="ml-2 text-xs text-slate-500">
                       {entry.entityType}
                       {entry.entityId ? ` ${entry.entityId.slice(0, 10)}…` : ''}
                     </span>
                   </p>
                   <p className="text-xs text-slate-500">
-                    {entry.actor?.email ?? 'system'} · {formatDateTime(entry.createdAt)}
+                    {entry.actor?.email ?? t.admin.outbox.system} · {formatDateTime(entry.createdAt)}
                   </p>
                 </div>
               </li>

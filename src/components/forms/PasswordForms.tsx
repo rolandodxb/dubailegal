@@ -13,7 +13,19 @@ import { MIN_PASSWORD_LENGTH } from '@/lib/constants';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Alert, Field, Input } from '@/components/ui/primitives';
 
-export function ForgotPasswordForm() {
+/**
+ * The password forms.
+ *
+ * Each one takes the words it shows from the page that renders it: these are
+ * client components, so they cannot read the dictionary themselves. The password
+ * rule is the one sentence they all share, so it is passed in as a template and
+ * filled with the configured minimum length here.
+ */
+export function ForgotPasswordForm({
+  labels,
+}: {
+  labels: { email: string; pending: string; submit: string; backToSignIn: string };
+}) {
   const [state, formAction] = useActionState(forgotPasswordAction, initialFormState);
 
   return (
@@ -21,7 +33,7 @@ export function ForgotPasswordForm() {
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
-      <Field label="Email address" htmlFor="email" required error={state?.fieldErrors?.email}>
+      <Field label={labels.email} htmlFor="email" required error={state?.fieldErrors?.email}>
         <Input
           id="email"
           name="email"
@@ -34,26 +46,40 @@ export function ForgotPasswordForm() {
         />
       </Field>
 
-      <SubmitButton className="w-full" size="lg" pendingLabel="Sending…">
-        Send reset link
+      <SubmitButton className="w-full" size="lg" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
 
       <p className="text-center text-sm">
         <Link href="/login" className="font-medium text-brand-700 hover:underline">
-          Back to sign in
+          {labels.backToSignIn}
         </Link>
       </p>
     </form>
   );
 }
 
-export function ResetPasswordForm({ token }: { token: string }) {
+export function ResetPasswordForm({
+  token,
+  labels,
+}: {
+  token: string;
+  labels: {
+    failedTitle: string;
+    newPassword: string;
+    passwordHint: string;
+    confirmNewPassword: string;
+    pending: string;
+    submit: string;
+    note: string;
+  };
+}) {
   const [state, formAction] = useActionState(resetPasswordAction, initialFormState);
 
   return (
     <form action={formAction} className="space-y-5" noValidate>
       {state && !state.ok && state.message ? (
-        <Alert tone="error" title="Could not reset your password">
+        <Alert tone="error" title={labels.failedTitle}>
           {state.message}
         </Alert>
       ) : null}
@@ -61,11 +87,11 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <input type="hidden" name="token" value={token} />
 
       <Field
-        label="New password"
+        label={labels.newPassword}
         htmlFor="password"
         required
         error={state?.fieldErrors?.password}
-        hint={`At least ${MIN_PASSWORD_LENGTH} characters, including a letter and a number.`}
+        hint={labels.passwordHint.replace('{count}', String(MIN_PASSWORD_LENGTH))}
       >
         <Input
           id="password"
@@ -78,7 +104,12 @@ export function ResetPasswordForm({ token }: { token: string }) {
         />
       </Field>
 
-      <Field label="Confirm new password" htmlFor="confirmPassword" required error={state?.fieldErrors?.confirmPassword}>
+      <Field
+        label={labels.confirmNewPassword}
+        htmlFor="confirmPassword"
+        required
+        error={state?.fieldErrors?.confirmPassword}
+      >
         <Input
           id="confirmPassword"
           name="confirmPassword"
@@ -89,18 +120,27 @@ export function ResetPasswordForm({ token }: { token: string }) {
         />
       </Field>
 
-      <SubmitButton className="w-full" size="lg" pendingLabel="Saving…">
-        Set new password
+      <SubmitButton className="w-full" size="lg" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
 
-      <p className="text-xs text-slate-500">
-        Setting a new password signs out every device that was already signed in.
-      </p>
+      <p className="text-xs text-slate-500">{labels.note}</p>
     </form>
   );
 }
 
-export function ChangePasswordForm() {
+export function ChangePasswordForm({
+  labels,
+}: {
+  labels: {
+    currentPassword: string;
+    newPassword: string;
+    passwordHint: string;
+    confirmNewPassword: string;
+    pending: string;
+    submit: string;
+  };
+}) {
   const [state, formAction] = useActionState(changePasswordAction, initialFormState);
 
   return (
@@ -109,7 +149,7 @@ export function ChangePasswordForm() {
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
       <Field
-        label="Current password"
+        label={labels.currentPassword}
         htmlFor="currentPassword"
         required
         error={state?.fieldErrors?.currentPassword}
@@ -125,11 +165,11 @@ export function ChangePasswordForm() {
       </Field>
 
       <Field
-        label="New password"
+        label={labels.newPassword}
         htmlFor="newPassword"
         required
         error={state?.fieldErrors?.password}
-        hint={`At least ${MIN_PASSWORD_LENGTH} characters, including a letter and a number.`}
+        hint={labels.passwordHint.replace('{count}', String(MIN_PASSWORD_LENGTH))}
       >
         <Input
           id="newPassword"
@@ -142,7 +182,12 @@ export function ChangePasswordForm() {
         />
       </Field>
 
-      <Field label="Confirm new password" htmlFor="confirmNewPassword" required error={state?.fieldErrors?.confirmPassword}>
+      <Field
+        label={labels.confirmNewPassword}
+        htmlFor="confirmNewPassword"
+        required
+        error={state?.fieldErrors?.confirmPassword}
+      >
         <Input
           id="confirmNewPassword"
           name="confirmPassword"
@@ -153,20 +198,24 @@ export function ChangePasswordForm() {
         />
       </Field>
 
-      <SubmitButton pendingLabel="Updating…">Change password</SubmitButton>
+      <SubmitButton pendingLabel={labels.pending}>{labels.submit}</SubmitButton>
     </form>
   );
 }
 
-export function ResendVerificationForm() {
+export function ResendVerificationForm({
+  labels,
+}: {
+  labels: { pending: string; submit: string };
+}) {
   const [state, formAction] = useActionState(resendVerificationAction, initialFormState);
 
   return (
     <form action={formAction} className="space-y-3">
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
-      <SubmitButton variant="secondary" pendingLabel="Requesting…">
-        Send the confirmation message again
+      <SubmitButton variant="secondary" pendingLabel={labels.pending}>
+        {labels.submit}
       </SubmitButton>
     </form>
   );

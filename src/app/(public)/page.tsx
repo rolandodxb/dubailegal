@@ -7,7 +7,8 @@ import { listPosts } from '@/server/services/blog-service';
 import { CommunityPanel } from '@/components/community/CommunityPanel';
 import { getI18n } from '@/lib/i18n';
 import { landingContent } from '@/lib/i18n/content';
-import { BADGE, DOCUMENT_REQUIREMENTS } from '@/lib/constants';
+import { BADGE, DOCUMENT_REQUIREMENTS, LEGAL_AREAS } from '@/lib/constants';
+import { legalAreaLabel } from '@/lib/i18n/labels';
 import { VerificationBadge } from '@/components/VerificationBadge';
 import { Icon, type IconName } from '@/components/icons';
 import { DOMAINS, domainChip, type Domain } from '@/lib/domains';
@@ -80,12 +81,6 @@ const BADGE_TYPES: AccountType[] = ['USER', 'LAWYER', 'FIRM'];
 
 /** How many community posts the panel on this page shows. */
 const COMMUNITY_PREVIEW = 4;
-
-/** The browser tab, in the language being read. */
-export async function generateMetadata() {
-  const { t } = await getI18n();
-  return { title: t.landing.metaTitle, description: t.landing.metaDescription };
-}
 
 export default async function LandingPage({
   searchParams,
@@ -356,7 +351,7 @@ export default async function LandingPage({
             </div>
 
             <Card className="w-full max-w-sm">
-              <h3 className="text-sm font-semibold text-slate-900">How it reaches someone</h3>
+              <h3 className="text-sm font-semibold text-slate-900">{t.landing.emergencyStepsHeading}</h3>
               <ol className="mt-3 space-y-3 text-sm text-slate-600">
                 <li className="flex gap-3">
                   <span className="font-semibold text-slate-400">1</span>
@@ -489,7 +484,29 @@ export default async function LandingPage({
 
             <Card>
               <h3 className="mb-4 font-semibold text-slate-900">{t.landing.enquirySend}</h3>
-              <PublicEnquiryForm compact />
+              <PublicEnquiryForm
+                compact
+                labels={{
+                  sentTitle: t.publicPages.enquiryForm.sentTitle,
+                  failedTitle: t.publicPages.enquiryForm.failedTitle,
+                  name: t.publicPages.enquiryForm.name,
+                  email: t.common.email,
+                  phone: t.common.phone,
+                  areaOfLaw: t.publicPages.enquiryForm.areaOfLaw,
+                  areaOptions: LEGAL_AREAS.map((area) => ({
+                    value: area.value,
+                    label: legalAreaLabel(t, area.value),
+                  })),
+                  notSure: t.publicPages.enquiryForm.notSure,
+                  subject: t.publicPages.enquiryForm.subject,
+                  subjectPlaceholder: t.publicPages.enquiryForm.subjectPlaceholder,
+                  question: t.publicPages.enquiryForm.question,
+                  questionHint: t.publicPages.enquiryForm.questionHint,
+                  pending: t.publicPages.enquiryForm.pending,
+                  submit: t.landing.enquirySubmit,
+                  poolNote: t.landing.enquiryPoolNote,
+                }}
+              />
             </Card>
           </div>
         </div>

@@ -9,12 +9,21 @@ import {
 } from '@/app/actions/appointment-actions';
 import { initialFormState } from '@/lib/form-state';
 import { BOOKABLE_HOURS } from '@/lib/appointment-slots';
+import type { MemberCasesDict } from '@/lib/i18n/dict/memberCases';
 import { buttonClasses, Field, Input, Select } from '@/components/ui/primitives';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Icon } from '@/components/icons';
 
+type AppointmentLabels = MemberCasesDict['appointment'];
+
 /** Lets either side call off a meeting. The other party is notified in-app. */
-export function CancelAppointmentButton({ appointmentId }: { appointmentId: string }) {
+export function CancelAppointmentButton({
+  appointmentId,
+  labels,
+}: {
+  appointmentId: string;
+  labels: AppointmentLabels;
+}) {
   const [state, formAction] = useActionState(cancelAppointmentAction, initialFormState);
 
   return (
@@ -29,10 +38,10 @@ export function CancelAppointmentButton({ appointmentId }: { appointmentId: stri
       <SubmitButton
         variant="ghost"
         size="sm"
-        confirm="Cancel this meeting? The other party will be told."
-        pendingLabel="Cancelling…"
+        confirm={labels.cancelConfirm}
+        pendingLabel={labels.cancelling}
       >
-        Cancel meeting
+        {labels.cancelMeeting}
       </SubmitButton>
     </form>
   );
@@ -51,12 +60,17 @@ export function RescheduleAppointmentForm({
   defaultHour,
   defaultMode,
   defaultOfficeAddress,
+  labels,
+  modeLabels,
 }: {
   appointmentId: string;
   defaultDateKey: string;
   defaultHour: number;
   defaultMode: string;
   defaultOfficeAddress: string | null;
+  labels: AppointmentLabels;
+  /** The three ways a meeting can happen, in the reader's language. */
+  modeLabels: { VIDEO_CALL: string; OFFICE_VISIT: string; PHONE_CALL: string };
 }) {
   const [state, formAction] = useActionState(rescheduleAppointmentAction, initialFormState);
   const mode = state?.values?.mode ?? defaultMode;
@@ -67,7 +81,7 @@ export function RescheduleAppointmentForm({
       <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-slate-700 marker:content-none">
         <span className="inline-flex items-center gap-1.5">
           <Icon name="calendar" size={14} />
-          Change the time
+          {labels.changeTime}
         </span>
       </summary>
 
@@ -84,7 +98,7 @@ export function RescheduleAppointmentForm({
         {state?.ok ? null : (
           <>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="New date" htmlFor={`date-${appointmentId}`} required error={state?.fieldErrors?.dateKey}>
+              <Field label={labels.newDate} htmlFor={`date-${appointmentId}`} required error={state?.fieldErrors?.dateKey}>
                 <Input
                   id={`date-${appointmentId}`}
                   name="dateKey"
@@ -95,7 +109,7 @@ export function RescheduleAppointmentForm({
                 />
               </Field>
 
-              <Field label="Hour (UAE)" htmlFor={`hour-${appointmentId}`} required error={state?.fieldErrors?.hour}>
+              <Field label={labels.hourUae} htmlFor={`hour-${appointmentId}`} required error={state?.fieldErrors?.hour}>
                 <Select
                   id={`hour-${appointmentId}`}
                   name="hour"
@@ -111,7 +125,7 @@ export function RescheduleAppointmentForm({
                 </Select>
               </Field>
 
-              <Field label="Happens by" htmlFor={`mode-${appointmentId}`} required error={state?.fieldErrors?.mode}>
+              <Field label={labels.happensBy} htmlFor={`mode-${appointmentId}`} required error={state?.fieldErrors?.mode}>
                 <Select
                   id={`mode-${appointmentId}`}
                   name="mode"
@@ -119,20 +133,20 @@ export function RescheduleAppointmentForm({
                   defaultValue={mode}
                   error={state?.fieldErrors?.mode}
                 >
-                  <option value="OFFICE_VISIT">Office visit</option>
-                  <option value="VIDEO_CALL">Video call</option>
-                  <option value="PHONE_CALL">Phone call</option>
+                  <option value="OFFICE_VISIT">{modeLabels.OFFICE_VISIT}</option>
+                  <option value="VIDEO_CALL">{modeLabels.VIDEO_CALL}</option>
+                  <option value="PHONE_CALL">{modeLabels.PHONE_CALL}</option>
                 </Select>
               </Field>
             </div>
 
             {mode === 'OFFICE_VISIT' ? (
               <Field
-                label="Office address"
+                label={labels.officeAddress}
                 htmlFor={`address-${appointmentId}`}
                 required
                 error={state?.fieldErrors?.officeAddress}
-                hint="The client is asked to accept the new time, because they have to travel."
+                hint={labels.officeAddressHint}
               >
                 <Input
                   id={`address-${appointmentId}`}
@@ -145,13 +159,10 @@ export function RescheduleAppointmentForm({
               </Field>
             ) : null}
 
-            <p className="text-[11px] text-slate-500">
-              If the meeting is a video call, a conference room is created or kept. The client is told
-              the new time either way.
-            </p>
+            <p className="text-[11px] text-slate-500">{labels.rescheduleNote}</p>
 
-            <SubmitButton size="sm" pendingLabel="Moving…">
-              Save the new time
+            <SubmitButton size="sm" pendingLabel={labels.moving}>
+              {labels.saveNewTime}
             </SubmitButton>
           </>
         )}
@@ -167,7 +178,13 @@ export function RescheduleAppointmentForm({
  * party, a deletion removes the arrangement and tells nobody. The button says so
  * before it is pressed, because that difference is the whole point of having both.
  */
-export function DeleteAppointmentButton({ appointmentId }: { appointmentId: string }) {
+export function DeleteAppointmentButton({
+  appointmentId,
+  labels,
+}: {
+  appointmentId: string;
+  labels: AppointmentLabels;
+}) {
   const [state, formAction] = useActionState(deleteAppointmentAction, initialFormState);
 
   return (
@@ -182,14 +199,12 @@ export function DeleteAppointmentButton({ appointmentId }: { appointmentId: stri
       <SubmitButton
         variant="danger"
         size="sm"
-        confirm="Delete this meeting? The client will NOT be told — use Cancel instead if you want them alerted."
-        pendingLabel="Deleting…"
+        confirm={labels.deleteConfirm}
+        pendingLabel={labels.deleting}
       >
-        Delete meeting
+        {labels.deleteMeeting}
       </SubmitButton>
-      <p className="mt-1 text-[11px] text-slate-500">
-        Deleting removes it and tells the client nothing. Cancel instead if they should be alerted.
-      </p>
+      <p className="mt-1 text-[11px] text-slate-500">{labels.deleteNote}</p>
     </form>
   );
 }
@@ -201,7 +216,13 @@ export function DeleteAppointmentButton({ appointmentId }: { appointmentId: stri
  * it needed to say, should not leave a room open that keeps looking like it is
  * waiting for somebody. Both sides are told it is over.
  */
-export function CancelCallButton({ appointmentId }: { appointmentId: string }) {
+export function CancelCallButton({
+  appointmentId,
+  labels,
+}: {
+  appointmentId: string;
+  labels: AppointmentLabels;
+}) {
   const [state, formAction] = useActionState(cancelAppointmentAction, initialFormState);
   const router = useRouter();
 
@@ -211,7 +232,10 @@ export function CancelCallButton({ appointmentId }: { appointmentId: string }) {
         <p className="text-xs font-medium text-red-700">{state.message}</p>
       ) : null}
       {state?.ok && state.message ? (
-        <p className="text-xs font-medium text-green-700">{state.message} The room is closed.</p>
+        <p className="text-xs font-medium text-green-700">
+          {state.message}
+          {labels.roomClosed}
+        </p>
       ) : null}
       <input type="hidden" name="appointmentId" value={appointmentId} />
       {state?.ok ? (
@@ -220,15 +244,15 @@ export function CancelCallButton({ appointmentId }: { appointmentId: string }) {
           onClick={() => router.push('/rooms')}
           className={buttonClasses('secondary', 'md')}
         >
-          Back to my rooms
+          {labels.backToRooms}
         </button>
       ) : (
         <SubmitButton
           variant="danger"
-          confirm="End this call? The room closes and the other person is told."
-          pendingLabel="Ending…"
+          confirm={labels.endCallConfirm}
+          pendingLabel={labels.ending}
         >
-          End this call
+          {labels.endCall}
         </SubmitButton>
       )}
     </form>

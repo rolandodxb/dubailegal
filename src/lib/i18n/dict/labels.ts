@@ -117,7 +117,7 @@ export const labelsEn = {
     MONEY_DEBT: 'Money, debt and cheques',
     COURTS_PROCEDURE: 'Courts, notaries and procedure',
     COSTS_FEES: 'Fees, costs and payments',
-    USING_DUBAI_LEGAL: 'Using Dubai Legal',
+    USING_DUBAI_LEGAL: 'Using Legal Dash',
     OTHER: 'Something else',
   },
 
@@ -305,7 +305,7 @@ export const labelsEs: LabelsDict = {
     MONEY_DEBT: 'Dinero, deudas y cheques',
     COURTS_PROCEDURE: 'Tribunales, notarios y procedimiento',
     COSTS_FEES: 'Honorarios, costas y pagos',
-    USING_DUBAI_LEGAL: 'Usar Dubai Legal',
+    USING_DUBAI_LEGAL: 'Usar Legal Dash',
     OTHER: 'Otro asunto',
   },
 

@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { accountTypeLabel, emirateLabel, legalAreaLabel } from '@/lib/i18n/labels';
 import { getListingById } from '@/server/services/directory-service';
 import { getAvailability, isEnabled } from '@/lib/availability';
-import { ACCOUNT_TYPE_LABEL, EMIRATE_LABEL, LEGAL_AREA_LABEL } from '@/lib/constants';
+import { LEGAL_AREAS } from '@/lib/constants';
 import { CaseSubmissionForm } from '@/components/forms/CaseSubmissionForm';
 import { VerificationStatusPill } from '@/components/VerificationBadge';
 import { Alert, Card, Chip } from '@/components/ui/primitives';
@@ -16,15 +18,15 @@ export default async function NewCasePage({
 }: {
   searchParams: Promise<{ listing?: string }>;
 }) {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const labels = t.memberCases.newCase;
   const { listing: listingId } = await searchParams;
 
   const availability = await getAvailability();
   if (!isEnabled(availability.settings, 'feature.case_submission')) {
     return (
-      <Alert tone="warning" title="Sending new cases is switched off">
-        An administrator has temporarily disabled case submission. Existing cases continue as
-        normal.
+      <Alert tone="warning" title={labels.switchedOff}>
+        {labels.switchedOffBody}
       </Alert>
     );
   }
@@ -39,18 +41,16 @@ export default async function NewCasePage({
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm" aria-label="Breadcrumb">
+      <nav className="text-sm" aria-label={t.memberCases.breadcrumb}>
         <Link href={`/directory/${listing.id}`} className="text-brand-700 hover:underline">
-          ← Back to {professionalName}
+          {labels.backTo.replace('{name}', professionalName)}
         </Link>
       </nav>
 
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Get in touch about a case</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Describe the matter and attach anything relevant. It is sent to {professionalName} as a
-          request to review, and you can follow its progress and message them directly once they
-          open it.
+          {labels.intro.replace('{name}', professionalName)}
         </p>
       </header>
 
@@ -63,16 +63,18 @@ export default async function NewCasePage({
               <VerificationStatusPill
                 accountType={listing.user.accountType}
                 status={listing.user.verificationStatus}
+                label={t.badges[listing.user.accountType]}
+                statusLabel={t.verificationStatus[listing.user.verificationStatus]}
               />
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              {ACCOUNT_TYPE_LABEL[listing.user.accountType]} ·{' '}
-              {EMIRATE_LABEL[listing.primaryEmirate]}
+              {accountTypeLabel(t, listing.user.accountType)} ·{' '}
+              {emirateLabel(t, listing.primaryEmirate)}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {listing.areas.slice(0, 5).map((area) => (
                 <Chip key={area} tone="brand">
-                  {LEGAL_AREA_LABEL[area]}
+                  {legalAreaLabel(t, area)}
                 </Chip>
               ))}
             </div>
@@ -81,8 +83,7 @@ export default async function NewCasePage({
 
         {listing.user.verificationStatus !== 'APPROVED' ? (
           <Alert tone="warning" className="mt-4">
-            This member&rsquo;s documents have not been reviewed yet. You can still send a case, but
-            confirm their licence with the relevant authority before instructing them.
+            {labels.unreviewedWarning}
           </Alert>
         ) : null}
       </Card>
@@ -92,6 +93,16 @@ export default async function NewCasePage({
           listingId={listing.id}
           professionalName={professionalName}
           suggestedType={listing.areas[0]}
+          labels={t.memberCases.caseForm}
+          areaOptions={LEGAL_AREAS.map((area) => ({
+            value: area.value,
+            label: legalAreaLabel(t, area.value),
+          }))}
+          statusLabels={{
+            submitted: t.labels.caseStatus.SUBMITTED,
+            underReview: t.labels.caseStatus.UNDER_REVIEW,
+            assigned: t.labels.caseStatus.ASSIGNED,
+          }}
         />
       </Card>
     </div>

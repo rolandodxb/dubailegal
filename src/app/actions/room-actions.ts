@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requestMeta, requireActiveUser, requireReviewer } from '@/lib/auth';
 import type { FormState } from '@/lib/form-state';
 import { deleteAllRecordings, deleteRecording, saveRoomRecording } from '@/server/services/room-recording-service';
+import { localiseFormState } from '@/lib/i18n/form-messages';
 
 /**
  * Stores a finished call recording.
@@ -12,7 +13,7 @@ import { deleteAllRecordings, deleteRecording, saveRoomRecording } from '@/serve
  * service decides whether this account was actually on the call, so a recording
  * cannot be attached to somebody else's room.
  */
-export async function saveRoomRecordingAction(
+async function saveRoomRecordingActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -42,7 +43,7 @@ export async function saveRoomRecordingAction(
  * administration, not something a participant does to their own evidence
  * mid-dispute.
  */
-export async function deleteRecordingAction(
+async function deleteRecordingActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -56,7 +57,7 @@ export async function deleteRecordingAction(
   return { ok: true, message: 'The recording and its file have been destroyed.' };
 }
 
-export async function deleteAllRecordingsAction(
+async function deleteAllRecordingsActionImpl(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -78,4 +79,31 @@ export async function deleteAllRecordingsAction(
         ? 'There were no recordings to delete.'
         : `${result.data.deleted} recording${result.data.deleted === 1 ? '' : 's'} destroyed, files included.`,
   };
+}
+
+/**
+ * The actions, localised.
+ *
+ * Each one is the same function with its result passed through the message
+ * catalogue, so a failed form reads in the language the member is using. The
+ * implementation keeps its own name with an `Impl` suffix because a `'use
+ * server'` module may only export async function declarations — a wrapped
+ * constant would be rejected at build time.
+ */
+export async function saveRoomRecordingAction(
+  ...args: Parameters<typeof saveRoomRecordingActionImpl>
+): Promise<Awaited<ReturnType<typeof saveRoomRecordingActionImpl>>> {
+  return localiseFormState(await saveRoomRecordingActionImpl(...args));
+}
+
+export async function deleteRecordingAction(
+  ...args: Parameters<typeof deleteRecordingActionImpl>
+): Promise<Awaited<ReturnType<typeof deleteRecordingActionImpl>>> {
+  return localiseFormState(await deleteRecordingActionImpl(...args));
+}
+
+export async function deleteAllRecordingsAction(
+  ...args: Parameters<typeof deleteAllRecordingsActionImpl>
+): Promise<Awaited<ReturnType<typeof deleteAllRecordingsActionImpl>>> {
+  return localiseFormState(await deleteAllRecordingsActionImpl(...args));
 }

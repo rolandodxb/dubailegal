@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireProfessional } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
 import { listCasesForFirm, listCasesForLawyer, unreadMessageCountsByCase } from '@/server/services/case-service';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 import { CaseCard } from '@/components/cases/CaseCard';
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: 'Cases pending review' };
  * case from here.
  */
 export default async function PendingCasesPage() {
-  const user = await requireProfessional();
+  const [{ t }, user] = await Promise.all([getI18n(), requireProfessional()]);
   const isFirm = user.accountType === 'FIRM';
 
   const [lawyerCases, firmCases, unread] = await Promise.all([
@@ -29,33 +30,35 @@ export default async function PendingCasesPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Cases pending review</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t.items.pending}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          {isFirm
-            ? 'Open a case, decide it is a fit, then release it to your registered lawyers. They each choose to take it or pass, and the first to take it is assigned.'
-            : 'New cases sent to you that nobody has picked up, and the ones you have opened for review.'}
+          {isFirm ? t.memberCore.pending.introFirm : t.memberCore.pending.introLawyer}
         </p>
       </header>
 
       {isFirm ? (
-        <Alert tone="info" title="How cases reach your lawyers">
-          A case submitted to {user.profile?.fullName?.trim() || 'your firm'} lands here first. Open it
-          and, if you have a lawyer who fits the work, press <strong>Accept and send to our
-          lawyers</strong> — every registered lawyer is then offered it and decides for themselves.
+        <Alert tone="info" title={t.memberCore.pending.howReachTitle}>
+          {t.memberCore.pending.howReachBefore.replace(
+            '{name}',
+            user.profile?.fullName?.trim() || t.memberCore.pending.yourFirm,
+          )}
+          <strong>{t.memberCore.pending.howReachAction}</strong>
+          {t.memberCore.pending.howReachAfter}
         </Alert>
       ) : null}
 
       <section>
         <h2 className="mb-3 font-semibold text-slate-900">
-          {isFirm ? 'Waiting for your decision' : 'Waiting to be picked up'} ({waiting.length})
+          {isFirm
+            ? t.memberCore.pending.waitingForDecision
+            : t.memberCore.pending.waitingToBePickedUp}{' '}
+          ({waiting.length})
         </h2>
         {waiting.length === 0 ? (
           <EmptyState
-            title="Nothing waiting"
+            title={t.memberCore.pending.nothingWaiting}
             description={
-              isFirm
-                ? 'Cases sent to your firm appear here until one of your lawyers accepts them.'
-                : 'Cases sent to you from your directory listing appear here.'
+              isFirm ? t.memberCore.pending.emptyFirm : t.memberCore.pending.emptyLawyer
             }
           />
         ) : (
@@ -67,7 +70,9 @@ export default async function PendingCasesPage() {
                 perspective="professional"
                 action={{
                   href: `/cases/${item.id}`,
-                  label: isFirm ? 'Open and review' : 'Review the case',
+                  label: isFirm
+                    ? t.memberCore.pending.openAndReview
+                    : t.memberCore.pending.reviewTheCase,
                 }}
                 unreadCount={unread.get(item.id) ?? 0}
               />
@@ -79,11 +84,13 @@ export default async function PendingCasesPage() {
       {isFirm && distributed.length > 0 ? (
         <section>
           <h2 className="mb-3 font-semibold text-slate-900">
-            With your lawyers ({distributed.length})
+            {t.memberCore.pending.withYourLawyers.replace(
+              '{count}',
+              String(distributed.length),
+            )}
           </h2>
           <p className="mb-3 text-sm text-slate-600">
-            Released and waiting for one of them to answer. Open a case to see who has passed and who
-            has not replied.
+            {t.memberCore.pending.withYourLawyersBody}
           </p>
           <ul className="grid gap-4 sm:grid-cols-2">
             {distributed.map((item) => (
@@ -91,7 +98,7 @@ export default async function PendingCasesPage() {
                 key={item.id}
                 item={item}
                 perspective="professional"
-                action={{ href: `/cases/${item.id}`, label: 'See who answered' }}
+                action={{ href: `/cases/${item.id}`, label: t.memberCore.pending.seeWhoAnswered }}
                 unreadCount={unread.get(item.id) ?? 0}
               />
             ))}
@@ -101,14 +108,16 @@ export default async function PendingCasesPage() {
 
       {inReview.length > 0 ? (
         <section>
-          <h2 className="mb-3 font-semibold text-slate-900">Opened for review ({inReview.length})</h2>
+          <h2 className="mb-3 font-semibold text-slate-900">
+            {t.memberCore.pending.openedForReview.replace('{count}', String(inReview.length))}
+          </h2>
           <ul className="grid gap-4 sm:grid-cols-2">
             {inReview.map((item) => (
               <CaseCard
                 key={item.id}
                 item={item}
                 perspective="professional"
-                action={{ href: `/cases/${item.id}`, label: 'Continue review' }}
+                action={{ href: `/cases/${item.id}`, label: t.memberCore.pending.continueReview }}
                 unreadCount={unread.get(item.id) ?? 0}
               />
             ))}
@@ -118,13 +127,10 @@ export default async function PendingCasesPage() {
 
       {isFirm ? (
         <Card>
-          <h2 className="font-semibold text-slate-900">Not a lawyer yourself?</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            A firm account cannot accept a case — only a registered lawyer can. Add your lawyers so
-            they can pick cases up.
-          </p>
+          <h2 className="font-semibold text-slate-900">{t.memberCore.pending.notLawyerTitle}</h2>
+          <p className="mt-1 text-sm text-slate-600">{t.memberCore.pending.notLawyerBody}</p>
           <Link href="/firm/lawyers" className={buttonClasses('secondary', 'md', 'mt-3')}>
-            Lawyers registered
+            {t.items.firmLawyers}
           </Link>
         </Card>
       ) : null}

@@ -3,16 +3,14 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { requireMember } from '@/lib/auth';
+import { getI18n } from '@/lib/i18n';
+import { paymentPurposeLabel } from '@/lib/i18n/labels';
 import { BankTransferForm } from '@/components/forms/BankTransferForm';
 import { bankTransferLines } from '@/server/services/payment-service';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
-import { PAYMENT_PURPOSES } from '@/lib/payment-purposes';
+import { localiseBankLines } from '@/lib/i18n/format';
 
 export const metadata: Metadata = { title: 'Pay a fee' };
-
-const PURPOSE_LABEL: Map<string, string> = new Map(
-  PAYMENT_PURPOSES.map((entry) => [entry.value, entry.label]),
-);
 
 /**
  * The page a client reaches from the pay button on a fee card.
@@ -30,7 +28,8 @@ export default async function PayFeePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ method?: string }>;
 }) {
-  const user = await requireMember();
+  const [{ t }, user] = await Promise.all([getI18n(), requireMember()]);
+  const labels = t.memberCases.pay;
   const [{ id }, { method }] = await Promise.all([params, searchParams]);
   const chosen = method === 'card' ? ('CARD' as const) : ('TRANSFER' as const);
 
@@ -72,13 +71,12 @@ export default async function PayFeePage({
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <Card>
-          <h1 className="text-xl font-semibold text-slate-900">This fee was withdrawn</h1>
+          <h1 className="text-xl font-semibold text-slate-900">{labels.withdrawnTitle}</h1>
           <p className="mt-2 text-sm text-slate-600">
-            The professional withdrew this request on case {payment.case.reference}, so there is
-            nothing to pay.
+            {labels.withdrawnBody.replace('{reference}', payment.case.reference)}
           </p>
           <Link href={`/cases/${payment.caseId}`} className={buttonClasses('secondary', 'md', 'mt-4')}>
-            Back to the case
+            {labels.backToCaseButton}
           </Link>
         </Card>
       </div>
@@ -91,26 +89,31 @@ export default async function PayFeePage({
     payment.case.lawyer?.user.profile?.fullName?.trim() ||
     payment.requestedBy.email;
 
+  const purposeLabel =
+    paymentPurposeLabel(t, payment.purpose) || t.memberCases.fees.feeFallback;
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <nav className="text-sm print:hidden" aria-label="Breadcrumb">
+      <nav className="text-sm print:hidden" aria-label={t.memberCases.breadcrumb}>
         <Link href={`/cases/${payment.caseId}`} className="text-brand-700 hover:underline">
-          ← Back to case {payment.case.reference}
+          {labels.backToCase.replace('{reference}', payment.case.reference)}
         </Link>
       </nav>
 
       <header className="print:hidden">
-        <h1 className="text-2xl font-semibold text-slate-900">Pay a fee</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{labels.title}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          For case {payment.case.reference} — {payment.case.title}
+          {labels.forCase
+            .replace('{reference}', payment.case.reference)
+            .replace('{title}', payment.case.title)}
         </p>
         <p className="mt-2 text-xs text-slate-500">
-          Payable to {professionalName}. Fees on this installation are settled by bank transfer.
+          {labels.payableTo.replace('{name}', professionalName)}
         </p>
       </header>
 
       {payment.details ? (
-        <Alert tone="neutral" title={PURPOSE_LABEL.get(payment.purpose) ?? 'Fee'}>
+        <Alert tone="neutral" title={purposeLabel}>
           <p className="whitespace-pre-line">{payment.details}</p>
         </Alert>
       ) : null}
@@ -120,9 +123,9 @@ export default async function PayFeePage({
           paymentId={payment.id}
           caseId={payment.caseId}
           amountFils={payment.amountFils}
-          purposeLabel={PURPOSE_LABEL.get(payment.purpose) ?? 'Fee'}
+          purposeLabel={purposeLabel}
           reference={payment.case.reference}
-          lines={bankTransferLines({
+          lines={localiseBankLines(t, bankTransferLines({
             bankAccountName: payment.bankAccountName,
             bankName: payment.bankName,
             bankIban: payment.bankIban,
@@ -130,9 +133,10 @@ export default async function PayFeePage({
             bankSwift: payment.bankSwift,
             bankBranch: payment.bankBranch,
             bankInstructions: payment.bankInstructions,
-          })}
+          }))}
           instructions={payment.bankInstructions}
           method={chosen}
+          labels={t.memberCases.bankTransfer}
         />
       </Card>
     </div>

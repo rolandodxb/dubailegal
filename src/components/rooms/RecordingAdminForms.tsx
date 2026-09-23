@@ -21,21 +21,23 @@ const CONFIRMATION = 'delete-all';
  * it matches, so the failure mode is "nothing happened" rather than "everything
  * happened".
  */
-export function DeleteAllRecordingsForm({ count }: { count: number }) {
+export function DeleteAllRecordingsForm({
+  count,
+  labels,
+}: {
+  count: number;
+  labels: { label: string; hint: string; hintOne: string; submit: string; pending: string };
+}) {
   const [state, formAction] = useActionState(deleteAllRecordingsAction, initialFormState);
   const [typed, setTyped] = useState('');
+  const hint = (count === 1 ? labels.hintOne : labels.hint).replace('{count}', String(count));
 
   return (
     <form action={formAction} className="space-y-3">
       {state?.ok && state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state && !state.ok && state.message ? <Alert tone="error">{state.message}</Alert> : null}
 
-      <Field
-        label={`Type “${CONFIRMATION}” to confirm`}
-        htmlFor="confirm"
-        required
-        hint={`This destroys ${count} recording${count === 1 ? '' : 's'} and the files. It cannot be undone.`}
-      >
+      <Field label={labels.label} htmlFor="confirm" required hint={hint}>
         <Input
           id="confirm"
           name="confirm"
@@ -49,10 +51,10 @@ export function DeleteAllRecordingsForm({ count }: { count: number }) {
       <SubmitButton
         variant="danger"
         disabled={typed.trim() !== CONFIRMATION || count === 0}
-        pendingLabel="Deleting…"
+        pendingLabel={labels.pending}
       >
         <Icon name="trash" size={17} />
-        Delete every recording
+        {labels.submit}
       </SubmitButton>
     </form>
   );
@@ -62,9 +64,11 @@ export function DeleteAllRecordingsForm({ count }: { count: number }) {
 export function DeleteRecordingForm({
   recordingId,
   roomCode,
+  labels,
 }: {
   recordingId: string;
   roomCode: string;
+  labels: { confirm: string; submit: string; pending: string };
 }) {
   const [state, formAction] = useActionState(deleteRecordingAction, initialFormState);
 
@@ -77,11 +81,11 @@ export function DeleteRecordingForm({
       <SubmitButton
         variant="danger"
         size="sm"
-        confirm={`Delete the recording of room ${roomCode}? The file is destroyed and cannot be recovered.`}
-        pendingLabel="Deleting…"
+        confirm={labels.confirm.replace('{room}', roomCode)}
+        pendingLabel={labels.pending}
       >
         <Icon name="trash" size={15} />
-        Delete
+        {labels.submit}
       </SubmitButton>
     </form>
   );

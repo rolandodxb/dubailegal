@@ -9,8 +9,27 @@ import { Alert, Field, Input, Textarea } from '@/components/ui/primitives';
 /**
  * Sends an inquiry to a listed professional. Stored against the listing and
  * shown in the recipient's dashboard.
+ *
+ * The wording arrives from the server parent: a client component cannot read the
+ * dictionary itself.
  */
-export function InquiryForm({ listingId, displayName }: { listingId: string; displayName: string }) {
+export function InquiryForm({
+  listingId,
+  displayName,
+  labels,
+}: {
+  listingId: string;
+  displayName: string;
+  labels: {
+    subject: string;
+    subjectPlaceholder: string;
+    message: string;
+    messageHint: string;
+    sending: string;
+    sendInquiry: string;
+    privacyNote: string;
+  };
+}) {
   const [state, formAction] = useActionState(createInquiryAction, initialFormState);
 
   return (
@@ -19,24 +38,29 @@ export function InquiryForm({ listingId, displayName }: { listingId: string; dis
 
       <input type="hidden" name="listingId" value={listingId} />
 
-      <Field label="Subject" htmlFor="inquiry-subject" required error={state?.fieldErrors?.subject}>
+      <Field
+        label={labels.subject}
+        htmlFor="inquiry-subject"
+        required
+        error={state?.fieldErrors?.subject}
+      >
         <Input
           id="inquiry-subject"
           name="subject"
           required
           maxLength={160}
-          placeholder="e.g. Advice on a commercial lease dispute"
+          placeholder={labels.subjectPlaceholder}
           defaultValue={state?.values?.subject ?? ''}
           error={state?.fieldErrors?.subject}
         />
       </Field>
 
       <Field
-        label="Message"
+        label={labels.message}
         htmlFor="inquiry-message"
         required
         error={state?.fieldErrors?.message}
-        hint={`Describe your situation briefly. At least 20 characters. This goes to ${displayName}.`}
+        hint={labels.messageHint.replace('{name}', displayName)}
       >
         <Textarea
           id="inquiry-message"
@@ -50,14 +74,11 @@ export function InquiryForm({ listingId, displayName }: { listingId: string; dis
         />
       </Field>
 
-      <SubmitButton className="w-full" pendingLabel="Sending…">
-        Send inquiry
+      <SubmitButton className="w-full" pendingLabel={labels.sending}>
+        {labels.sendInquiry}
       </SubmitButton>
 
-      <p className="text-xs text-slate-500">
-        Your name and the email address on your account are shared with the recipient so they can
-        reply. Your Emirates ID is never shared through the directory.
-      </p>
+      <p className="text-xs text-slate-500">{labels.privacyNote}</p>
     </form>
   );
 }

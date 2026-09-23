@@ -7,9 +7,38 @@ import { adminEn, type AdminDict } from './dict/admin';
 import { feedEn, type FeedDict } from './dict/feed';
 import { labelsEn, type LabelsDict } from './dict/labels';
 import { requirementsEn, type RequirementsDict } from './dict/requirements';
+import { emergencyEn, type EmergencyDict } from './dict/emergency';
 
 const baseEn = {
   language: { label: 'Language', change: 'Change language' },
+
+  /**
+   * The six lines a bank transfer is quoted on. Their English wording is the
+   * wording `bankTransferLines` has always produced, kept exactly.
+   */
+  bankTransfer: {
+    accountName: 'Account name',
+    bank: 'Bank',
+    iban: 'IBAN',
+    accountNumber: 'Account number',
+    swift: 'SWIFT / BIC',
+    branch: 'Branch',
+  },
+
+  brand: {
+    /** The line under the name in the lockup used on receipts, printouts and signs. */
+    tagline: 'Verified lawyers and legal firms, worldwide',
+  },
+
+  /**
+   * The default tab title and search description, for every page that does not
+   * set its own. The brand name stays in Latin script in both languages.
+   */
+  meta: {
+    title: 'Legal Dash — verified lawyers and legal firms',
+    description:
+      'Find lawyers and legal firms wherever you are, filter by area of law and location, and see which profiles have been verified against their official documents.',
+  },
 
   nav: {
     menu: 'Menu',
@@ -78,10 +107,10 @@ const baseEn = {
   tabs: { home: 'Home', community: 'Community', allBoards: 'All boards' },
 
   landing: {
-    badge: 'United Arab Emirates',
+    badge: 'Available worldwide',
     heroTitle: 'Find a lawyer you can actually check.',
     heroBody:
-      'Dubai Legal connects you with lawyers and legal firms across the Emirates — with their credentials verified, your case tracked from the first message to the last, and everything that matters kept in one place.',
+      'Legal Dash connects you with lawyers and legal firms wherever you are — with their credentials verified against official identity documents, your case tracked from the first message to the last, and everything that matters kept in one place.',
     findLawyer: 'Find a lawyer',
     iAmProfessional: 'I am a lawyer or a firm',
     urgentHelp: 'Urgent help, no account',
@@ -113,9 +142,10 @@ const baseEn = {
     emergencyEyebrow: 'Emergency representation',
     emergencyTitle: 'When you cannot wait until Monday',
     emergencyBody: 'Raise an urgent request and it is pushed straight to every lawyer and firm who takes emergencies. The first to answer opens a case and steps into a video room with you.',
-    emergencyNote: 'Dubai Legal connects you to a lawyer. It does not dispatch emergency services — if somebody is in danger, call 999.',
+    emergencyNote: 'Legal Dash connects you to a lawyer. It does not dispatch emergency services — if somebody is in danger, call your local emergency number.',
     emergencyCta: 'Get urgent help',
     emergencyForProfessionals: 'Take emergency cases',
+    emergencyStepsHeading: 'How it reaches someone',
     emergencyStep1: 'You describe what has happened and give a number.',
     emergencyStep2: 'It is pushed to every professional who has opted into emergencies.',
     emergencyStep3: 'The first to take it gets a case opened and assigned, and you are told who.',
@@ -128,7 +158,7 @@ const baseEn = {
     closingBody: 'Search the directory for free, or create an account to send your first case.',
     howItWorks: 'How getting a lawyer works',
     howStep1Title: 'Find someone',
-    howStep1Body: 'Filter by area of law and emirate. Compare what each professional publishes, including their licence and whether a reviewer has approved it.',
+    howStep1Body: 'Filter by area of law and location. Compare what each professional publishes, including their licence and whether a reviewer has approved it.',
     howStep2Title: 'Send your case',
     howStep2Body: 'Name it, describe it, attach the papers. It arrives as a request the professional can accept or decline.',
     howStep3Title: 'Agree and talk',
@@ -143,7 +173,7 @@ const baseEn = {
     documentsNeeded: '{count} documents needed to verify, including the permit to provide legal representation.',
     documentsNeededOne: 'One document needed to verify, including the permit to provide legal representation.',
     step1Title: 'Search',
-    step1Body: 'Filter by area of law and emirate. Compare what each professional publishes, including their licence and practice address.',
+    step1Body: 'Filter by area of law and location. Compare what each professional publishes, including their licence and practice address.',
     step2Title: 'Send your case',
     step2Body: 'Name it, describe it, attach the papers. It arrives as a request the professional can accept or decline.',
     step3Title: 'Agree and talk',
@@ -158,11 +188,9 @@ const baseEn = {
     enquiryEmergencyLead: 'In an emergency, do not send an enquiry —',
     enquiryEmergencyLink: 'get a lawyer on video now',
     enquiryEmergencyTail: ', with no account at all.',
-    metaTitle: 'Dubai Legal — verified lawyers and legal firms in the UAE',
-    metaDescription: 'Search verified lawyers and legal firms across the seven Emirates, send a case, follow it, and keep every document, message and fee in one place.',
     emergencyPageTitle: 'Get a lawyer on video now',
     verifiedByHand: 'Reviewed by a person, never by a machine',
-    clientsIntro: 'Most people find a lawyer through a friend and hope for the best. Dubai Legal gives you the details to judge for yourself, and a record of everything afterwards. Everything below is what you get as a client — searching is free, and it stays free.',
+    clientsIntro: 'Most people find a lawyer through a friend and hope for the best. Legal Dash gives you the details to judge for yourself, and a record of everything afterwards. Everything below is what you get as a client — searching is free, and it stays free.',
     needLawyer: 'I need a lawyer',
     needLawyerBody: 'An account is what turns a directory listing into a case you can follow. It needs your identity documents to verify you, and your number is never published.',
     createFreeAccount: 'Create a free account',
@@ -229,12 +257,12 @@ const baseEn = {
     fullNameHint: 'As it appears on your identification, so a reviewer can match it.',
     phone: 'Phone number',
     phoneHint: 'How the other side of a case reaches you, and how you are told about a reply.',
-    accountType: 'How will you use Dubai Legal?',
+    accountType: 'How will you use Legal Dash?',
     accountTypeHint:
       'This decides what you must provide to become verified, and cannot be changed later. Your identity details and documents are asked for in the verification tab, where a reviewer reads them.',
     createAccountTitle: 'Create your account',
     haveAccount: 'Already have an account?',
-    noAccount: 'New to Dubai Legal?',
+    noAccount: 'New to Legal Dash?',
   },
 
   common: {
@@ -261,6 +289,16 @@ const baseEn = {
     yes: 'Yes',
     no: 'No',
     optional: 'Optional',
+    /** How long ago something happened, for a feed or an alert list. */
+    justNow: 'just now',
+    minuteAgo: '{count} minute ago',
+    minutesAgo: '{count} minutes ago',
+    hourAgo: '{count} hour ago',
+    hoursAgo: '{count} hours ago',
+    /** Appended to the label of a field nobody has to fill in. */
+    optionalSuffix: '(optional)',
+    /** The name of the section list, read aloud by a screen reader and never shown. */
+    sections: 'Sections',
     required: 'Required',
     status: 'Status',
     actions: 'Actions',
@@ -337,7 +375,7 @@ const baseEn = {
 
   footer: {
     disclaimer:
-      'Dubai Legal is not a law firm and does not give legal advice. Information in the directory is supplied by its members. Always confirm that a professional is licensed before instructing them.',
+      'Legal Dash is not a law firm and does not give legal advice. Information in the directory is supplied by its members. Always confirm that a professional is licensed before instructing them.',
   },
 } as const;
 
@@ -359,6 +397,7 @@ export const dictionary: Translated<typeof baseEn> & {
   feed: FeedDict;
   labels: LabelsDict;
   requirements: RequirementsDict;
+  emergency: EmergencyDict;
 } = {
   ...baseEn,
   publicPages: publicPagesEn,
@@ -369,6 +408,7 @@ export const dictionary: Translated<typeof baseEn> & {
   feed: feedEn,
   labels: labelsEn,
   requirements: requirementsEn,
+  emergency: emergencyEn,
 };
 
 export type Dictionary = Translated<typeof dictionary>;
