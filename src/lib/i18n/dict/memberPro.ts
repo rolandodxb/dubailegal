@@ -31,7 +31,7 @@ export const memberProEn = {
     placeChooseDivision: 'Choose from the list…',
     placeOptional: 'No list for this country — type it below',
     intro:
-      'This is what people see when they search the directory. Your practice areas and emirates are what the filters match on, so keep them accurate.',
+      'This is what people see when they search the directory. Your practice areas and the places you cover are what the filters match on, so keep them accurate.',
     noticeUnpublished: 'Your listing has been removed from the public directory. It is still saved.',
     representedTitle: 'You are represented by {firm}',
     representedBefore: 'Your account was created by that firm, so you are shown under ',
@@ -39,7 +39,7 @@ export const memberProEn = {
       ' on the firm’s profile rather than as a separate entry in the directory. This listing is kept as a draft; if you leave the firm it becomes your own and you can publish it.',
     addAddressTitle: 'Add your practice address',
     addAddressBody:
-      'Clients check where a professional actually is. Adding a UAE address — and a phone number and email — makes your profile far easier to trust.',
+      'Clients check where a professional actually is. Adding a practice address — and a phone number and email — makes your profile far easier to trust.',
     published: 'Published',
     notPublishedYet: 'Not published yet',
     live: 'Your listing is live in the public directory.',
@@ -77,7 +77,7 @@ export const memberProEn = {
     contactEmail: 'Contact email',
     contactEmailHint: 'Published. Leave blank to keep your account email private.',
     contactPhone: 'Contact phone',
-    practiceAddress: 'Practice address in the UAE',
+    practiceAddress: 'Practice address',
     practiceAddressHint:
       'Published, so a client can see where you actually are. For example: Office 1204, Sample Tower, 100 Example Street.',
     visibility: 'Visibility',
@@ -94,7 +94,7 @@ export const memberProEn = {
     lawyerTitle: 'Your legal licence',
     firmIntro:
       'A legal firm must be able to show both its own registration and the licence of the legal professional through whom it provides representation.',
-    lawyerIntro: 'Your permission to provide legal representation in the United Arab Emirates.',
+    lawyerIntro: 'Your permission to provide legal representation in the country where you practise.',
     checkedTitle: 'These details are checked against your documents',
     checkedBody:
       'A reviewer compares what you enter here with the documents you upload. If the number changes after your account is approved, the badge is withdrawn and the account is reviewed again.',
@@ -102,10 +102,10 @@ export const memberProEn = {
     licenceNotSavedTitle: 'Your licence details were not saved',
     licenceNumber: 'Licence number',
     licenceNumberHint:
-      'The number on your permit or licence to provide legal representation in the UAE.',
+      'The number on your permit or licence to provide legal representation where you practise.',
     licensingAuthority: 'Licensing authority',
     licensingAuthorityHintLawyer:
-      'For example the Legal Dash Affairs Department, or the UAE Ministry of Justice.',
+      'For example your bar association, or the authority that issued your licence.',
     issuedOn: 'Issued on',
     validUntil: 'Valid until',
     validUntilHint: 'Shown on your public profile once verified.',
@@ -146,18 +146,18 @@ export const memberProEn = {
 
   verification: {
     checkDigitWarning:
-      'The Emirates ID you entered does not pass its internal check digit. That does not block you — a reviewer will confirm it against your uploaded card — but please re-read the number if you typed it by hand.',
+      'The government ID you entered does not pass its internal check digit. That does not block you — a reviewer will confirm it against your uploaded card — but please re-read the number if you typed it by hand.',
     intro:
       'Upload the documents a reviewer needs, then submit. Nothing is verified automatically — a person examines each document and records the decision.',
     currentStatus: 'Current status',
-    emiratesIdOnFile: 'Emirates ID on file',
+    emiratesIdOnFile: 'government ID on file',
     notProvidedYet: 'Not provided yet',
     requestedTypes: '{present} of {total} requested types',
     requestsSubmitted: 'Requests submitted',
     openRequest: 'Open request',
     roundSubmitted: 'Round {round}, submitted {date}',
     encryptionSubject: 'Identity documents',
-    checkDigitTitle: 'About your Emirates ID number',
+    checkDigitTitle: 'About your government ID number',
     notApprovedTitle: 'Why your last request was not approved',
     notApprovedBody:
       'Fix what is described, then submit again. Uploading a replacement document does not require a new account.',
@@ -220,7 +220,7 @@ export const memberProEn = {
     notUploadedTitle: 'The document was not uploaded',
 
     empty:
-      'No documents uploaded yet. Every account must upload an Emirates ID before it can be verified.',
+      'No documents uploaded yet. Every account must upload an government ID before it can be verified.',
     statusAwaitingReview: 'Waiting to be reviewed',
     statusApproved: 'Accepted',
     statusRejected: 'Not accepted',
@@ -378,7 +378,7 @@ export const memberProEn = {
     creatingAccount: 'Creating account…',
     createLawyerAccount: 'Create lawyer account',
     createLawyerNote:
-      'The account is created active and affiliated to your firm immediately. Verification is separate: a reviewer must still examine the lawyer’s own Emirates ID and licence.',
+      'The account is created active and affiliated to your firm immediately. Verification is separate: a reviewer must still examine the lawyer’s own government ID and licence.',
   },
 };
 
@@ -402,7 +402,7 @@ export const memberProEs: MemberProDict = {
     placeChooseDivision: 'Elija de la lista…',
     placeOptional: 'No hay lista para este país: escríbalo abajo',
     intro:
-      'Esto es lo que ven los usuarios cuando buscan en el directorio. Los filtros comparan sus áreas del derecho y sus emiratos, así que manténgalos correctos.',
+      'Esto es lo que ven los usuarios cuando buscan en el directorio. Los filtros comparan sus áreas del derecho y los lugares que cubre, así que manténgalos correctos.',
     noticeUnpublished: 'Su ficha se ha retirado del directorio público. Sigue guardada.',
     representedTitle: 'Le representa {firm}',
     representedBefore: 'Esa firma creó su cuenta, así que aparece en ',
@@ -450,7 +450,7 @@ export const memberProEs: MemberProDict = {
     contactEmailHint:
       'Se publica. Déjelo en blanco para mantener privado el correo de su cuenta.',
     contactPhone: 'Teléfono de contacto',
-    practiceAddress: 'Dirección del despacho en los EAU',
+    practiceAddress: 'Dirección del despacho',
     practiceAddressHint:
       'Se publica, para que un cliente vea dónde está realmente. Por ejemplo: Oficina 1204, Sample Tower, 100 Example Street.',
     visibility: 'Visibilidad',
@@ -470,7 +470,7 @@ export const memberProEs: MemberProDict = {
     firmIntro:
       'Un despacho de abogados debe poder acreditar tanto su propio registro como la licencia del profesional jurídico a través del cual presta la representación.',
     lawyerIntro:
-      'Su autorización para ejercer la representación legal en los Emiratos Árabes Unidos.',
+      'Su autorización para ejercer la representación legal en el país donde ejerce.',
     checkedTitle: 'Estos datos se cotejan con sus documentos',
     checkedBody:
       'Un revisor compara lo que introduce aquí con los documentos que sube. Si el número cambia después de aprobarse su cuenta, se retira la insignia y la cuenta vuelve a revisarse.',
@@ -478,7 +478,7 @@ export const memberProEs: MemberProDict = {
     licenceNotSavedTitle: 'No se guardaron los datos de su licencia',
     licenceNumber: 'Número de licencia',
     licenceNumberHint:
-      'El número de su permiso o licencia para ejercer la representación legal en los EAU.',
+      'El número de su permiso o licencia para ejercer la representación legal donde ejerce.',
     licensingAuthority: 'Autoridad otorgante',
     licensingAuthorityHintLawyer:
       'Por ejemplo, un colegio de abogados o la autoridad que expidió la licencia.',
@@ -523,18 +523,18 @@ export const memberProEs: MemberProDict = {
 
   verification: {
     checkDigitWarning:
-      'El Emirates ID que introdujo no supera su dígito de control interno. Eso no le bloquea: un revisor lo confirmará con la tarjeta que subió. Aun así, vuelva a leer el número si lo escribió a mano.',
+      'El documento oficial de identidad que introdujo no supera su dígito de control interno. Eso no le bloquea: un revisor lo confirmará con la tarjeta que subió. Aun así, vuelva a leer el número si lo escribió a mano.',
     intro:
       'Suba los documentos que necesita un revisor y envíelos. Nada se verifica de forma automática: una persona examina cada documento y deja constancia de la decisión.',
     currentStatus: 'Estado actual',
-    emiratesIdOnFile: 'Emirates ID en el expediente',
+    emiratesIdOnFile: 'documento oficial de identidad en el expediente',
     notProvidedYet: 'Aún no facilitado',
     requestedTypes: '{present} de {total} tipos solicitados',
     requestsSubmitted: 'Solicitudes enviadas',
     openRequest: 'Solicitud abierta',
     roundSubmitted: 'Ronda {round}, enviada el {date}',
     encryptionSubject: 'Documentos de identidad',
-    checkDigitTitle: 'Sobre su número de Emirates ID',
+    checkDigitTitle: 'Sobre su número de documento oficial de identidad',
     notApprovedTitle: 'Por qué no se aprobó su última solicitud',
     notApprovedBody:
       'Corrija lo que se indica y vuelva a enviarla. Subir un documento de sustitución no requiere una cuenta nueva.',
@@ -597,7 +597,7 @@ export const memberProEs: MemberProDict = {
     notUploadedTitle: 'No se subió el documento',
 
     empty:
-      'Todavía no se ha subido ningún documento. Toda cuenta debe subir un Emirates ID antes de poder verificarse.',
+      'Todavía no se ha subido ningún documento. Toda cuenta debe subir un documento oficial de identidad antes de poder verificarse.',
     statusAwaitingReview: 'Pendiente de revisión',
     statusApproved: 'Aceptado',
     statusRejected: 'No aceptado',
@@ -755,6 +755,6 @@ export const memberProEs: MemberProDict = {
     creatingAccount: 'Creando la cuenta…',
     createLawyerAccount: 'Crear cuenta de abogado',
     createLawyerNote:
-      'La cuenta se crea activa y vinculada a su despacho de inmediato. La verificación es aparte: un revisor debe examinar igualmente el Emirates ID y la licencia del propio abogado.',
+      'La cuenta se crea activa y vinculada a su despacho de inmediato. La verificación es aparte: un revisor debe examinar igualmente el documento oficial de identidad y la licencia del propio abogado.',
   },
 };

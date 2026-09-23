@@ -222,7 +222,7 @@ const baseEs: Omit<
   directory: {
     title: 'Directorio de abogados y despachos',
     intro:
-      'Todos los perfiles que figuran a continuación pertenecen a miembros registrados reales. Utilice los filtros para acotar por área del derecho y emirato. Qué significan las insignias',
+      'Todos los perfiles que figuran a continuación pertenecen a miembros registrados reales. Utilice los filtros para acotar por área del derecho y ubicación. Qué significan las insignias',
     results: 'Resultados',
     filterHeading: 'Filtrar el directorio',
     verifiedOnly: 'Solo miembros verificados',
@@ -330,13 +330,13 @@ const baseEs: Omit<
       'Abra un abogado o un despacho en el directorio y elija «Contactar» para enviar su primer caso.',
     verification: 'Verificación',
     stillOutstanding: 'Aún pendiente',
-    emiratesId: 'Emirates ID',
+    emiratesId: 'Documento oficial de identidad',
     documentsOnFile: 'Documentos en su expediente',
     verificationRequests: 'Solicitudes de verificación',
     yourListing: 'Su ficha del directorio',
     noListing: 'Todavía no tiene ficha en el directorio',
     noListingBody:
-      'Cree una para que quienes buscan por área del derecho y emirato puedan encontrarle y enviarle un caso. Usted decide cuándo publicarla.',
+      'Cree una para que quienes buscan por área del derecho y ubicación puedan encontrarle y enviarle un caso. Usted decide cuándo publicarla.',
     commonTasks: 'Tareas habituales',
     reviewerAccess: 'Tiene acceso de revisor',
     editProfile: 'Editar mi perfil',

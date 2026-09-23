@@ -2,7 +2,7 @@ import { DocumentKind } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { recordAudit } from '@/lib/audit';
 import { deleteUpload, storeUpload, UploadRejected } from '@/lib/storage';
-import { DOCUMENT_REQUIREMENTS } from '@/lib/constants';
+import { documentRequirementsFor, optionalKinds } from '@/lib/document-requirements';
 import { failure, success, type ServiceResult } from './result';
 import { invalidateVerification } from './verification-service';
 
@@ -46,7 +46,19 @@ export async function uploadDocument(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, accountType: true, verificationStatus: true },
+    select: {
+      id: true,
+      accountType: true,
+      verificationStatus: true,
+      profile: {
+        select: {
+          countryOfBirthCode: true,
+          nationalityCode: true,
+          countryOfResidenceCode: true,
+          declaresNoResidencePermit: true,
+        },
+      },
+    },
   });
   if (!user) return failure('That account no longer exists.', { status: 404 });
 
@@ -111,7 +123,14 @@ export async function uploadDocument(
     return document;
   });
 
-  const required = DOCUMENT_REQUIREMENTS[user.accountType].required;
+  // Required of *this* member, in their country — not of everybody in the Emirates.
+  const required = documentRequirementsFor({
+    accountType: user.accountType,
+    countryOfBirthCode: user.profile?.countryOfBirthCode,
+    nationalityCode: user.profile?.nationalityCode,
+    countryOfResidenceCode: user.profile?.countryOfResidenceCode,
+    declaresNoResidencePermit: user.profile?.declaresNoResidencePermit,
+  }).required;
   if (previouslyApproved && required.includes(kind) && user.verificationStatus === 'APPROVED') {
     await invalidateVerification(
       userId,
@@ -150,7 +169,19 @@ export async function deleteDocument(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { accountType: true, verificationStatus: true, profile: { select: { avatarDocumentId: true } } },
+    select: {
+      accountType: true,
+      verificationStatus: true,
+      profile: {
+        select: {
+          avatarDocumentId: true,
+          countryOfBirthCode: true,
+          nationalityCode: true,
+          countryOfResidenceCode: true,
+          declaresNoResidencePermit: true,
+        },
+      },
+    },
   });
 
   await prisma.$transaction(async (tx) => {
@@ -170,7 +201,13 @@ export async function deleteDocument(
   if (
     user &&
     document.status === 'APPROVED' &&
-    DOCUMENT_REQUIREMENTS[user.accountType].required.includes(document.kind) &&
+    documentRequirementsFor({
+      accountType: user.accountType,
+      countryOfBirthCode: user.profile?.countryOfBirthCode,
+      nationalityCode: user.profile?.nationalityCode,
+      countryOfResidenceCode: user.profile?.countryOfResidenceCode,
+      declaresNoResidencePermit: user.profile?.declaresNoResidencePermit,
+    }).required.includes(document.kind) &&
     user.verificationStatus === 'APPROVED'
   ) {
     await invalidateVerification(userId, `Required document removed: ${document.kind}`, meta.ip ?? null);

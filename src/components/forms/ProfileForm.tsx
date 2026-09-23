@@ -101,10 +101,12 @@ export function ProfileForm({
     countryValue('nationalityCode') || countryValue('countryOfResidenceCode') || '',
   );
   const identityCountryNames = countryNames ?? {};
+  // Named by the country, always: a United Arab Emirates member is shown
+  // "Emirates ID" because that is their document, an Argentine one "DNI" because
+  // that is theirs — and an account that has not said where it is gets the neutral
+  // "Document number" rather than assuming the platform's home country.
   const identityDocName =
-    identityCountry === 'AE'
-      ? labels.emiratesId
-      : countryByCode(identityCountry)?.nationalId ?? labels.identityNumber;
+    countryByCode(identityCountry)?.nationalId ?? labels.identityNumber;
   const identityIsEmirates = identityCountry === 'AE';
 
   const [emiratesId, setEmiratesId] = useState(

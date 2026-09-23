@@ -159,7 +159,7 @@ export const memberCoreEn = {
     missingTitle: 'Profile missing',
     missingBody: 'Your profile record could not be loaded. Please sign out and in again.',
     intro:
-      'These are the basics every account must supply. Only your work description, education and country of residence appear on a public listing — your Emirates ID, date of birth and place of birth are never published.',
+      'These are the basics every account must supply. Only your work description, education and country of residence appear on a public listing — your government ID, date of birth and place of birth are never published.',
     picture: 'Profile picture',
     yourAccount: 'Your account',
     onFile: 'What you have on file',
@@ -179,7 +179,7 @@ export const memberCoreEn = {
     licence: 'Add your legal licence details, then upload your documents.',
     editLegalDetails: 'Edit legal details',
     goToDocuments: 'Go to documents',
-    uploadEmiratesId: 'Upload your Emirates ID to submit your account for verification.',
+    uploadEmiratesId: 'Upload your government ID to submit your account for verification.',
   },
 
   notifications: {
@@ -340,20 +340,20 @@ export const memberCoreEn = {
     placeOfBirthPlaceholder: 'e.g. Rosario',
     phone: 'Phone number',
     phoneHint: 'Include the country code, for example +971 50 123 4567.',
-    emiratesId: 'Emirates ID',
+    emiratesId: 'government ID',
     identityHeading: 'Your identity document',
     identityBody:
-      'Required for every account type, and it is the document your own country issues — a DNI in Argentina, an Emirates ID in the United Arab Emirates, an INE in France. One identity document can verify only one Legal Dash account. It is never shown publicly.',
+      'Required for every account type, and the document it asks for is the one your own country issues — chosen from the country you select above. One identity document can verify only one Legal Dash account. It is never shown publicly.',
     identityNumber: 'Document number',
     identityNumberHint: 'Exactly as printed on the document.',
     identityNumberHintUae: '15 digits, in the form 784-YYYY-NNNNNNN-C.',
     identityExpiry: 'Expiry date',
     emiratesIdBody:
-      'Required for every account type. One Emirates ID can verify only one Legal Dash account. It is never shown publicly — reviewers see the full number, everyone else sees it masked.',
-    emiratesIdNumber: 'Emirates ID number',
+      'Required for every account type. One government ID can verify only one Legal Dash account. It is never shown publicly — reviewers see the full number, everyone else sees it masked.',
+    emiratesIdNumber: 'government ID number',
     emiratesIdNumberHint: '15 digits, in the form 784-YYYY-NNNNNNN-C.',
     emiratesIdNumberPlaceholder: '784-1990-1234567-1',
-    emiratesIdExpiry: 'Emirates ID expiry',
+    emiratesIdExpiry: 'government ID expiry',
     work: 'Your work',
     workHint: 'Briefly describe what you actually do. Lawyers and firms: describe your practice.',
     education: 'Education background',
@@ -412,7 +412,7 @@ export const memberCoreEn = {
   supportForms: {
     problem: 'What is the problem?',
     problemHint: 'One line, so it can be told apart from everything else in the queue.',
-    problemPlaceholder: 'I cannot upload my Emirates ID',
+    problemPlaceholder: 'I cannot upload my government ID',
     about: 'What is it about?',
     describe: 'Describe it',
     describeHint:
@@ -442,7 +442,7 @@ export const memberCoreEn = {
     sending: 'Sending…',
     sendInquiry: 'Send inquiry',
     privacyNote:
-      'Your name and the email address on your account are shared with the recipient so they can reply. Your Emirates ID is never shared through the directory.',
+      'Your name and the email address on your account are shared with the recipient so they can reply. Your government ID is never shared through the directory.',
   },
 
   inquiryReply: {
@@ -600,7 +600,7 @@ export const memberCoreEs: MemberCoreDict = {
     missingTitle: 'Perfil no encontrado',
     missingBody: 'No se pudo cargar su registro de perfil. Cierre la sesión y vuelva a iniciarla.',
     intro:
-      'Estos son los datos básicos que debe aportar toda cuenta. Solo su descripción del trabajo, su formación y su país de residencia aparecen en una ficha pública: su Emirates ID, su fecha de nacimiento y su lugar de nacimiento nunca se publican.',
+      'Estos son los datos básicos que debe aportar toda cuenta. Solo su descripción del trabajo, su formación y su país de residencia aparecen en una ficha pública: su documento oficial de identidad, su fecha de nacimiento y su lugar de nacimiento nunca se publican.',
     picture: 'Foto de perfil',
     yourAccount: 'Su cuenta',
     onFile: 'Lo que consta en su expediente',
@@ -621,7 +621,7 @@ export const memberCoreEs: MemberCoreDict = {
     licence: 'Añada los datos de su licencia profesional y después suba sus documentos.',
     editLegalDetails: 'Editar los datos profesionales',
     goToDocuments: 'Ir a los documentos',
-    uploadEmiratesId: 'Suba su Emirates ID para enviar su cuenta a verificación.',
+    uploadEmiratesId: 'Suba su documento oficial de identidad para enviar su cuenta a verificación.',
   },
 
   notifications: {
@@ -785,20 +785,20 @@ export const memberCoreEs: MemberCoreDict = {
     placeOfBirthPlaceholder: 'p. ej. Rosario',
     phone: 'Número de teléfono',
     phoneHint: 'Incluya el prefijo del país, por ejemplo +971 50 123 4567.',
-    emiratesId: 'Emirates ID',
+    emiratesId: 'documento oficial de identidad',
     identityHeading: 'Su documento de identidad',
     identityBody:
-      'Obligatorio para todos los tipos de cuenta, y es el documento que expide su propio país: un DNI en Argentina, un Emirates ID en los Emiratos Árabes Unidos, un INE en Francia. Un documento de identidad solo puede verificar una cuenta de Legal Dash. Nunca se muestra públicamente.',
+      'Obligatorio para todos los tipos de cuenta, y el documento que solicita es el que expide su propio país, elegido según el país que seleccione arriba. Un documento de identidad solo puede verificar una cuenta de Legal Dash. Nunca se muestra públicamente.',
     identityNumber: 'Número del documento',
     identityNumberHint: 'Exactamente como figura en el documento.',
     identityNumberHintUae: '15 dígitos, con el formato 784-AAAA-NNNNNNN-C.',
     identityExpiry: 'Fecha de caducidad',
     emiratesIdBody:
-      'Obligatorio para todos los tipos de cuenta. Un Emirates ID solo puede verificar una cuenta de Legal Dash. Nunca se muestra públicamente: los revisores ven el número completo y los demás lo ven enmascarado.',
-    emiratesIdNumber: 'Número de Emirates ID',
+      'Obligatorio para todos los tipos de cuenta. Un documento oficial de identidad solo puede verificar una cuenta de Legal Dash. Nunca se muestra públicamente: los revisores ven el número completo y los demás lo ven enmascarado.',
+    emiratesIdNumber: 'Número de documento oficial de identidad',
     emiratesIdNumberHint: '15 dígitos, con el formato 784-AAAA-NNNNNNN-C.',
     emiratesIdNumberPlaceholder: '784-1990-1234567-1',
-    emiratesIdExpiry: 'Caducidad del Emirates ID',
+    emiratesIdExpiry: 'Caducidad del documento oficial de identidad',
     work: 'Su trabajo',
     workHint:
       'Describa brevemente lo que hace realmente. Abogados y despachos: describan su actividad.',
@@ -858,7 +858,7 @@ export const memberCoreEs: MemberCoreDict = {
   supportForms: {
     problem: '¿Cuál es el problema?',
     problemHint: 'Una línea, para poder distinguirlo del resto de la cola.',
-    problemPlaceholder: 'No puedo subir mi Emirates ID',
+    problemPlaceholder: 'No puedo subir mi documento oficial de identidad',
     about: '¿Sobre qué es?',
     describe: 'Descríbalo',
     describeHint:
@@ -888,7 +888,7 @@ export const memberCoreEs: MemberCoreDict = {
     sending: 'Enviando…',
     sendInquiry: 'Enviar la consulta',
     privacyNote:
-      'Su nombre y la dirección de correo electrónico de su cuenta se comparten con el destinatario para que pueda responder. Su Emirates ID nunca se comparte a través del directorio.',
+      'Su nombre y la dirección de correo electrónico de su cuenta se comparten con el destinatario para que pueda responder. Su documento oficial de identidad nunca se comparte a través del directorio.',
   },
 
   inquiryReply: {

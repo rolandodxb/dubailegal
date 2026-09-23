@@ -335,7 +335,7 @@ const baseEn = {
       'Open a lawyer or firm in the directory and choose “Get in touch” to send your first case.',
     verification: 'Verification',
     stillOutstanding: 'Still outstanding',
-    emiratesId: 'Emirates ID',
+    emiratesId: 'Government ID',
     documentsOnFile: 'Documents on file',
     verificationRequests: 'Verification requests',
     yourListing: 'Your directory listing',

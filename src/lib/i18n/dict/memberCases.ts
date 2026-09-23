@@ -329,9 +329,9 @@ export const memberCasesEn = {
     manageLawyers: 'Manage lawyers registered',
     backToDashboard: 'Back to my dashboard',
     introFirm:
-      'Every diary held by your firm’s lawyers, in UAE time. You can move, cancel or delete any of these meetings — the client is told about everything except a deletion.',
+      'Every diary held by your firm’s lawyers, in your diary’s time zone. You can move, cancel or delete any of these meetings — the client is told about everything except a deletion.',
     introSolo:
-      'Your diary in UAE time. Pick a day, choose a free hour and register the booking — the client is alerted straight away. You can also move, cancel or delete a meeting you already have.',
+      'Your diary in your diary’s time zone. Pick a day, choose a free hour and register the booking — the client is alerted straight away. You can also move, cancel or delete a meeting you already have.',
     viewGroupLabel: 'Calendar view',
     previous: '← Previous',
     today: 'Today',
@@ -345,7 +345,7 @@ export const memberCasesEn = {
     freeCount: '{count} free',
     booked: 'Booked · {name}',
     available: 'Available',
-    workingHours: 'Working hours {from}:00–{to}:00 UAE time.',
+    workingHours: 'Working hours {from}:00–{to}:00 your diary’s time zone.',
     bookingsOnDay: 'Bookings on this day',
     nothingBooked: 'Nothing booked yet.',
     withLawyer: 'with {name}',
@@ -369,7 +369,7 @@ export const memberCasesEn = {
       'You have no clients with an accepted case yet. A meeting can be booked once you have accepted a case.',
     noFreeSlots: 'Every slot on this day is taken. Choose another day in the calendar.',
     availableTime: 'Available time',
-    meetingLength: 'Meeting length {minutes} minutes. Times are UAE time.',
+    meetingLength: 'Meeting length {minutes} minutes. Times are your diary’s time zone.',
     howMeet: 'How will you meet?',
     modeHint:
       'A video call opens a conference room. An office visit is a request the client has to accept, because they have to travel.',
@@ -402,7 +402,7 @@ export const memberCasesEn = {
     cancelMeeting: 'Cancel meeting',
     changeTime: 'Change the time',
     newDate: 'New date',
-    hourUae: 'Hour (UAE)',
+    hourUae: 'Hour',
     happensBy: 'Happens by',
     officeAddress: 'Office address',
     officeAddressHint:
@@ -1174,9 +1174,9 @@ export const memberCasesEs: MemberCasesDict = {
     manageLawyers: 'Gestionar los abogados registrados',
     backToDashboard: 'Volver a mi panel',
     introFirm:
-      'Todas las agendas de los abogados de su despacho, en hora de los EAU. Puede mover, cancelar o eliminar cualquiera de estas reuniones: se informa al cliente de todo excepto de una eliminación.',
+      'Todas las agendas de los abogados de su despacho, en la zona horaria de su agenda. Puede mover, cancelar o eliminar cualquiera de estas reuniones: se informa al cliente de todo excepto de una eliminación.',
     introSolo:
-      'Su agenda en hora de los EAU. Elija un día, escoja una hora libre y registre la reserva: se avisa al cliente de inmediato. También puede mover, cancelar o eliminar una reunión que ya tenga.',
+      'Su agenda en la zona horaria de su agenda. Elija un día, escoja una hora libre y registre la reserva: se avisa al cliente de inmediato. También puede mover, cancelar o eliminar una reunión que ya tenga.',
     viewGroupLabel: 'Vista del calendario',
     previous: '← Anterior',
     today: 'Hoy',
@@ -1190,7 +1190,7 @@ export const memberCasesEs: MemberCasesDict = {
     freeCount: '{count} libres',
     booked: 'Reservada · {name}',
     available: 'Disponible',
-    workingHours: 'Horario de trabajo {from}:00–{to}:00, hora de los EAU.',
+    workingHours: 'Horario de trabajo {from}:00–{to}:00, la zona horaria de su agenda.',
     bookingsOnDay: 'Reservas de este día',
     nothingBooked: 'Todavía no hay nada reservado.',
     withLawyer: 'con {name}',
@@ -1213,7 +1213,7 @@ export const memberCasesEs: MemberCasesDict = {
       'Todavía no tiene clientes con un caso aceptado. Podrá reservar una reunión en cuanto haya aceptado un caso.',
     noFreeSlots: 'Todas las franjas de este día están ocupadas. Elija otro día en el calendario.',
     availableTime: 'Hora disponible',
-    meetingLength: 'Duración de la reunión: {minutes} minutos. Las horas son de los EAU.',
+    meetingLength: 'Duración de la reunión: {minutes} minutos. ',
     howMeet: '¿Cómo se reunirán?',
     modeHint:
       'Una videollamada abre una sala de conferencia. Una visita al despacho es una solicitud que el cliente debe aceptar, porque tiene que desplazarse.',

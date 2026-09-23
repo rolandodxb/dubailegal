@@ -483,7 +483,23 @@ export async function decideCase(
   const verificationCase = await prisma.verificationCase.findUnique({
     where: { id: caseId },
     include: {
-      user: { select: { id: true, accountType: true, status: true } },
+      user: {
+      select: {
+        id: true,
+        accountType: true,
+        status: true,
+        // The applicant's own countries, so the documents demanded of them are the
+        // ones their country issues rather than the Emirates'.
+        profile: {
+          select: {
+            countryOfBirthCode: true,
+            nationalityCode: true,
+            countryOfResidenceCode: true,
+            declaresNoResidencePermit: true,
+          },
+        },
+      },
+    },
       documents: { select: { id: true, kind: true, status: true } },
     },
   });
@@ -512,21 +528,40 @@ export async function decideCase(
     // the reviewer. A case can never be approved on the strength of documents
     // that were merely uploaded, or that nobody has looked at yet.
     const accountType = verificationCase.user.accountType as AccountType;
-    const required = DOCUMENT_REQUIREMENTS[accountType].required;
-    const byKind = new Map<DocumentKind, string[]>();
-    for (const doc of verificationCase.documents) {
-      const list = byKind.get(doc.kind) ?? [];
-      list.push(doc.status);
-      byKind.set(doc.kind, list);
-    }
+
+    // The rules this applicant's own country implies, not the Emirates'.
+    const rules = documentRulesFor({
+      accountType,
+      countryOfBirthCode: verificationCase.user.profile?.countryOfBirthCode,
+      nationalityCode: verificationCase.user.profile?.nationalityCode,
+      countryOfResidenceCode: verificationCase.user.profile?.countryOfResidenceCode,
+      declaresNoResidencePermit: verificationCase.user.profile?.declaresNoResidencePermit,
+    });
+
+    const approved = new Set(
+      verificationCase.documents.filter((doc) => doc.status === 'APPROVED').map((doc) => doc.kind),
+    );
+
+    /**
+     * A requirement is met by *any one* of the documents that satisfy it.
+     *
+     * That distinction matters: a country that issues no identity card is satisfied
+     * by a passport alone, and an applicant who holds several acceptable documents
+     * should not be refused for not holding all of them. So the question is asked of
+     * the rules — which is what `missingRequirements` answers — rather than of a flat
+     * list of kinds, where every alternative would look mandatory.
+     */
+    const missing = missingRequirements(rules, [...approved]);
+    const uploadedKinds = new Set(verificationCase.documents.map((doc) => doc.kind));
     const problems: string[] = [];
-    for (const kind of required) {
-      const statuses = byKind.get(kind) ?? [];
-      if (statuses.length === 0) {
-        problems.push(`${DOCUMENT_KIND_LABEL[kind]} is missing from this case.`);
-      } else if (!statuses.includes('APPROVED')) {
-        problems.push(`${DOCUMENT_KIND_LABEL[kind]} has not been accepted yet.`);
-      }
+    for (const request of missing) {
+      const present = request.kinds.some((kind) => uploadedKinds.has(kind));
+      const label = request.kinds.map((kind) => DOCUMENT_KIND_LABEL[kind]).join(' or ');
+      problems.push(
+        present
+          ? `${label} has not been accepted yet.`
+          : `${label} is missing from this case.`,
+      );
     }
     if (problems.length > 0) {
       return failure(problems.join(' '), { status: 400 });

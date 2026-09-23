@@ -14,10 +14,10 @@ import type { Translated } from '../translated';
  * build produced before, because a test suite asserts on some of them.
  */
 export const requirementsEn = {
-  /** The Emirates ID is identity and residence in one. */
+  /** The government ID is identity and residence in one. */
   emiratesId: {
-    label: 'Emirates ID',
-    why: 'The Emirates ID is both the identity document and the residence permit in the United Arab Emirates.',
+    label: 'government ID',
+    why: 'The government ID is both the identity document and the residence permit in the United Arab Emirates.',
   },
 
   /** Nothing is known about where the member is from yet. */
@@ -101,8 +101,8 @@ export type RequirementsDict = Translated<typeof requirementsEn>;
 
 export const requirementsEs: RequirementsDict = {
   emiratesId: {
-    label: 'Emirates ID',
-    why: 'El Emirates ID es a la vez el documento de identidad y el permiso de residencia en los Emiratos Árabes Unidos.',
+    label: 'documento oficial de identidad',
+    why: 'El documento oficial de identidad es a la vez el documento de identidad y el permiso de residencia en los Emiratos Árabes Unidos.',
   },
 
   unknownOrigin: {

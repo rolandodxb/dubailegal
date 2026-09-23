@@ -288,3 +288,26 @@ export function missingRequirements(
     .filter((request) => !(request.mayBeDeclaredMissing && rules.declaredNoResidencePermit))
     .filter((request) => !request.kinds.some((kind) => present.has(kind)));
 }
+
+/**
+ * The same answer as `DOCUMENT_REQUIREMENTS`, but for a particular member.
+ *
+ * `DOCUMENT_REQUIREMENTS` in `lib/constants.ts` answers "what does a lawyer need
+ * in the United Arab Emirates" — it is the platform's original, single-country
+ * answer and it says EMIRATES_ID for everybody. A member in Argentina needs a DNI
+ * or a passport; asking them for an Emirates ID is asking for a document their
+ * country does not issue, which is what the rules above exist to prevent. This is
+ * the drop-in that uses them.
+ */
+export function documentRequirementsFor(member: MemberCountries): {
+  required: DocumentKind[];
+  optional: DocumentKind[];
+} {
+  const rules = documentRulesFor(member);
+  const required = rules.requests
+    .filter((request) => request.kinds.length > 0 && request.kinds[0] !== 'PROFILE_PHOTO')
+    .filter((request) => !(request.mayBeDeclaredMissing && rules.declaredNoResidencePermit))
+    .flatMap((request) => request.kinds);
+
+  return { required: [...new Set(required)], optional: optionalKinds(rules) };
+}

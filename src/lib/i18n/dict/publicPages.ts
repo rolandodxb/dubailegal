@@ -75,11 +75,11 @@ export const publicPagesEn = {
       'A verification badge on Legal Dash is a statement that a named reviewer looked at specific documents and approved them. It is never issued automatically, and it is withdrawn if the evidence behind it changes.',
     badgesHeading: 'The three badges',
     userBadgeBody:
-      'Issued to an individual once their Emirates ID and profile details have been reviewed.',
+      'Issued to an individual once their government ID and profile details have been reviewed.',
     lawyerBadgeBody:
-      'Issued to a lawyer once their Emirates ID and their permit to provide legal representation have been reviewed.',
+      'Issued to a lawyer once their government ID and their permit to provide legal representation have been reviewed.',
     firmBadgeBody:
-      'Issued to a legal firm once its Emirates ID, legal permit and trade licence have been reviewed.',
+      'Issued to a legal firm once its government ID, legal permit and trade licence have been reviewed.',
     unverifiedNoteLead:
       'An unverified member is not hidden, but their profile is labelled plainly — never dressed up as verified. You can restrict results to verified members only from the ',
     unverifiedNoteTail: '.',
@@ -91,8 +91,8 @@ export const publicPagesEn = {
     profileDetail:
       'Name, date of birth, place of birth, country of residence, phone number, a description of your work and your education background. All of it is required before a reviewer can look at your file.',
     reviewerHeading: 'What a reviewer checks',
-    reviewerName: 'That the name on the Emirates ID matches the name on the profile.',
-    reviewerReuse: 'That the Emirates ID has not already been used to verify another account.',
+    reviewerName: 'That the name on the government ID matches the name on the profile.',
+    reviewerReuse: 'That the government ID has not already been used to verify another account.',
     reviewerPermit:
       'That a lawyer’s permit to provide legal representation is current and matches the licensing authority.',
     reviewerLicence:
@@ -100,13 +100,13 @@ export const publicPagesEn = {
     reviewerExpiry: 'That any expiry date shown on a document has not passed.',
     withdrawnHeading: 'If a badge is withdrawn',
     withdrawnBody:
-      'Replacing an Emirates ID, a legal permit, a trade licence or a required document after approval withdraws the badge and puts the account back in the review queue. This is deliberate: the badge described the documents that were reviewed, and those documents no longer describe the account.',
+      'Replacing an government ID, a legal permit, a trade licence or a required document after approval withdraws the badge and puts the account back in the review queue. This is deliberate: the badge described the documents that were reviewed, and those documents no longer describe the account.',
   },
 
   // ── Directory ─────────────────────────────────────────────────────────
   directoryPage: {
     metaDescription:
-      'Browse lawyers and legal firms in the UAE, filtered by area of law and emirate. Verification badges show which profiles have had their documents reviewed.',
+      'Browse lawyers and legal firms, filtered by area of law and location. Verification badges show which profiles have had their documents reviewed.',
     switchedOffBody:
       'An administrator has temporarily disabled the public directory. It will be back once they switch it on again.',
     introLead:
@@ -257,8 +257,8 @@ export const publicPagesEn = {
     registeredEmirate: 'Registered emirate',
     verifiedDocuments: 'Verified documents',
     verifiedDocumentsBody:
-      'What a reviewer checked. The documents themselves and the Emirates ID number are never published.',
-    emiratesIdVerified: 'Emirates ID verified',
+      'What a reviewer checked. The documents themselves and the government ID number are never published.',
+    emiratesIdVerified: 'government ID verified',
     documentVerified: 'Verified {date}',
     noDocumentRecords: 'No document records are attached to this approval.',
     legalRepresentative: 'Legal representative',
@@ -276,7 +276,7 @@ export const publicPagesEn = {
     notProvided: 'Not provided',
     ageNote: 'Age {age}.',
     contactAndLocation: 'Contact and location',
-    addressInUae: 'Address in the UAE',
+    addressInUae: 'Address',
     website: 'Website',
     notPublishedUseGetInTouch: 'Not published — use “Get in touch”',
     notPublished: 'Not published',
@@ -291,7 +291,7 @@ export const publicPagesEn = {
   // ── General enquiry ───────────────────────────────────────────────────
   enquiry: {
     metaDescription:
-      'Send a general legal enquiry to lawyers and legal firms in the UAE. No account needed — but an account is faster.',
+      'Send a general legal enquiry to lawyers and legal firms. No account needed — but an account is faster.',
     title: 'Send a general enquiry',
     intro:
       'No account needed. Your enquiry goes into a shared pool that every registered lawyer and firm can see, and the first to pick it up contacts you directly — your phone and email are shared with them.',
@@ -515,7 +515,7 @@ export const publicPagesEn = {
       'I confirm the details I give are my own, and I understand that documents I upload are examined by a reviewer before any verification badge is issued.',
     pending: 'Creating your account…',
     emiratesIdNote:
-      '{user}, {lawyer} and {firm} accounts all require an Emirates ID before verification.',
+      '{user}, {lawyer} and {firm} accounts all require an government ID before verification.',
   },
 
   passwordForms: {
@@ -677,11 +677,11 @@ export const publicPagesEs: PublicPagesDict = {
       'Una insignia de verificación en Legal Dash declara que un revisor identificado examinó documentos concretos y los aprobó. Nunca se emite de forma automática y se retira si las pruebas que la sostienen cambian.',
     badgesHeading: 'Las tres insignias',
     userBadgeBody:
-      'Se emite para una persona física una vez revisados su Emirates ID y los datos de su perfil.',
+      'Se emite para una persona física una vez revisados su documento oficial de identidad y los datos de su perfil.',
     lawyerBadgeBody:
-      'Se emite para un abogado una vez revisados su Emirates ID y su permiso para ejercer la representación legal.',
+      'Se emite para un abogado una vez revisados su documento oficial de identidad y su permiso para ejercer la representación legal.',
     firmBadgeBody:
-      'Se emite para un despacho una vez revisados su Emirates ID, su permiso legal y su licencia comercial.',
+      'Se emite para un despacho una vez revisados su documento oficial de identidad, su permiso legal y su licencia comercial.',
     unverifiedNoteLead:
       'Un miembro sin verificar no se oculta, pero su perfil se etiqueta con claridad: nunca se presenta como verificado. Puede limitar los resultados a miembros verificados desde el ',
     unverifiedNoteTail: '.',
@@ -693,8 +693,8 @@ export const publicPagesEs: PublicPagesDict = {
     profileDetail:
       'Nombre, fecha de nacimiento, lugar de nacimiento, país de residencia, número de teléfono, una descripción de su trabajo y su formación académica. Todo ello es obligatorio antes de que un revisor pueda examinar su expediente.',
     reviewerHeading: 'Qué comprueba un revisor',
-    reviewerName: 'Que el nombre del Emirates ID coincide con el nombre del perfil.',
-    reviewerReuse: 'Que el Emirates ID no se ha utilizado ya para verificar otra cuenta.',
+    reviewerName: 'Que el nombre del documento oficial de identidad coincide con el nombre del perfil.',
+    reviewerReuse: 'Que el documento oficial de identidad no se ha utilizado ya para verificar otra cuenta.',
     reviewerPermit:
       'Que el permiso de un abogado para ejercer la representación legal está vigente y coincide con la autoridad de licencias.',
     reviewerLicence:
@@ -702,16 +702,16 @@ export const publicPagesEs: PublicPagesDict = {
     reviewerExpiry: 'Que ninguna fecha de caducidad que figure en un documento haya pasado.',
     withdrawnHeading: 'Si se retira una insignia',
     withdrawnBody:
-      'Sustituir un Emirates ID, un permiso legal, una licencia comercial o un documento obligatorio después de la aprobación retira la insignia y devuelve la cuenta a la cola de revisión. Es deliberado: la insignia describía los documentos que se revisaron, y esos documentos ya no describen la cuenta.',
+      'Sustituir un documento oficial de identidad, un permiso legal, una licencia comercial o un documento obligatorio después de la aprobación retira la insignia y devuelve la cuenta a la cola de revisión. Es deliberado: la insignia describía los documentos que se revisaron, y esos documentos ya no describen la cuenta.',
   },
 
   directoryPage: {
     metaDescription:
-      'Consulte abogados y despachos de los EAU, filtrando por área del derecho y emirato. Las insignias de verificación muestran qué perfiles tienen los documentos revisados.',
+      'Consulte abogados y despachos, filtrando por área del derecho y ubicación. Las insignias de verificación muestran qué perfiles tienen los documentos revisados.',
     switchedOffBody:
       'Un administrador ha desactivado temporalmente el directorio público. Volverá cuando lo active de nuevo.',
     introLead:
-      'Todos los perfiles que figuran a continuación pertenecen a miembros registrados reales. Utilice los filtros para acotar por área del derecho y emirato. Una marca de color significa que un revisor aprobó los documentos de ese miembro; los perfiles que no la tienen se etiquetan con claridad. ',
+      'Todos los perfiles que figuran a continuación pertenecen a miembros registrados reales. Utilice los filtros para acotar por área del derecho y ubicación. Una marca de color significa que un revisor aprobó los documentos de ese miembro; los perfiles que no la tienen se etiquetan con claridad. ',
     badgesMean: 'Qué significan las insignias',
     activeCount: '{count} activos',
     clearAll: 'Borrar todo',
@@ -827,8 +827,8 @@ export const publicPagesEs: PublicPagesDict = {
     registeredEmirate: 'Emirato de registro',
     verifiedDocuments: 'Documentos verificados',
     verifiedDocumentsBody:
-      'Lo que comprobó un revisor. Los documentos en sí y el número del Emirates ID nunca se publican.',
-    emiratesIdVerified: 'Emirates ID verificado',
+      'Lo que comprobó un revisor. Los documentos en sí y el número del documento oficial de identidad nunca se publican.',
+    emiratesIdVerified: 'documento oficial de identidad verificado',
     documentVerified: 'Verificado el {date}',
     noDocumentRecords: 'No hay registros de documentos asociados a esta aprobación.',
     legalRepresentative: 'Representante legal',
@@ -846,7 +846,7 @@ export const publicPagesEs: PublicPagesDict = {
     notProvided: 'No facilitado',
     ageNote: 'Edad: {age}.',
     contactAndLocation: 'Contacto y ubicación',
-    addressInUae: 'Dirección en los EAU',
+    addressInUae: 'Dirección',
     website: 'Sitio web',
     notPublishedUseGetInTouch: 'No publicado — use «Contactar»',
     notPublished: 'No publicado',
@@ -1087,7 +1087,7 @@ export const publicPagesEs: PublicPagesDict = {
       'Confirmo que los datos que facilito son míos y entiendo que los documentos que suba los examina un revisor antes de emitir cualquier insignia de verificación.',
     pending: 'Creando su cuenta…',
     emiratesIdNote:
-      'Las cuentas de {user}, {lawyer} y {firm} requieren un Emirates ID antes de la verificación.',
+      'Las cuentas de {user}, {lawyer} y {firm} requieren un documento oficial de identidad antes de la verificación.',
   },
 
   passwordForms: {

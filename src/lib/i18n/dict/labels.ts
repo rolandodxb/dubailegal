@@ -21,8 +21,8 @@ export const labelsEn = {
 
   accountTypeDescription: {
     USER: 'Looking for legal help, or managing your own legal matters.',
-    LAWYER: 'A licensed legal professional providing legal representation in the UAE.',
-    FIRM: 'A licensed law firm or legal consultancy registered in the UAE.',
+    LAWYER: 'A licensed legal professional providing legal representation.',
+    FIRM: 'A licensed law firm or legal consultancy, registered where it operates.',
   },
 
   emirate: {
@@ -54,7 +54,7 @@ export const labelsEn = {
   },
 
   documentKind: {
-    EMIRATES_ID: 'Emirates ID',
+    EMIRATES_ID: 'Government ID',
     PASSPORT: 'Passport',
     PROFILE_PHOTO: 'Profile photo',
     LAWYER_LICENSE: 'Legal representation permit / licence',
@@ -69,7 +69,7 @@ export const labelsEn = {
   },
 
   documentKindHint: {
-    EMIRATES_ID: 'Front and back of your Emirates ID.',
+    EMIRATES_ID: 'Front and back of the identity document your country issues.',
     NATIONAL_ID: 'Front and back of your national identity card.',
     PASSPORT: 'The page with your photograph and the machine-readable strip.',
     RESIDENCE_PERMIT:
@@ -211,8 +211,8 @@ export const labelsEs: LabelsDict = {
 
   accountTypeDescription: {
     USER: 'Busca ayuda legal o gestiona sus propios asuntos jurídicos.',
-    LAWYER: 'Un profesional del derecho colegiado que ofrece representación legal en los EAU.',
-    FIRM: 'Un despacho de abogados o una consultoría jurídica con licencia en los EAU.',
+    LAWYER: 'Un profesional del derecho colegiado que ofrece representación legal.',
+    FIRM: 'Un despacho de abogados o una consultoría jurídica con licencia, registrado donde ejerce.',
   },
 
   emirate: {
@@ -244,7 +244,7 @@ export const labelsEs: LabelsDict = {
   },
 
   documentKind: {
-    EMIRATES_ID: 'Emirates ID',
+    EMIRATES_ID: 'Government ID',
     PASSPORT: 'Pasaporte',
     PROFILE_PHOTO: 'Foto de perfil',
     LAWYER_LICENSE: 'Permiso o licencia de representación legal',
@@ -259,7 +259,7 @@ export const labelsEs: LabelsDict = {
   },
 
   documentKindHint: {
-    EMIRATES_ID: 'Anverso y reverso de su Emirates ID.',
+    EMIRATES_ID: 'Anverso y reverso del documento de identidad que expide su país.',
     NATIONAL_ID: 'Anverso y reverso de su documento nacional de identidad.',
     PASSPORT: 'La página con su fotografía y la banda de lectura mecánica.',
     RESIDENCE_PERMIT:
