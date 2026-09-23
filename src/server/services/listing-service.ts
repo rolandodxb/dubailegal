@@ -41,6 +41,7 @@ export async function saveListing(
     ? data.emirates.map((emirate) => ({
         countryCode: UAE,
         divisionCode: divisionOfEmirate(emirate),
+        districtCode: null as string | null,
         locality: null as string | null,
         areas: data.areas,
         isPrimary: emirate === place.primaryEmirate,
@@ -49,6 +50,7 @@ export async function saveListing(
       ? [{
           countryCode: place.primaryCountryCode,
           divisionCode: place.primaryDivisionCode,
+          districtCode: data.primaryDistrictCode ?? null,
           locality: data.primaryLocality ?? null,
           areas: data.areas,
           isPrimary: true,
@@ -64,12 +66,14 @@ export async function saveListing(
         ...data,
         primaryCountryCode: place.primaryCountryCode,
         primaryDivisionCode: place.primaryDivisionCode,
+        primaryDistrictCode: data.primaryDistrictCode ?? null,
         primaryEmirate: place.primaryEmirate,
       },
       update: {
         ...data,
         primaryCountryCode: place.primaryCountryCode,
         primaryDivisionCode: place.primaryDivisionCode,
+        primaryDistrictCode: data.primaryDistrictCode ?? null,
         primaryEmirate: place.primaryEmirate,
       },
       select: { id: true },

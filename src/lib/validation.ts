@@ -374,6 +374,12 @@ export const listingSchema = z
         const code = typeof value === 'string' ? value.trim().toUpperCase() : '';
         return code.length === 0 ? null : code;
       }),
+    primaryDistrictCode: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((value) => {
+        const code = typeof value === 'string' ? value.trim().toUpperCase() : '';
+        return code.length === 0 ? null : code;
+      }),
     primaryLocality: optionalString(160, 'Locality'),
     /** Every emirate the professional or firm covers. */
     primaryEmirate: z
@@ -453,6 +459,14 @@ export const listingSchema = z
     {
       path: ['primaryCountryCode'],
       message: 'Choose the country you work in.',
+    },
+  )
+  .refine(
+    (data) => data.primaryDistrictCode === null || data.primaryDivisionCode === null ||
+      data.primaryDistrictCode.startsWith(`${data.primaryDivisionCode}.`),
+    {
+      path: ['primaryDistrictCode'],
+      message: 'That district is not in the province you chose.',
     },
   )
   .refine(

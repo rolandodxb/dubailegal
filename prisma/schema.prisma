@@ -446,6 +446,8 @@ model ListingCoverage {
   /// An admin1 division code from the reference data, e.g. AR.14. Null means the
   /// whole country rather than a part of it.
   divisionCode String?
+  /// An admin2 code — the department or municipality beneath the division.
+  districtCode String?
   /// A free-text place beneath the division, when a picker has no list for it.
   locality String?
 
@@ -495,6 +497,9 @@ model Listing {
   /// the same moment.
   primaryCountryCode  String?
   primaryDivisionCode String?
+  /// The second-level division beneath the primary one — a department, a
+  /// municipality — by code, so a client can filter to it.
+  primaryDistrictCode String?
   primaryLocality     String?
 
   /// Everywhere this professional offers to work, worldwide.

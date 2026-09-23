@@ -15,6 +15,17 @@ import type { Translated } from '../translated';
  */
 export const memberProEn = {
   listing: {
+    placeCountry: 'Country you work in',
+    placeCountryHint: 'Pick the country first — the list beneath it follows that country.',
+    placeDivision: 'State / province',
+    placeDistrict: 'Department / district',
+    placeDistrictHint: 'The list comes from the province you chose.',
+    placeDivisionHint: 'The list comes from the country you chose.',
+    placeLocality: 'Town or city',
+    placeLocalityHint: 'Optional. The town or city, if you want to be that specific.',
+    placeChooseCountry: 'Choose a country…',
+    placeChooseDivision: 'Choose from the list…',
+    placeOptional: 'No list for this country — type it below',
     intro:
       'This is what people see when they search the directory. Your practice areas and emirates are what the filters match on, so keep them accurate.',
     noticeUnpublished: 'Your listing has been removed from the public directory. It is still saved.',
@@ -371,6 +382,17 @@ export type MemberProDict = Translated<typeof memberProEn>;
 
 export const memberProEs: MemberProDict = {
   listing: {
+    placeCountry: 'País en el que trabaja',
+    placeCountryHint: 'Elija primero el país: la lista de abajo depende de él.',
+    placeDivision: 'Estado / provincia',
+    placeDistrict: 'Departamento / distrito',
+    placeDistrictHint: 'La lista procede de la provincia que ha elegido.',
+    placeDivisionHint: 'La lista procede del país que ha elegido.',
+    placeLocality: 'Localidad o ciudad',
+    placeLocalityHint: 'Opcional. La localidad o ciudad, si quiere ser tan concreto.',
+    placeChooseCountry: 'Elija un país…',
+    placeChooseDivision: 'Elija de la lista…',
+    placeOptional: 'No hay lista para este país: escríbalo abajo',
     intro:
       'Esto es lo que ven los usuarios cuando buscan en el directorio. Los filtros comparan sus áreas del derecho y sus emiratos, así que manténgalos correctos.',
     noticeUnpublished: 'Su ficha se ha retirado del directorio público. Sigue guardada.',

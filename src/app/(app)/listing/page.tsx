@@ -10,6 +10,8 @@ import { getListingForEdit } from '@/server/services/listing-service';
 import { ListingForm } from '@/components/forms/ListingForm';
 import { unpublishListingAction } from '@/app/actions/profile-actions';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
+import { ALL_COUNTRIES } from '@/lib/countries';
+import { countryName } from '@/lib/i18n/country-names';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -24,7 +26,7 @@ export default async function ListingPage({
   const user = await requireMember();
   if (user.accountType === 'USER') redirect('/dashboard');
 
-  const [{ t }, listing, params, lawyerProfile] = await Promise.all([
+  const [{ t, effectiveLocale }, listing, params, lawyerProfile] = await Promise.all([
     getI18n(),
     getListingForEdit(user.id),
     searchParams,
@@ -133,6 +135,10 @@ export default async function ListingPage({
                 }
               : null
           }
+          countries={ALL_COUNTRIES.map((country) => ({
+            code: country.code,
+            name: countryName(effectiveLocale, country.code, country.name),
+          }))}
           labels={{
             notSavedTitle: t.memberPro.listing.formNotSavedTitle,
             displayName: t.memberPro.listing.displayName,
@@ -167,6 +173,17 @@ export default async function ListingPage({
             saveListing: t.memberPro.listing.saveListing,
             saving: t.memberPro.listing.saving,
             emirateLabels,
+            placeCountry: t.memberPro.listing.placeCountry,
+            placeCountryHint: t.memberPro.listing.placeCountryHint,
+            placeDivision: t.memberPro.listing.placeDivision,
+            placeDivisionHint: t.memberPro.listing.placeDivisionHint,
+            placeDistrict: t.memberPro.listing.placeDistrict,
+            placeDistrictHint: t.memberPro.listing.placeDistrictHint,
+            placeLocality: t.memberPro.listing.placeLocality,
+            placeLocalityHint: t.memberPro.listing.placeLocalityHint,
+            placeChooseCountry: t.memberPro.listing.placeChooseCountry,
+            placeChooseDivision: t.memberPro.listing.placeChooseDivision,
+            placeOptional: t.memberPro.listing.placeOptional,
             areaLabels,
           }}
         />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { saveListingAction } from '@/app/actions/profile-actions';
 import { initialFormState } from '@/lib/form-state';
 import { EMIRATES, LEGAL_AREAS } from '@/lib/constants';
@@ -14,6 +14,7 @@ import {
   Select,
   Textarea,
 } from '@/components/ui/primitives';
+import { PlacePicker } from './PlacePicker';
 
 export type ListingFormValues = {
   displayName: string;
@@ -25,6 +26,7 @@ export type ListingFormValues = {
   /** The worldwide description of the same place, for everywhere else. */
   primaryCountryCode?: string | null;
   primaryDivisionCode?: string | null;
+  primaryDistrictCode?: string | null;
   primaryLocality?: string | null;
   areas: string[];
   languages: string[];
@@ -76,6 +78,18 @@ export type ListingFormLabels = {
   saveListing: string;
   saving: string;
   emirateLabels: Record<string, string>;
+  /** The worldwide place cascade. */
+  placeCountry: string;
+  placeCountryHint: string;
+  placeDivision: string;
+  placeDivisionHint: string;
+  placeDistrict: string;
+  placeDistrictHint: string;
+  placeLocality: string;
+  placeLocalityHint: string;
+  placeChooseCountry: string;
+  placeChooseDivision: string;
+  placeOptional: string;
   areaLabels: Record<string, string>;
 };
 
@@ -87,12 +101,19 @@ export function ListingForm({
   listing,
   defaultDisplayName,
   labels,
+  countries,
 }: {
   listing: ListingFormValues | null;
   defaultDisplayName: string;
+  countries: { code: string; name: string }[];
   labels: ListingFormLabels;
 }) {
   const [state, formAction] = useActionState(saveListingAction, initialFormState);
+  // Which country the professional chose. Held here as well as in the picker
+  // because the multi-emirate list below only means anything in the Emirates.
+  const [country, setCountry] = useState(
+    state?.values?.primaryCountryCode ?? listing?.primaryCountryCode ?? 'AE',
+  );
 
   const selectedAreas = new Set(
     (state?.values?.areas ? state.values.areas.split(',') : listing?.areas) ?? [],
@@ -168,45 +189,51 @@ export function ListingForm({
         />
       </Field>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field
-          label={labels.mainEmirate}
-          htmlFor="primaryEmirate"
-          required
-          error={state?.fieldErrors?.primaryEmirate}
-        >
-          <Select
-            id="primaryEmirate"
-            name="primaryEmirate"
-            required
-            defaultValue={state?.values?.primaryEmirate ?? listing?.primaryEmirate ?? 'DUBAI'}
-            error={state?.fieldErrors?.primaryEmirate}
-          >
-            {EMIRATES.map((emirate) => (
-              <option key={emirate.value} value={emirate.value}>
-                {labels.emirateLabels[emirate.value]}
-              </option>
-            ))}
-          </Select>
-        </Field>
+      {/* Where you work. The country comes first because everything below it
+          depends on it: the list of provinces, and what they are called. */}
+      <PlacePicker
+        countries={countries}
+        defaultCountry={state?.values?.primaryCountryCode ?? listing?.primaryCountryCode ?? 'AE'}
+        defaultDivision={state?.values?.primaryDivisionCode ?? listing?.primaryDivisionCode ?? ''}
+        defaultDistrict={state?.values?.primaryDistrictCode ?? listing?.primaryDistrictCode ?? ''}
+        defaultLocality={state?.values?.primaryLocality ?? listing?.primaryLocality ?? ''}
+        labels={{
+          country: labels.placeCountry,
+          countryHint: labels.placeCountryHint,
+          division: labels.placeDivision,
+          divisionHint: labels.placeDivisionHint,
+          district: labels.placeDistrict,
+          districtHint: labels.placeDistrictHint,
+          locality: labels.placeLocality,
+          localityHint: labels.placeLocalityHint,
+          chooseCountry: labels.placeChooseCountry,
+          chooseDivision: labels.placeChooseDivision,
+          optional: labels.placeOptional,
+        }}
+        errors={{
+          country: state?.fieldErrors?.primaryCountryCode,
+          division: state?.fieldErrors?.primaryDivisionCode,
+        }}
+        onCountryChange={setCountry}
+      />
 
-        <Field
-          label={labels.yearsOfExperience}
-          htmlFor="yearsOfExperience"
+      <Field
+        label={labels.yearsOfExperience}
+        htmlFor="yearsOfExperience"
+        error={state?.fieldErrors?.yearsOfExperience}
+      >
+        <Input
+          id="yearsOfExperience"
+          name="yearsOfExperience"
+          type="number"
+          min={0}
+          max={80}
+          defaultValue={state?.values?.yearsOfExperience ?? listing?.yearsOfExperience ?? ''}
           error={state?.fieldErrors?.yearsOfExperience}
-        >
-          <Input
-            id="yearsOfExperience"
-            name="yearsOfExperience"
-            type="number"
-            min={0}
-            max={80}
-            defaultValue={state?.values?.yearsOfExperience ?? listing?.yearsOfExperience ?? ''}
-            error={state?.fieldErrors?.yearsOfExperience}
-          />
-        </Field>
-      </div>
+        />
+      </Field>
 
+      {country === 'AE' ? (
       <fieldset>
         <legend className="text-sm font-medium text-slate-800">
           {labels.emiratesCovered}
@@ -233,6 +260,7 @@ export function ListingForm({
           </p>
         ) : null}
       </fieldset>
+      ) : null}
 
       <fieldset>
         <legend className="text-sm font-medium text-slate-800">
