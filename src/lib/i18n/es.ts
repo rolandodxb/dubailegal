@@ -116,6 +116,7 @@ const baseEs: Omit<
     legalFirms: 'Despachos',
     lawyers: 'Abogados',
     clientReviews: 'Opiniones de clientes',
+    publishedProfileOne: 'perfil publicado, del cual',
     publishedProfiles: 'perfiles publicados, de los cuales',
     isVerified: 'está verificado',
     areVerified: 'están verificados',

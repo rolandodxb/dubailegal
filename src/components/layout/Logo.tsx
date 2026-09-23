@@ -41,7 +41,7 @@ export function LogoMark({
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={className ?? 'text-base font-semibold tracking-tight text-slate-900'}>
-      Legal<span className="text-brand-700">Dash</span>
+      Legal{' '}<span className="text-brand-700">Dash</span>
     </span>
   );
 }

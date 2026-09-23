@@ -20,7 +20,11 @@ import { VerificationBadge } from '@/components/VerificationBadge';
 import { CaseCard } from '@/components/cases/CaseCard';
 import { Alert, buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
 
-export const metadata: Metadata = { title: 'Dashboard' };
+/** The tab title, in the reader's language — the same words as the nav entry. */
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.dashboard };
+}
 
 /**
  * One dashboard, shaped by the account type.

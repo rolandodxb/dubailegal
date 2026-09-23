@@ -116,7 +116,7 @@ export function SiteHeader({
                 {displayName}
               </span>
               {user.verificationStatus === 'APPROVED' ? (
-                <VerificationBadge accountType={user.accountType} size="sm" />
+                <VerificationBadge accountType={user.accountType} size="sm" label={t.badges[user.accountType]} />
               ) : null}
               <span className="sr-only">
                 {t.publicPages.siteHeader.accountLabel.replace(

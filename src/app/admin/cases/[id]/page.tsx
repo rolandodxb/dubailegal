@@ -8,6 +8,7 @@ import { caseStatusLabel, legalAreaLabel } from '@/lib/i18n/labels';
 import { formatDateTime, formatFileSize } from '@/lib/format';
 import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/primitives';
 import { CaseStatusChip } from '@/components/cases/CaseStatusChip';
+import { messageTranslator } from '@/lib/i18n/messages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -26,7 +27,7 @@ export default async function AdminCaseOversightPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const [{ t }] = await Promise.all([getI18n(), requireReviewer()]);
+  const [{ t, effectiveLocale }] = await Promise.all([getI18n(), requireReviewer()]);
   const { id } = await params;
 
   const legalCase = await getCaseForAdmin(id);
@@ -176,7 +177,7 @@ export default async function AdminCaseOversightPage({
               </p>
               <p className="text-xs text-slate-500">
                 {event.actor?.email ?? t.admin.cases.system} · {formatDateTime(event.createdAt)}
-                {event.note ? ` · ${event.note}` : ''}
+                {event.note ? ` · ${messageTranslator(effectiveLocale)(event.note)}` : ''}
               </p>
             </li>
           ))}

@@ -110,7 +110,7 @@ export default async function AdminReviewPostPage({
               <p className="flex flex-wrap items-center gap-1.5 font-medium text-slate-900">
                 {author}
                 {post.author.verificationStatus === 'APPROVED' ? (
-                  <VerificationBadge accountType={post.author.accountType} size="sm" />
+                  <VerificationBadge accountType={post.author.accountType} size="sm" label={t.badges[post.author.accountType]} />
                 ) : (
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
                     {t.verificationStatus.UNVERIFIED}

@@ -91,7 +91,11 @@ export function AuthorLine({ author, t }: { author: CommunityAuthor; t: Dictiona
       />
       <span className="font-semibold text-slate-800">{name}</span>
       {author.verificationStatus === 'APPROVED' ? (
-        <VerificationBadge accountType={author.accountType as 'USER' | 'LAWYER' | 'FIRM'} size="sm" />
+        <VerificationBadge
+          accountType={author.accountType as 'USER' | 'LAWYER' | 'FIRM'}
+          size="sm"
+          label={t.badges[author.accountType as 'USER' | 'LAWYER' | 'FIRM']}
+        />
       ) : (
         <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
           {t.verificationStatus.UNVERIFIED}
@@ -144,6 +148,7 @@ async function CommentRow({
               <VerificationBadge
                 accountType={comment.author.accountType as 'USER' | 'LAWYER' | 'FIRM'}
                 size="sm"
+                label={t.badges[comment.author.accountType as 'USER' | 'LAWYER' | 'FIRM']}
               />
             ) : null}
           </p>

@@ -172,7 +172,13 @@ async function main(): Promise<void> {
 
     const landing = markup(await html('/'));
     check('the landing page shows the mark', landing.includes('/logo.svg'));
-    check('with the product name beside it', landing.includes('Dubai<span'));
+    // The wordmark is two tones, so the name is split across a span and React puts
+    // a comment node where the space is. What matters is the words a reader sees.
+    const landingText = landing
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ');
+    check('with the product name beside it', landingText.includes('Legal Dash'));
 
     const admin = await register(`brand.admin.${runId}@example.ae`, 'USER');
     await makeProfile(admin.userId, 'Brand Reviewer', 8101);

@@ -8,7 +8,11 @@ import { notificationText } from '@/lib/i18n/notifications';
 import { Card, EmptyState, cx } from '@/components/ui/primitives';
 import { MarkAllReadButton, MarkReadButton } from '@/components/forms/NotificationButtons';
 
-export const metadata: Metadata = { title: 'Alerts' };
+/** The tab title, in the reader's language — the same words as the nav entry. */
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.items.alerts };
+}
 
 /**
  * In-app alerts. With no mail provider configured, this is how a client learns

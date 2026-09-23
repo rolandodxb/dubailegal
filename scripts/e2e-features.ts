@@ -757,9 +757,13 @@ async function main(): Promise<void> {
       lawyerCaseHtml.includes('Payment completed') &&
         !lawyerCaseHtml.includes(`/payments/${openRequest.ok ? openRequest.data.paymentId : ''}/pay`),
     );
+    // The labels a client component is given travel in the flight payload, so the
+    // question is whether the lawyer is *shown* the prompt, not whether the words
+    // appear anywhere in the response.
+    const lawyerVisible = lawyerCaseHtml.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
     check(
       'and the lawyer is not asked to send proof',
-      !lawyerCaseHtml.includes('Send the proof of payment'),
+      !lawyerVisible.includes('Send the proof of payment'),
     );
 
     // ── Proof of payment, after the payment ───────────────────────────────

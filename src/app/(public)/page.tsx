@@ -196,10 +196,12 @@ export default async function LandingPage({
                 </p>
               ) : (
                 <p className="mt-6 text-sm text-slate-600">
-                  <strong className="text-slate-900">{facts.published}</strong> published{' '}
-                  {facts.published === 1 ? 'profile' : 'profiles'}, of which{' '}
+                  <strong className="text-slate-900">{facts.published}</strong>{' '}
+                  {facts.published === 1
+                    ? t.landing.publishedProfileOne
+                    : t.landing.publishedProfiles}{' '}
                   <strong className="text-slate-900">{facts.verified}</strong>{' '}
-                  {facts.verified === 1 ? 'is' : 'are'} verified.
+                  {facts.verified === 1 ? t.landing.isVerified : t.landing.areVerified}.
                 </p>
               )}
             </div>
@@ -212,7 +214,7 @@ export default async function LandingPage({
               <ul className="mt-4 space-y-4">
                 {BADGE_TYPES.map((type, index) => (
                   <li key={type} className="flex items-start gap-3">
-                    <VerificationBadge accountType={type} size="lg" />
+                    <VerificationBadge accountType={type} size="lg" label={t.badges[type]} />
                     <div>
                       <p className="text-sm font-medium text-slate-900">{t.badges[type]}</p>
                       <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
@@ -302,7 +304,7 @@ export default async function LandingPage({
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="max-w-xl">
                 <div className="flex items-center gap-2">
-                  <VerificationBadge accountType="USER" size="md" />
+                  <VerificationBadge accountType="USER" size="md" label={t.badges.USER} />
                   <h3 className="font-semibold text-slate-900">{t.landing.needLawyer}</h3>
                 </div>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
@@ -417,7 +419,7 @@ export default async function LandingPage({
             ).map((option) => (
               <Card key={option.type} className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <VerificationBadge accountType={option.type} size="md" />
+                  <VerificationBadge accountType={option.type} size="md" label={t.badges[option.type]} />
                   <h3 className="font-semibold text-slate-900">{option.title}</h3>
                 </div>
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{option.body}</p>

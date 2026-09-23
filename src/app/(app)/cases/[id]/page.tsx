@@ -26,6 +26,7 @@ import { CaseProgressTrack, CaseStatusChip } from '@/components/cases/CaseStatus
 import { EncryptionNotice } from '@/components/SecurityNotice';
 import { Alert, buttonClasses, Card, DescriptionList } from '@/components/ui/primitives';
 import { localiseBankLines } from '@/lib/i18n/format';
+import { messageTranslator } from '@/lib/i18n/messages';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -368,7 +369,7 @@ export default async function CaseDetailPage({
                   </p>
                   <p className="text-xs text-slate-500">
                     {event.actor?.email ?? labels.system} · {formatDateTime(event.createdAt)}
-                    {event.note ? ` · ${event.note}` : ''}
+                    {event.note ? ` · ${messageTranslator(effectiveLocale)(event.note)}` : ''}
                   </p>
                 </li>
               ))}

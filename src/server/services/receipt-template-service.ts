@@ -22,7 +22,7 @@ import { fromZodError, failure, success, type ServiceResult } from './result';
 /** Where the platform mark and the standard wording live. */
 export const PLATFORM_BRAND = {
   name: 'Legal Dash',
-  tagline: 'Lawyers and legal firms of the United Arab Emirates',
+  tagline: 'Verified lawyers and legal firms, worldwide',
   logo: '/logo.svg',
 } as const;
 

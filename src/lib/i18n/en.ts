@@ -117,6 +117,7 @@ const baseEn = {
     legalFirms: 'Legal firms',
     lawyers: 'Lawyers',
     clientReviews: 'Client reviews',
+    publishedProfileOne: 'published profile, of which',
     publishedProfiles: 'published profiles, of which',
     isVerified: 'is verified',
     areVerified: 'are verified',
