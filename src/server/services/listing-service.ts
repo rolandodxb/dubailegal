@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { divisionOfEmirate, resolvePlace, UAE } from '@/lib/geo-emirates';
 import { invalidate } from '@/lib/ttl-cache';
 import { recordAudit } from '@/lib/audit';
 import { listingSchema } from '@/lib/validation';
@@ -29,10 +30,57 @@ export async function saveListing(
 
   const data = parsed.data;
 
-  await prisma.listing.upsert({
-    where: { userId },
-    create: { userId, kind: user.accountType, ...data },
-    update: { ...data },
+  // Whichever way the place was described, both descriptions are stored and they
+  // agree — so the emirate filter keeps working for a UAE listing and the country
+  // filter works for everybody.
+  const place = resolvePlace(data);
+
+  // One coverage row per place covered: every emirate for a UAE listing, or the
+  // single country-and-division for one anywhere else.
+  const coverage = data.emirates.length > 0
+    ? data.emirates.map((emirate) => ({
+        countryCode: UAE,
+        divisionCode: divisionOfEmirate(emirate),
+        locality: null as string | null,
+        areas: data.areas,
+        isPrimary: emirate === place.primaryEmirate,
+      }))
+    : place.primaryCountryCode
+      ? [{
+          countryCode: place.primaryCountryCode,
+          divisionCode: place.primaryDivisionCode,
+          locality: data.primaryLocality ?? null,
+          areas: data.areas,
+          isPrimary: true,
+        }]
+      : [];
+
+  await prisma.$transaction(async (tx) => {
+    const saved = await tx.listing.upsert({
+      where: { userId },
+      create: {
+        userId,
+        kind: user.accountType,
+        ...data,
+        primaryCountryCode: place.primaryCountryCode,
+        primaryDivisionCode: place.primaryDivisionCode,
+        primaryEmirate: place.primaryEmirate,
+      },
+      update: {
+        ...data,
+        primaryCountryCode: place.primaryCountryCode,
+        primaryDivisionCode: place.primaryDivisionCode,
+        primaryEmirate: place.primaryEmirate,
+      },
+      select: { id: true },
+    });
+
+    // Replaced wholesale rather than diffed: the set is small, and a diff would
+    // have to guess which row the professional meant when they renamed a place.
+    await tx.listingCoverage.deleteMany({ where: { listingId: saved.id } });
+    for (const row of coverage) {
+      await tx.listingCoverage.create({ data: { listingId: saved.id, ...row } });
+    }
   });
 
   await recordAudit({

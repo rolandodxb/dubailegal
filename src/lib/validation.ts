@@ -353,9 +353,32 @@ export const listingSchema = z
     displayName: requiredString(2, 160, 'Display name'),
     headline: optionalString(160, 'Headline'),
     bio: optionalString(3000, 'About'),
-    primaryEmirate: z.nativeEnum(Emirate, {
-      errorMap: () => ({ message: 'Choose the main emirate you practise in.' }),
-    }),
+    /**
+     * Where the professional works, in the worldwide model.
+     *
+     * A place is described either as an emirate — which is what every listing in the
+     * United Arab Emirates does, and what every filter written before the platform
+     * went worldwide expects — or as a country and one of its divisions. The two are
+     * reconciled below, so a form only ever has to send one of them and the stored
+     * row always has both.
+     */
+    primaryCountryCode: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((value) => {
+        const code = typeof value === 'string' ? value.trim().toUpperCase() : '';
+        return /^[A-Z]{2}$/.test(code) ? code : null;
+      }),
+    primaryDivisionCode: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((value) => {
+        const code = typeof value === 'string' ? value.trim().toUpperCase() : '';
+        return code.length === 0 ? null : code;
+      }),
+    primaryLocality: optionalString(160, 'Locality'),
+    /** Every emirate the professional or firm covers. */
+    primaryEmirate: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((value) => (typeof value === 'string' && value in Emirate ? (value as Emirate) : null)),
     emirates: z
       .union([z.string(), z.array(z.string()), z.null(), z.undefined()])
       .transform((value) => {
@@ -363,7 +386,6 @@ export const listingSchema = z
         if (typeof value === 'string' && value.length > 0) return [value];
         return [];
       })
-      .refine((values) => values.length > 0, 'Select at least one emirate.')
       .refine(
         (values) => values.every((value) => value in Emirate),
         'One of the selected emirates is not recognised.',
@@ -415,10 +437,32 @@ export const listingSchema = z
     website: optionalWebsite(),
     addressLine: optionalString(300, 'Practice address'),
   })
-  .refine((data) => data.emirates.includes(data.primaryEmirate), {
-    path: ['emirates'],
-    message: 'The main emirate must also be selected in the list of emirates you cover.',
-  });
+  .refine(
+    (data) => data.primaryEmirate === null || data.emirates.includes(data.primaryEmirate),
+    {
+      path: ['emirates'],
+      message: 'The main emirate must also be selected in the list of emirates you cover.',
+    },
+  )
+  .refine(
+    (data) =>
+      data.primaryCountryCode !== null ||
+      data.primaryDivisionCode !== null ||
+      data.primaryEmirate !== null ||
+      data.emirates.length > 0,
+    {
+      path: ['primaryCountryCode'],
+      message: 'Choose the country you work in.',
+    },
+  )
+  .refine(
+    (data) => data.primaryDivisionCode === null || data.primaryCountryCode === null ||
+      data.primaryDivisionCode.startsWith(`${data.primaryCountryCode}.`),
+    {
+      path: ['primaryDivisionCode'],
+      message: 'That province is not in the country you chose.',
+    },
+  );
 
 // ── Inquiries ────────────────────────────────────────────────────────────────
 

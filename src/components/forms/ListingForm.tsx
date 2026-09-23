@@ -19,8 +19,13 @@ export type ListingFormValues = {
   displayName: string;
   headline: string | null;
   bio: string | null;
-  primaryEmirate: string;
+  /** The emirate, for a listing in the United Arab Emirates. Null elsewhere. */
+  primaryEmirate: string | null;
   emirates: string[];
+  /** The worldwide description of the same place, for everywhere else. */
+  primaryCountryCode?: string | null;
+  primaryDivisionCode?: string | null;
+  primaryLocality?: string | null;
   areas: string[];
   languages: string[];
   yearsOfExperience: number | null;

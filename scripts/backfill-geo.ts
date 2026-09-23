@@ -46,7 +46,9 @@ async function main(): Promise<void> {
   let coverageRows = 0;
 
   for (const listing of listings) {
-    const primaryDivision = EMIRATE_CODES[listing.primaryEmirate] ?? null;
+    const primaryDivision = listing.primaryEmirate
+      ? EMIRATE_CODES[listing.primaryEmirate] ?? null
+      : null;
 
     if (listing.primaryCountryCode === null) {
       await prisma.listing.update({
@@ -60,9 +62,12 @@ async function main(): Promise<void> {
       // One row per emirate the listing covers, so the map is complete rather than
       // only the headline one. The primary emirate is flagged, which is what the
       // profile shows first and what a future currency default reads.
-      const divisions = listing.emirates.length > 0 ? listing.emirates : [listing.primaryEmirate];
+      const divisions =
+        listing.emirates.length > 0
+          ? listing.emirates
+          : ([listing.primaryEmirate].filter(Boolean) as string[]);
       for (const emirate of divisions) {
-        const divisionCode = EMIRATE_CODES[emirate];
+        const divisionCode = emirate ? EMIRATE_CODES[emirate] : undefined;
         if (!divisionCode) continue;
         await prisma.listingCoverage.create({
           data: {

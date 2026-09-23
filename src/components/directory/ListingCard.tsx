@@ -105,6 +105,15 @@ export function ListingCard({
     /** The stored code, resolved to the word this reader uses for it. */
     accountType: (code: string) => string;
     emirate: (code: string) => string;
+    /**
+     * Where the profile is offered from: its emirate in the United Arab Emirates,
+     * its province or state anywhere else. Null when it has recorded neither.
+     */
+    place: (listing: {
+      primaryEmirate: string | null;
+      primaryDivisionCode: string | null;
+      primaryLocality: string | null;
+    }) => string | null;
     legalArea: (code: string) => string;
   };
 }) {
@@ -133,7 +142,7 @@ export function ListingCard({
           <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             {labels.accountType(owner.accountType)}
             <span className="mx-1.5 font-normal text-slate-300">|</span>
-            {labels.emirate(listing.primaryEmirate)}
+            {labels.place(listing)}
           </p>
           {listing.headline ? (
             <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-600">{listing.headline}</p>

@@ -16,6 +16,7 @@ import { Icon } from '@/components/icons';
 import { DirectoryFilters } from '@/components/directory/DirectoryFilters';
 import { ListingCard } from '@/components/directory/ListingCard';
 import { buttonClasses, Card, EmptyState } from '@/components/ui/primitives';
+import { listingPlaceText } from '@/lib/i18n/place';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -190,6 +191,7 @@ export default async function DirectoryPage({
                       verificationStatus: t.verificationStatus,
                       accountType: (code) => accountTypeLabel(t, code),
                       emirate: (code) => emirateLabel(t, code),
+                      place: (placeListing) => listingPlaceText(t, placeListing),
                       legalArea: (code) => legalAreaLabel(t, code),
                     }}
                     key={listing.id}

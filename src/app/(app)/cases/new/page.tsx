@@ -10,6 +10,7 @@ import { LEGAL_AREAS } from '@/lib/constants';
 import { CaseSubmissionForm } from '@/components/forms/CaseSubmissionForm';
 import { VerificationStatusPill } from '@/components/VerificationBadge';
 import { Alert, Card, Chip } from '@/components/ui/primitives';
+import { listingPlaceText } from '@/lib/i18n/place';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -72,7 +73,7 @@ export default async function NewCasePage({
             </div>
             <p className="mt-1 text-xs text-slate-500">
               {accountTypeLabel(t, listing.user.accountType)} ·{' '}
-              {emirateLabel(t, listing.primaryEmirate)}
+              {listingPlaceText(t, listing)}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {listing.areas.slice(0, 5).map((area) => (

@@ -24,6 +24,7 @@ import { InquiryForm } from '@/components/forms/InquiryForm';
 import { Alert, buttonClasses, Card, Chip, DescriptionList, cx } from '@/components/ui/primitives';
 import { Icon } from '@/components/icons';
 import { relativeTime } from '@/lib/i18n/format';
+import { listingPlaceText } from '@/lib/i18n/place';
 
 export async function generateMetadata({
   params,
@@ -163,7 +164,8 @@ export default async function ListingDetailPage({
   // Only a contact address the member deliberately published. Falling back to
   // the account's login email would leak a private address into a public page.
   const contactEmail = listing.contactEmail;
-  const category = `${accountTypeLabel(t, owner.accountType)} · ${emirateLabel(t, listing.primaryEmirate)}`;
+  const place = listingPlaceText(t, listing);
+  const category = [accountTypeLabel(t, owner.accountType), place].filter(Boolean).join(' · ');
   const tabHref = (key: Tab) => `/directory/${listing.id}?tab=${key}`;
   const recommendationCount = (summary.count === 1 ? labels.recommendationOne : labels.recommendationOther).replace(
     '{count}',

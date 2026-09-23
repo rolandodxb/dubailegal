@@ -481,8 +481,12 @@ model Listing {
   /// `AE.07` in the reference data are exactly these seven, so the two models
   /// describe the same thing and the emirate filter is the country filter
   /// specialised to the United Arab Emirates.
-  primaryEmirate    Emirate
-  /// Every emirate the professional or firm covers.
+  /// The UAE emirate, where the professional works in the United Arab Emirates.
+  /// Null for a listing anywhere else: the seven emirates are the seven admin1
+  /// divisions of `AE`, so a UAE listing always has one and every other country's
+  /// listing carries a division code instead.
+  primaryEmirate    Emirate?
+  /// Every emirate the professional or firm covers. Empty outside the Emirates.
   emirates          Emirate[]
 
   /// The primary place in the worldwide model. `primaryDivisionCode` is an admin1
