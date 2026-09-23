@@ -602,6 +602,9 @@ export const memberCasesEn = {
 
   /** Paying a fee. */
   pay: {
+    crossBorderTitle: 'You are instructing a professional abroad',
+    crossBorderBody:
+      'This fee is quoted in {currency}, the money of the country where the professional works, and it is paid into their bank on their terms. When you instruct somebody outside your own country, their payment conditions are the ones that apply. Your bank may charge a conversion or transfer fee of its own.',
     backToCase: '← Back to case {reference}',
     withdrawnTitle: 'This fee was withdrawn',
     withdrawnBody:
@@ -1434,6 +1437,9 @@ export const memberCasesEs: MemberCasesDict = {
   },
 
   pay: {
+    crossBorderTitle: 'Está contratando a un profesional en el extranjero',
+    crossBorderBody:
+      'Estos honorarios se expresan en {currency}, la moneda del país donde trabaja el profesional, y se pagan a su banco según sus condiciones. Cuando se contrata a alguien fuera del propio país, se aplican sus condiciones de pago. Su banco puede cobrarle además una comisión de cambio o de transferencia.',
     backToCase: '← Volver al caso {reference}',
     withdrawnTitle: 'Estos honorarios se retiraron',
     withdrawnBody:

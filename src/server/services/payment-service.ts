@@ -140,7 +140,14 @@ export async function requestPayment(
       client: { select: { profile: { select: { countryOfResidenceCode: true } } } },
       lawyerId: true,
       firmId: true,
-      lawyer: { select: { userId: true } },
+      /// The professional's country decides the currency: the fee is paid into
+      /// their bank, in their money, on their terms.
+      lawyer: {
+        select: {
+          userId: true,
+          user: { select: { profile: { select: { countryOfResidenceCode: true } } } },
+        },
+      },
       firm: { select: { userId: true, lawyers: { select: { userId: true } } } },
     },
   });
@@ -176,9 +183,20 @@ export async function requestPayment(
       caseId: legalCase.id,
       requestedById,
       amountFils: Math.round(parsed.data.amountAed * 100),
-      // The consultation happens where the client is, so the fee is quoted in
-      // that country's money rather than in the platform's.
-      currency: currencyForCountry(legalCase.client?.profile?.countryOfResidenceCode),
+      /**
+       * The professional's money, not the client's.
+       *
+       * A fee is paid into the professional's bank account, so it is quoted in the
+       * currency of the country they work in — and where the client is somewhere
+       * else entirely, the professional's terms are the ones that apply. That is
+       * the rule for instructing somebody abroad: you pay them the way their
+       * country is paid. The client's own country is the fallback only when the
+       * professional's has never been recorded, and the platform's own last.
+       */
+      currency: currencyForCountry(
+        legalCase.lawyer?.user?.profile?.countryOfResidenceCode ??
+          legalCase.client?.profile?.countryOfResidenceCode,
+      ),
       purpose: parsed.data.purpose,
       details: parsed.data.details,
       status: 'REQUESTED',

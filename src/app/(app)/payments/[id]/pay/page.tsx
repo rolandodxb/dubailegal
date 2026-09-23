@@ -9,6 +9,7 @@ import { BankTransferForm } from '@/components/forms/BankTransferForm';
 import { bankTransferLines } from '@/server/services/payment-service';
 import { Alert, buttonClasses, Card } from '@/components/ui/primitives';
 import { localiseBankLines } from '@/lib/i18n/format';
+import { currencyForCountry } from '@/lib/countries';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -43,6 +44,7 @@ export default async function PayFeePage({
       status: true,
       amountFils: true,
       purpose: true,
+      currency: true,
       details: true,
       caseId: true,
       case: {
@@ -92,6 +94,10 @@ export default async function PayFeePage({
     payment.case.lawyer?.user.profile?.fullName?.trim() ||
     payment.requestedBy.email;
 
+  // The money of the client's own country, so the notice appears only when the fee
+  // is quoted in somebody else's — which is exactly the cross-border case.
+  const homeCurrency = currencyForCountry(user.profile?.countryOfResidenceCode);
+
   const purposeLabel =
     paymentPurposeLabel(t, payment.purpose) || t.memberCases.fees.feeFallback;
 
@@ -114,6 +120,18 @@ export default async function PayFeePage({
           {labels.payableTo.replace('{name}', professionalName)}
         </p>
       </header>
+
+      {/*
+        The cross-border rule, said plainly at the moment it matters. A client
+        paying a professional in another country is paying on that professional's
+        terms — their currency, their bank, their conditions — so they are told so
+        rather than discovering it at their own bank.
+      */}
+      {homeCurrency !== payment.currency ? (
+        <Alert tone="info" title={labels.crossBorderTitle}>
+          {labels.crossBorderBody.replace('{currency}', payment.currency)}
+        </Alert>
+      ) : null}
 
       {payment.details ? (
         <Alert tone="neutral" title={purposeLabel}>
