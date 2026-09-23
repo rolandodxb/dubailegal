@@ -33,7 +33,8 @@
     "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "https": "tsx scripts/https-proxy.ts",
     "call:check": "tsx scripts/call-check.ts",
-    "geo:build": "tsx scripts/build-geo-data.ts"
+    "geo:build": "tsx scripts/build-geo-data.ts",
+    "geo:backfill": "tsx scripts/backfill-geo.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^6.19.3",

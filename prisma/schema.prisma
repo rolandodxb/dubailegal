@@ -286,6 +286,11 @@ model Profile {
   countryOfBirthCode     String?
   nationalityCode        String?
   countryOfResidenceCode String?
+  /// The state, province or region of residence, as an admin1 code such as AR.14,
+  /// and a free-text town beneath it. Optional, because it narrows a directory
+  /// rather than identifying anybody.
+  divisionCode           String?
+  locality               String?
 
   /// Set when a member says they hold the documents of their own country but do
   /// not yet have a residence permit for where they live. It is a normal
@@ -420,6 +425,45 @@ model FirmProfile {
 // ── Public directory ─────────────────────────────────────────────────────────
 
 /// A published directory entry. Only lawyers and firms have one.
+/// Where a professional is willing to work, and in what.
+///
+/// The directory is no longer one country's, so "which emirate" cannot be asked of
+/// everybody. Each row is one offer: a country, the division within it, the
+/// district beneath that, and the areas of law practised there. A lawyer who works
+/// in two countries has two rows, which is what makes "find a lawyer in Mendoza"
+/// and "find a lawyer who also works in Chile" both answerable.
+///
+/// The district and the locality are both optional: GeoNames knows the first two
+/// levels everywhere, but the third is often a town the professional should simply
+/// be able to type.
+model ListingCoverage {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  /// ISO 3166-1 alpha-2, e.g. AR.
+  countryCode String
+  /// An admin1 division code from the reference data, e.g. AR.14. Null means the
+  /// whole country rather than a part of it.
+  divisionCode String?
+  /// A free-text place beneath the division, when a picker has no list for it.
+  locality String?
+
+  /// The areas of law practised at this place, for the directory's legal-type filter.
+  areas LegalArea[]
+
+  /// The place shown first on the profile and used for the default currency.
+  isPrimary Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId])
+  @@index([countryCode])
+  @@index([countryCode, divisionCode])
+  @@index([divisionCode])
+}
+
 model Listing {
   id     String @id @default(cuid())
   userId String @unique
@@ -432,9 +476,25 @@ model Listing {
   headline    String?
   bio         String? @db.Text
 
+  /// The UAE fields, kept because the Emirates are this platform's home market and
+  /// existing listings, filters and receipts are written against them. `AE.01`…
+  /// `AE.07` in the reference data are exactly these seven, so the two models
+  /// describe the same thing and the emirate filter is the country filter
+  /// specialised to the United Arab Emirates.
   primaryEmirate    Emirate
   /// Every emirate the professional or firm covers.
   emirates          Emirate[]
+
+  /// The primary place in the worldwide model. `primaryDivisionCode` is an admin1
+  /// code such as `AR.14`; `primaryCountryCode` is derived from it, and both are
+  /// kept alongside the emirate so nothing that reads the emirate has to change at
+  /// the same moment.
+  primaryCountryCode  String?
+  primaryDivisionCode String?
+  primaryLocality     String?
+
+  /// Everywhere this professional offers to work, worldwide.
+  coverage ListingCoverage[]
   /// Practice areas used by the directory's "legal type" filter.
   areas             LegalArea[]
   languages         String[]
@@ -461,6 +521,8 @@ model Listing {
 
   @@index([published, kind])
   @@index([primaryEmirate])
+  @@index([published, primaryCountryCode])
+  @@index([published, primaryDivisionCode])
   // Array columns are filtered with `has`/`hasSome`, which needs GIN.
   @@index([areas], type: Gin)
   @@index([emirates], type: Gin)
@@ -1477,6 +1539,14 @@ model BlogPost {
   title String
   body  String         @db.Text
 
+  /// The country the post belongs to, taken from its author when it is written.
+  /// The board is worldwide, so a reader lands on their own country's posts by
+  /// default and can widen to every country deliberately. Null on posts written
+  /// before the platform went worldwide, which are shown everywhere rather than
+  /// hidden from everybody.
+  countryCode  String?
+  divisionCode String?
+
   /// The professional this post is attached to: the one being recommended, or —
   /// when the author owns the profile — the professional posting to their own
   /// page, which is what a firm does to announce something.
@@ -1519,6 +1589,7 @@ model BlogPost {
   reactions BlogReaction[]
 
   @@index([status, createdAt])
+  @@index([status, countryCode])
   @@index([status, topic])
   @@index([status, score])
   @@index([listingId, status])
