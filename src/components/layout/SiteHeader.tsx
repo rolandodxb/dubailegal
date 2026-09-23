@@ -213,12 +213,12 @@ export function SiteFooter({
             <Logo />
             <p>
               {locale === 'ar'
-                ? 'دليل المحامين ومكاتب المحاماة في الإمارات العربية المتحدة. تُمنح شارات التوثيق من مراجع بشري مُسمّى بناءً على مستندات رُفعت فعلاً — لا تلقائياً أبداً، ولا دون دليل.'
+                ? 'دليل المحامين ومكاتب المحاماة حول العالم. تُمنح شارات التوثيق من مراجع بشري مُسمّى بناءً على مستندات رُفعت فعلاً — لا تلقائياً أبداً، ولا دون دليل.'
                 : locale === 'es'
-                  ? 'Un directorio de abogados y despachos de los Emiratos Árabes Unidos. Las insignias de verificación las otorga un revisor humano identificado a partir de documentos realmente subidos: nunca de forma automática ni sin pruebas.'
+                  ? 'Un directorio mundial de abogados y despachos. Las insignias de verificación las otorga un revisor humano identificado a partir de documentos realmente subidos: nunca de forma automática ni sin pruebas.'
                   : locale === 'fr'
-                    ? 'Un annuaire d’avocats et de cabinets des Émirats arabes unis. Les badges de vérification sont délivrés par un vérificateur humain nommé, sur des documents réellement téléversés — jamais automatiquement, jamais sans preuve.'
-                    : 'A directory of lawyers and legal firms in the United Arab Emirates. Verification badges are issued by a named human reviewer against documents that were actually uploaded — never automatically, and never without evidence.'}
+                    ? 'Un annuaire mondial d’avocats et de cabinets. Les badges de vérification sont délivrés par un vérificateur humain nommé, sur des documents réellement téléversés — jamais automatiquement, jamais sans preuve.'
+                    : 'A worldwide directory of lawyers and legal firms. Verification badges are issued by a named human reviewer against documents that were actually uploaded — never automatically, and never without evidence.'}
             </p>
           </div>
           {signedIn ? null : (
