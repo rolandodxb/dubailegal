@@ -28,7 +28,9 @@ export async function saveListing(
     return failure('Only lawyer and legal-firm accounts can appear in the directory.', { status: 403 });
   }
 
-  const data = parsed.data;
+  // `coverage` is the extra countries the form sent, and it shares its name with
+  // the relation, so it is taken out of the spread before the rest is written.
+  const { coverage: extraPlaces, ...data } = parsed.data;
 
   // Whichever way the place was described, both descriptions are stored and they
   // agree — so the emirate filter keeps working for a UAE listing and the country
@@ -37,25 +39,63 @@ export async function saveListing(
 
   // One coverage row per place covered: every emirate for a UAE listing, or the
   // single country-and-division for one anywhere else.
-  const coverage = data.emirates.length > 0
-    ? data.emirates.map((emirate) => ({
+  // The primary place always counts as covered, and any further countries are added
+  // beside it. Duplicates are dropped so adding a country that is already the
+  // primary one cannot produce two identical offers.
+  const seen = new Set<string>();
+  const keyOf = (row: { countryCode: string; divisionCode: string | null; districtCode: string | null }) =>
+    `${row.countryCode}|${row.divisionCode ?? ''}|${row.districtCode ?? ''}`;
+
+  const coverage: {
+    countryCode: string;
+    divisionCode: string | null;
+    districtCode: string | null;
+    locality: string | null;
+    areas: typeof data.areas;
+    isPrimary: boolean;
+  }[] = [];
+
+  const add = (row: (typeof coverage)[number]) => {
+    const key = keyOf(row);
+    if (seen.has(key)) return;
+    seen.add(key);
+    coverage.push(row);
+  };
+
+  if (data.emirates.length > 0) {
+    // A UAE listing covers the emirates it ticked, which is what the checklist is
+    // for; the primary place is the one flagged among them.
+    for (const emirate of data.emirates) {
+      add({
         countryCode: UAE,
         divisionCode: divisionOfEmirate(emirate),
-        districtCode: null as string | null,
-        locality: null as string | null,
+        districtCode: null,
+        locality: null,
         areas: data.areas,
         isPrimary: emirate === place.primaryEmirate,
-      }))
-    : place.primaryCountryCode
-      ? [{
-          countryCode: place.primaryCountryCode,
-          divisionCode: place.primaryDivisionCode,
-          districtCode: data.primaryDistrictCode ?? null,
-          locality: data.primaryLocality ?? null,
-          areas: data.areas,
-          isPrimary: true,
-        }]
-      : [];
+      });
+    }
+  } else if (place.primaryCountryCode) {
+    add({
+      countryCode: place.primaryCountryCode,
+      divisionCode: place.primaryDivisionCode,
+      districtCode: data.primaryDistrictCode ?? null,
+      locality: data.primaryLocality ?? null,
+      areas: data.areas,
+      isPrimary: true,
+    });
+  }
+
+  for (const extra of extraPlaces) {
+    add({
+      countryCode: extra.countryCode,
+      divisionCode: extra.divisionCode,
+      districtCode: extra.districtCode,
+      locality: extra.locality,
+      areas: data.areas,
+      isPrimary: false,
+    });
+  }
 
   await prisma.$transaction(async (tx) => {
     const saved = await tx.listing.upsert({

@@ -15,6 +15,7 @@ import {
   Textarea,
 } from '@/components/ui/primitives';
 import { PlacePicker } from './PlacePicker';
+import { CoverageList } from './CoverageList';
 
 export type ListingFormValues = {
   displayName: string;
@@ -27,6 +28,8 @@ export type ListingFormValues = {
   primaryCountryCode?: string | null;
   primaryDivisionCode?: string | null;
   primaryDistrictCode?: string | null;
+  /** The further countries the professional works in. */
+  coverage?: { countryCode: string; divisionCode: string | null; districtCode: string | null; locality: string | null }[];
   primaryLocality?: string | null;
   areas: string[];
   languages: string[];
@@ -85,6 +88,10 @@ export type ListingFormLabels = {
   placeDivisionHint: string;
   placeDistrict: string;
   placeDistrictHint: string;
+  placeCountriesHeading: string;
+  placeCountriesHint: string;
+  placeCountriesAdd: string;
+  placeCountriesRemove: string;
   placeLocality: string;
   placeLocalityHint: string;
   placeChooseCountry: string;
@@ -215,6 +222,28 @@ export function ListingForm({
           division: state?.fieldErrors?.primaryDivisionCode,
         }}
         onCountryChange={setCountry}
+      />
+
+      {/* A practice is not always in one country, so further ones can be added. */}
+      <CoverageList
+        countries={countries}
+        labels={{
+          heading: labels.placeCountriesHeading,
+          hint: labels.placeCountriesHint,
+          add: labels.placeCountriesAdd,
+          remove: labels.placeCountriesRemove,
+          country: labels.placeCountry,
+          countryHint: labels.placeCountryHint,
+          division: labels.placeDivision,
+          divisionHint: labels.placeDivisionHint,
+          district: labels.placeDistrict,
+          districtHint: labels.placeDistrictHint,
+          locality: labels.placeLocality,
+          localityHint: labels.placeLocalityHint,
+          chooseCountry: labels.placeChooseCountry,
+          chooseDivision: labels.placeChooseDivision,
+          optional: labels.placeOptional,
+        }}
       />
 
       <Field

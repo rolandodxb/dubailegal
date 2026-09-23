@@ -15,6 +15,10 @@ import type { Translated } from '../translated';
  */
 export const memberProEn = {
   listing: {
+    placeCountriesHeading: 'Other countries you work in',
+    placeCountriesHint: 'Optional. Add each further country you will take instructions in — with its provinces, and the departments beneath them.',
+    placeCountriesAdd: 'Add another country',
+    placeCountriesRemove: 'Remove',
     placeCountry: 'Country you work in',
     placeCountryHint: 'Pick the country first — the list beneath it follows that country.',
     placeDivision: 'State / province',
@@ -382,6 +386,10 @@ export type MemberProDict = Translated<typeof memberProEn>;
 
 export const memberProEs: MemberProDict = {
   listing: {
+    placeCountriesHeading: 'Otros países en los que trabaja',
+    placeCountriesHint: 'Opcional. Añada cada país adicional en el que aceptará encargos, con sus provincias y los departamentos que las componen.',
+    placeCountriesAdd: 'Añadir otro país',
+    placeCountriesRemove: 'Quitar',
     placeCountry: 'País en el que trabaja',
     placeCountryHint: 'Elija primero el país: la lista de abajo depende de él.',
     placeDivision: 'Estado / provincia',

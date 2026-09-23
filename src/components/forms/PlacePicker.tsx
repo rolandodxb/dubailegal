@@ -36,6 +36,8 @@ export function PlacePicker({
   labels,
   errors,
   onCountryChange,
+  unnamed = false,
+  onPlaceChange,
 }: {
   countries: Country[];
   defaultCountry?: string;
@@ -58,10 +60,20 @@ export function PlacePicker({
   errors?: { country?: string; division?: string };
   /** Told to the form so it can show the UAE-only fields only for the UAE. */
   onCountryChange?: (code: string) => void;
+  /** True when the caller reads these values itself — a repeatable row, say. */
+  unnamed?: boolean;
+  /** Told the whole place whenever any part of it changes. */
+  onPlaceChange?: (place: {
+    countryCode: string;
+    divisionCode: string;
+    districtCode: string;
+    locality: string;
+  }) => void;
 }) {
   const [country, setCountry] = useState(defaultCountry);
   const [division, setDivision] = useState(defaultDivision);
   const [district, setDistrict] = useState(defaultDistrict);
+  const [locality, setLocality] = useState(defaultLocality);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [districts, setDistricts] = useState<Division[]>([]);
   const [divisionLabel, setDivisionLabel] = useState<string>(labels.division);
@@ -97,6 +109,10 @@ export function PlacePicker({
   useEffect(() => {
     onCountryChange?.(country);
   }, [country, onCountryChange]);
+
+  useEffect(() => {
+    onPlaceChange?.({ countryCode: country, divisionCode: division, districtCode: district, locality });
+  }, [country, division, district, locality, onPlaceChange]);
 
   // The list beneath the chosen division. Its name comes from the country too — a
   // department in Argentina, a municipality in Brazil, a district in Turkey.
@@ -149,7 +165,7 @@ export function PlacePicker({
       >
         <Select
           id="primaryCountryCode"
-          name="primaryCountryCode"
+          name={unnamed ? undefined : "primaryCountryCode"}
           required
           value={country}
           onChange={(event) => setCountry(event.target.value)}
@@ -172,7 +188,7 @@ export function PlacePicker({
       >
         <Select
           id="primaryDivisionCode"
-          name="primaryDivisionCode"
+          name={unnamed ? undefined : "primaryDivisionCode"}
           value={division}
           disabled={divisions.length === 0 || loading}
           onChange={(event) => setDivision(event.target.value)}
@@ -199,7 +215,7 @@ export function PlacePicker({
       >
         <Select
           id="primaryDistrictCode"
-          name="primaryDistrictCode"
+          name={unnamed ? undefined : "primaryDistrictCode"}
           value={district}
           disabled={districts.length === 0 || loadingDistricts}
           onChange={(event) => setDistrict(event.target.value)}
@@ -217,14 +233,15 @@ export function PlacePicker({
 
       {/* The emirate, when the division is one of the seven. Derived rather than
           asked, so a UAE professional never answers the same question twice. */}
-      {emirate ? <input type="hidden" name="primaryEmirate" value={emirate} /> : null}
+      {emirate && !unnamed ? <input type="hidden" name="primaryEmirate" value={emirate} /> : null}
 
       <Field label={labels.locality} htmlFor="primaryLocality" hint={labels.localityHint}>
         <Input
           id="primaryLocality"
-          name="primaryLocality"
+          name={unnamed ? undefined : 'primaryLocality'}
           maxLength={160}
-          defaultValue={defaultLocality}
+          value={locality}
+          onChange={(event) => setLocality(event.target.value)}
         />
       </Field>
     </div>

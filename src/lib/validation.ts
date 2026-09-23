@@ -380,6 +380,50 @@ export const listingSchema = z
         const code = typeof value === 'string' ? value.trim().toUpperCase() : '';
         return code.length === 0 ? null : code;
       }),
+    /**
+     * The other countries the professional offers to work in.
+     *
+     * Sent as JSON in one field rather than as a nested form, because the cascade
+     * that builds each row is a client component and a repeatable fieldset of
+     * country/division/district selects would have to invent an index for every
+     * name. Each row is validated here exactly as the primary place is.
+     */
+    coverage: z
+      .union([z.string(), z.array(z.unknown()), z.null(), z.undefined()])
+      .transform((value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value !== 'string' || value.trim().length === 0) return [];
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      })
+      .pipe(
+        z
+          .array(
+            z.object({
+              countryCode: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/),
+              divisionCode: z
+                .union([z.string(), z.null(), z.undefined()])
+                .transform((v) =>
+                  typeof v === 'string' && v.trim().length > 0 ? v.trim().toUpperCase() : null,
+                ),
+              districtCode: z
+                .union([z.string(), z.null(), z.undefined()])
+                .transform((v) =>
+                  typeof v === 'string' && v.trim().length > 0 ? v.trim().toUpperCase() : null,
+                ),
+              locality: z
+                .union([z.string(), z.null(), z.undefined()])
+                .transform((v) =>
+                  typeof v === 'string' && v.trim().length > 0 ? v.trim().slice(0, 160) : null,
+                ),
+            }),
+          )
+          .max(20, 'Cover at most twenty places.'),
+      ),
     primaryLocality: optionalString(160, 'Locality'),
     /** Every emirate the professional or firm covers. */
     primaryEmirate: z
@@ -448,6 +492,17 @@ export const listingSchema = z
     {
       path: ['emirates'],
       message: 'The main emirate must also be selected in the list of emirates you cover.',
+    },
+  )
+  .refine(
+    (data) =>
+      data.coverage.every(
+        (place) =>
+          place.divisionCode === null || place.divisionCode.startsWith(`${place.countryCode}.`),
+      ),
+    {
+      path: ['coverage'],
+      message: 'One of those provinces is not in the country it is filed under.',
     },
   )
   .refine(
