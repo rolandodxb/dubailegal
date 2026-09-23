@@ -57,17 +57,34 @@ export default async function DirectoryPage({
       ? null
       : await detectedCountryOrLanguage();
 
-  const query =
-    detected && (!parsed.countries || parsed.countries.length === 0)
-      ? { ...parsed, countries: [detected] }
-      : parsed;
-
-  const [results, facets, viewer, availability] = await Promise.all([
-    searchDirectory(query),
+  // The facets come first because they decide whether the detected country is worth
+  // filtering by at all: they carry the number of published profiles in each
+  // country, and they are cached, so this costs nothing extra.
+  const [facets, viewer, availability] = await Promise.all([
     directoryFacetCounts(),
     getSessionUser(),
     getAvailability(),
   ]);
+
+  /**
+   * The directory is never empty because of where the reader happens to be.
+   *
+   * Opening on the reader's own country is only helpful while there is something
+   * there to show. Where nobody has registered yet, narrowing to that country
+   * produces a page that says the platform is empty, which is both untrue and the
+   * worst possible first impression. So the country filter is applied only when
+   * that country has profiles; otherwise the reader sees everybody, and can narrow
+   * deliberately from there.
+   */
+  const detectedHasProfiles = detected !== null && (facets.countryCounts.get(detected) ?? 0) > 0;
+  const appliedCountry = detectedHasProfiles ? detected : null;
+
+  const query =
+    appliedCountry && (!parsed.countries || parsed.countries.length === 0)
+      ? { ...parsed, countries: [appliedCountry] }
+      : parsed;
+
+  const results = await searchDirectory(query);
 
   // Ratings for the professionals on this page, in one query.
   const ratings = await reviewSummariesFor(results.rows.map((row) => row.user.id));
